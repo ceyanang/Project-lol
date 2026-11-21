@@ -4,6 +4,7 @@ import type { PlayStep } from '../game/battle';
 import { meaningOptions, romajiOptions } from '../game/distractors';
 import { defaultRng } from '../game/rng';
 import { CONFIG } from '../config';
+import { playSfx } from '../game/sfx';
 
 interface Props {
   steps: PlayStep[];
@@ -50,6 +51,7 @@ export default function ReadingCheck({ steps, unlocked, title, decoys = [], onAn
   function choose(opt: string) {
     if (answered) return;
     const ok = opt === correctAnswer;
+    playSfx(ok ? 'correct' : 'wrong');
     setPicked(opt);
     const nextResults = [...results, ok];
     setResults(nextResults);

@@ -9,9 +9,11 @@ interface Props {
   onNewRun: () => void;
   onContinue: () => void;
   onLibrary: () => void;
+  onToggleSfx: () => void;
+  onToggleAutoSpeak: () => void;
 }
 
-export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary }: Props) {
+export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onToggleSfx, onToggleAutoSpeak }: Props) {
   const next = UNLOCK_GROUPS[profile.unlockedCount];
   const [confirming, setConfirming] = useState(false);
   return (
@@ -33,6 +35,15 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
         </button>
         <button type="button" className="btn btn-wide btn-blue" onClick={onLibrary}>
           📚 Kana Library
+        </button>
+      </div>
+
+      <div className="settings-row">
+        <button type="button" className="pill pill-btn" onClick={onToggleSfx} aria-pressed={profile.settings.sfx}>
+          {profile.settings.sfx ? '🔊 Sound on' : '🔇 Sound off'}
+        </button>
+        <button type="button" className="pill pill-btn" onClick={onToggleAutoSpeak} aria-pressed={profile.settings.autoSpeak}>
+          {profile.settings.autoSpeak ? '🗣️ Read aloud on' : '🤐 Read aloud off'}
         </button>
       </div>
 

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { playSfx } from '../game/sfx';
 import KanaCard from '../components/KanaCard';
 import { KANA_BY_ID, RELIC_BY_ID, UNLOCK_GROUPS, VOCAB_BY_ID } from '../data';
 import { cardValue } from '../game/battle';
@@ -19,6 +20,9 @@ const noPrompts = { guard: null, weak: [], word: null };
 
 export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic, onSkip }: Props) {
   const [chosen, setChosen] = useState<string | null>(null);
+  useEffect(() => {
+    if (step.kind === 'unlock') playSfx('unlock');
+  }, [step.kind]);
 
   if (step.kind === 'unlock') {
     const g = UNLOCK_GROUPS.find((x) => x.id === step.groupId)!;

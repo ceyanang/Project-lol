@@ -5,6 +5,7 @@ import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popR
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { VOICE_HELP, initSpeech, speak as speakJa, voicesKnown } from './game/speech';
+import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
 import MapScreen from './screens/MapScreen';
@@ -27,6 +28,18 @@ export default function App() {
   const [view, setView] = useState<View>('title');
 
   useEffect(() => saveProfile(profile), [profile]);
+  useEffect(() => setSfxEnabled(profile.settings.sfx), [profile.settings.sfx]);
+
+  // Universal button tick. Cards, answer tiles and map nodes have their own sounds.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const btn = (e.target as Element | null)?.closest?.('button');
+      if (!btn || btn.disabled || btn.closest('.card, .tile, .map-node')) return;
+      playSfx('tap');
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
   useEffect(() => saveRunRaw(run), [run]);
 
   const weightOf = useMemo(() => makeWeightOf(profile.srs, Date.now()), [profile.srs]);
@@ -128,6 +141,14 @@ export default function App() {
         onNewRun={startNewRun}
         onContinue={() => setView('run')}
         onLibrary={() => setView('library')}
+        onToggleSfx={() => {
+          const p = profileRef.current;
+          setProfile({ ...p, settings: { ...p.settings, sfx: !p.settings.sfx } });
+        }}
+        onToggleAutoSpeak={() => {
+          const p = profileRef.current;
+          setProfile({ ...p, settings: { ...p.settings, autoSpeak: !p.settings.autoSpeak } });
+        }}
       />
     );
   } else if (run.phase === 'map') {
@@ -136,7 +157,10 @@ export default function App() {
       <MapScreen
         run={run}
         bossEmoji={bossNode ? pickEnemy('boss', run.floor, defaultRng).emoji : '👹'}
-        onEnter={(id) => setRun(enterNode(run, id, profile.srs, ctx, Date.now()))}
+        onEnter={(id) => {
+          playSfx('step');
+          setRun(enterNode(run, id, profile.srs, ctx, Date.now()));
+        }}
         onMenu={() => setView('title')}
       />
     );
@@ -162,7 +186,10 @@ export default function App() {
         unlocked={ctx.unlocked}
         weightOf={weightOf}
         onSpeak={speakAuto}
-        onRest={() => setRun(restHeal(run))}
+        onRest={() => {
+          playSfx('heal');
+          setRun(restHeal(run));
+        }}
         onStudyDone={(answers) => {
           recordSrs(answers);
           setRun(studyReward(noteAnswers(run, answers), answers.filter((a) => a.correct).length));
@@ -176,8 +203,14 @@ export default function App() {
         step={run.rewards[0]}
         relics={run.relics}
         onSpeak={speak}
-        onTakeCard={(card) => claim((r) => takeCard(r, card))}
-        onTakeRelic={(id) => claim((r) => takeRelic(r, id))}
+        onTakeCard={(card) => {
+          playSfx('pickup');
+          claim((r) => takeCard(r, card));
+        }}
+        onTakeRelic={(id) => {
+          playSfx('pickup');
+          claim((r) => takeRelic(r, id));
+        }}
         onSkip={() => claim()}
       />
     );

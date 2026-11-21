@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { KANA_BY_ID, UNLOCK_GROUPS } from '../data';
+import { playSfx } from '../game/sfx';
 import type { RunState } from '../game/run';
 
 interface Props {
@@ -9,6 +11,9 @@ interface Props {
 
 export default function RunOver({ run, onSpeak, onDone }: Props) {
   const won = run.result === 'victory';
+  useEffect(() => {
+    if (won) playSfx('victory');
+  }, [won]);
   const total = run.stats.correct + run.stats.wrong;
   const acc = total ? Math.round((run.stats.correct / total) * 100) : 0;
   return (

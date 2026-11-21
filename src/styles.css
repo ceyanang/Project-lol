@@ -423,3 +423,4 @@ button {
 }
 .fx-reveal { color: var(--block); top: 32%; font-size: 1.3rem; }
 .fx-combo { font-size: 1.3rem; }
+.settings-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }

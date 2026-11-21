@@ -19,6 +19,7 @@ import {
 } from '../game/battle';
 import { CONFIG } from '../config';
 import { cardCost } from '../game/deck';
+import { type Sfx, playSfx } from '../game/sfx';
 import type { Vocab } from '../types';
 
 interface Props {
@@ -36,6 +37,16 @@ interface Props {
 
 const FX_MS = 1000;
 
+const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
+  enemyHit: 'hit',
+  playerHit: 'hurt',
+  block: 'block',
+  enemyBlock: 'block',
+  buff: 'buff',
+  combo: 'combo',
+  reveal: 'combo',
+};
+
 export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTurn, onSpeak, onMenu, missed }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [checking, setChecking] = useState<PlayPlan | null>(null);
@@ -49,10 +60,19 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
     const fresh = battle.fx.filter((f) => f.id > lastFx.current);
     lastFx.current = battle.fxSeq;
     if (!fresh.length) return;
+    // one sound per kind, slightly staggered so a turn reads as a sequence
+    [...new Set(fresh.map((f) => FX_SOUND[f.kind]).filter((s): s is Sfx => !!s))].forEach((s, i) =>
+      window.setTimeout(() => playSfx(s), i * 110),
+    );
     setFx((cur) => [...cur, ...fresh]);
     const t = window.setTimeout(() => setFx((cur) => cur.filter((f) => !fresh.includes(f))), FX_MS);
     return () => window.clearTimeout(t);
   }, [battle.fxSeq, battle.fx]);
+
+  useEffect(() => {
+    if (battle.outcome === 'won') window.setTimeout(() => playSfx('victory'), 250);
+    if (battle.outcome === 'lost') window.setTimeout(() => playSfx('defeat'), 250);
+  }, [battle.outcome]);
 
   // drop selections that left the hand (new turn)
   useEffect(() => {
@@ -68,6 +88,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
   const playerHit = fx.some((f) => f.kind === 'playerHit' || f.kind === 'miss');
 
   function toggle(uid: string) {
+    playSfx('select');
     setSelected((s) => (s.includes(uid) ? s.filter((u) => u !== uid) : [...s, uid]));
   }
 
