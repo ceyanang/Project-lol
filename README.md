@@ -1,7 +1,7 @@
 # Kana-Slayer ⚔️か
 
 A mobile-first, offline PWA deckbuilder roguelike that teaches **hiragana and katakana**.
-Your deck is moves; each turn they're labelled with romaji and you cast one by tapping the matching kana. Kana you miss come back 3× as often.
+Your deck is moves; each turn they're labelled with kana and you cast one by typing its romaji on an in-game keyboard. Kana you miss come back 3× as often.
 
 - Design spec: [`PLAN.md`](PLAN.md) · Coding & mobile rules: [`RULES.md`](RULES.md)
 - Game data: [`data/`](data) (kana, vocab, enemies, relics) · Tunables: [`src/config.ts`](src/config.ts)

@@ -335,7 +335,7 @@ button {
 .player-hp { flex: 1; }
 .battle-actions { margin-top: auto; }
 
-/* ---------- Moves & kana tiles ---------- */
+/* ---------- Moves ---------- */
 .matchups { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
 .matchup { font-size: 0.8rem; font-weight: 800; border-radius: 99px; padding: 3px 10px; background: var(--panel); }
 .matchup-weak { border: 2px solid var(--gold); color: var(--gold); }
@@ -354,10 +354,12 @@ button {
 .move-card.kind-block, .move-card.kind-mirror { border-color: #3d6fa3; }
 .move-card.kind-heal, .move-card.kind-weaken { border-color: #3f8a64; }
 .move-card.is-selected { border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 207, 90, 0.45); }
-.move-romaji {
-  flex: 0 0 auto; min-width: 52px; height: 44px; padding: 0 6px; border-radius: 10px; background: var(--bg);
-  display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 900; letter-spacing: 0.03em; color: var(--gold);
+.move-label {
+  flex: 0 0 auto; min-width: 48px; height: 48px; padding: 0 6px; border-radius: 10px; background: #fffaf0; color: #2a1f3d;
+  display: flex; align-items: center; justify-content: center; font-size: 1.9rem; font-weight: 700;
 }
+.move-label.is-word { font-size: 1.05rem; }
+.kbd-area { display: flex; flex-direction: column; gap: 6px; }
 .move-body { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
 .move-name { font-weight: 800; font-size: 0.85rem; }
 .move-count { color: var(--gold); }
@@ -366,15 +368,6 @@ button {
 .badge-weak { background: var(--gold); color: #3a2400; }
 .badge-resist { background: var(--panel2); color: var(--muted); }
 
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.kana-pick {
-  min-height: 58px; border-radius: 14px; border: 3px solid transparent; background: #fffaf0; color: #2a1f3d;
-  font-size: 2.1rem; font-weight: 700; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); transition: transform 80ms;
-}
-.kana-pick.is-word { font-size: 1.35rem; }
-.kana-pick:active { transform: translateY(2px); }
-.kana-pick.is-picked { border-color: var(--gold); background: #fff1b8; transform: translateY(-3px); box-shadow: 0 0 0 3px rgba(255, 207, 90, 0.5), 0 6px 0 rgba(0, 0, 0, 0.35); }
-.kana-pick:disabled { opacity: 0.5; }
 
 .fx-move { color: var(--purple); top: 8%; font-size: 1.3rem; }
 .fx-weak { color: var(--gold); top: 28%; font-size: 1.2rem; }
@@ -391,32 +384,12 @@ button {
   .enemy { padding-block: 6px 8px; }
   .battle .enemy-emoji { font-size: clamp(44px, 8dvh, 72px); }
   .move-card { min-height: 50px; }
-  .move-romaji { height: 38px; font-size: 1.2rem; }
-  .kana-pick { min-height: 50px; font-size: 1.8rem; }
-  .battle-top .icon-btn { min-height: 40px; }
+  .move-label { height: 40px; min-width: 42px; font-size: 1.6rem; }
+    .battle-top .icon-btn { min-height: 40px; }
 }
-.moves.is-waiting, .tiles.is-waiting { opacity: 0.45; transition: opacity 200ms; }
+.moves.is-waiting, .kbd-area.is-waiting { opacity: 0.45; transition: opacity 200ms; }
 .intent-bubble.is-acting { animation: intentPulse 0.6s ease-in-out infinite alternate; }
 @keyframes intentPulse { from { transform: scale(1); } to { transform: scale(1.15); box-shadow: 0 0 14px var(--red); } }
-
-/* ---------- Difficulty ---------- */
-.diff-options { display: flex; flex-direction: column; gap: 8px; }
-.diff-option {
-  display: flex; gap: 12px; align-items: center; text-align: left; min-height: 60px; padding: 10px 12px;
-  border-radius: 14px; border: 2px solid var(--panel2); background: var(--panel);
-}
-.diff-option.is-chosen { border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 207, 90, 0.35); }
-.diff-emoji { font-size: 1.6rem; }
-
-/* tile grid grows with difficulty */
-.tiles.tiles-4 { grid-template-columns: repeat(4, 1fr); }
-.tiles.tiles-8 { grid-template-columns: repeat(4, 1fr); }
-.tiles.tiles-many {
-  grid-template-columns: repeat(6, 1fr); gap: 5px; max-height: 38dvh; overflow-y: auto;
-  padding: 2px 2px 6px; border-radius: 12px; background: rgba(0, 0, 0, 0.2);
-}
-.tiles.tiles-many .kana-pick { min-height: 44px; font-size: 1.45rem; border-radius: 10px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
-.tiles.tiles-many .kana-pick.is-word { grid-column: span 2; font-size: 1.1rem; }
 
 /* ---------- Skip-ahead Quiz ---------- */
 .quiz-screen { gap: 10px; }
@@ -431,5 +404,34 @@ button {
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
 }
 .quiz-row.is-unlocked { background: #d3f5df; opacity: 0.7; font-size: 1.1rem; box-shadow: none; }
-/* Hard: the tile grid takes the leftover space and scrolls inside it, so End Turn stays on screen */
-.battle > .tiles.tiles-many { flex: 1 1 0; min-height: 104px; max-height: none; }
+
+/* ---------- Romaji keyboard ---------- */
+.kbd { display: flex; flex-direction: column; gap: 6px; user-select: none; }
+.kbd-row { display: flex; justify-content: center; gap: 4px; }
+.kbd-key {
+  flex: 1 1 0; max-width: 40px; min-height: 46px; padding: 0; border: 0; border-radius: 8px;
+  background: var(--panel2); color: var(--ink); font-size: 1.15rem; font-weight: 800;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4); touch-action: manipulation;
+}
+.kbd-key:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); background: #5a4499; }
+.kbd-wide { flex: 1.5 1 0; max-width: 60px; }
+.kbd-back { background: #5a2f4e; }
+.kbd-enter { background: var(--green); color: #06301a; }
+.kbd.is-disabled { opacity: 0.45; }
+.typed-box {
+  display: flex; align-items: center; justify-content: center; gap: 2px; min-height: 48px; border-radius: 12px;
+  background: var(--bg); border: 2px solid var(--panel2); font-size: 1.6rem; font-weight: 900; letter-spacing: 0.06em;
+}
+.typed-box .typed-placeholder { font-size: 0.9rem; font-weight: 600; letter-spacing: 0; color: var(--muted); }
+.typed-box .caret { width: 2px; height: 26px; background: var(--gold); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (max-height: 720px) {
+  .kbd-key { min-height: 40px; font-size: 1rem; }
+  .kbd { gap: 5px; }
+  .typed-box { min-height: 40px; font-size: 1.3rem; }
+}
+.tc-row { display: flex; gap: 12px; align-items: center; justify-content: center; }
+.tc-glyph { width: 110px; height: 110px; font-size: 72px; }
+.tc-typed { min-width: 120px; padding: 0 12px; }
+.typed-box.is-ok { border-color: var(--green); color: var(--green); }
+.typed-box.is-bad { border-color: var(--red); color: var(--red); }

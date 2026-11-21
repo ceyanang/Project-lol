@@ -1,7 +1,7 @@
 import { it } from 'vitest';
 import { CONFIG } from '../config';
 import { ENEMIES, MOVE_BY_ID, availableWords, firstGroups, unlockedKanaIds } from '../data';
-import { type BattleState, playTurn, createBattle, incomingDamage, pickTile, previewMove } from './battle';
+import { type BattleState, createBattle, incomingDamage, playTurn, previewMove, setTyped } from './battle';
 import { makeCard } from './deck';
 import { seeded } from './rng';
 
@@ -18,7 +18,7 @@ run('balance sim', () => {
       let lost = 0, turns = 0, deaths = 0;
       const N = 300;
       for (let i = 0; i < N; i++) {
-        const ctx = { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), wordsUnlocked: false, difficulty: (process.env.SIM_DIFF ?? 'normal') as 'normal', rng: seeded(i * 7 + floor) };
+        const ctx = { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), wordsUnlocked: false, rng: seeded(i * 7 + floor) };
         let b: BattleState = createBattle({ enemy: e, floor, deck: [...deck, ...extra].map(makeCard), hp: CONFIG.player.startHp, maxHp: CONFIG.player.startHp, relics: [], ctx });
         let t = 0;
         while (b.outcome === 'ongoing' && t < 60) {
@@ -31,8 +31,7 @@ run('balance sim', () => {
             return lethal + dmg + blk * (b.playerHp < 25 ? 1.5 : 1) + (b.playerHp < 30 ? p.heal : 0) + p.weaken * 2;
           };
           const best = b.slots.slice().sort((x, y) => score(y) - score(x))[0];
-          const tile = b.tiles.find((tt) => tt.slot === best.uid)!;
-          b = playTurn(pickTile(b, tile.id), ctx).battle;
+          b = playTurn(setTyped(b, best.label.romaji), ctx).battle;
           t++;
         }
         turns += t;

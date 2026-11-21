@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import HpBar from '../components/HpBar';
+import Keyboard from '../components/Keyboard';
 import MoveCard from '../components/MoveCard';
 import { ELEMENT_META, MOVE_BY_ID, RELIC_BY_ID } from '../data';
 import { type BattleState, type Fx, currentIntent, intentDamage, previewMove } from '../game/battle';
@@ -8,7 +9,7 @@ import { type Sfx, playSfx } from '../game/sfx';
 interface Props {
   battle: BattleState;
   floor: number;
-  onPick: (tileId: string) => void;
+  onType: (typed: string) => void;
   onConfirm: () => void;
   onMenu?: () => void;
 }
@@ -28,7 +29,7 @@ const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
 const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
-export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Props) {
+export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Props) {
   const [fx, setFx] = useState<Fx[]>([]);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
@@ -128,14 +129,14 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
             <span className="jp">{battle.lastResult.text}</span>
           </>
         ) : (
-          <span className="muted">Tap a move's kana, then End Turn.</span>
+          <span className="muted">Type a move's reading, then End Turn.</span>
         )}
       </p>
 
       <section className={`moves ${battle.pending ? 'is-waiting' : ''}`} aria-label="Your moves this turn">
         {battle.slots.map((s) => {
           const move = MOVE_BY_ID[s.card.moveId];
-          return <MoveCard key={s.uid} move={move} romaji={s.label.romaji} preview={previewMove(move, s.label, battle)} />;
+          return <MoveCard key={s.uid} move={move} label={s.label.text} preview={previewMove(move, s.label, battle)} />;
         })}
       </section>
 
@@ -154,38 +155,30 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
         </div>
       </section>
 
-      <section
-        className={`tiles ${battle.tiles.length <= 4 ? 'tiles-4' : battle.tiles.length <= 8 ? 'tiles-8' : 'tiles-many'} ${battle.pending ? 'is-waiting' : ''}`}
-        aria-label="Kana tiles"
-      >
-        {battle.tiles.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`kana-pick jp ${t.text.length > 1 ? 'is-word' : ''} ${battle.picked === t.id ? 'is-picked' : ''}`}
-            onClick={() => {
-              if (busy) return;
-              playSfx('select');
-              onPick(t.id);
-            }}
-            aria-pressed={battle.picked === t.id}
-            disabled={busy}
-          >
-            {t.text}
-          </button>
-        ))}
+      <section className={`kbd-area ${battle.pending ? 'is-waiting' : ''}`} aria-label="Type the reading">
+        <div className="typed-box" aria-live="polite" aria-label="Typed reading">
+          {battle.typed || <span className="typed-placeholder">type a move's reading…</span>}
+          {!busy && <span className="caret" />}
+        </div>
+        <Keyboard
+          disabled={busy}
+          onLetter={(l) => onType(battle.typed + l)}
+          onBackspace={() => onType(battle.typed.slice(0, -1))}
+          onEnter={onConfirm}
+          enterLabel="⏎"
+        />
       </section>
 
       <footer className="battle-actions">
         <span className="pile" aria-label="Draw pile">
           🂠 {battle.drawPile.length}
         </span>
-        <button type="button" className={`btn grow ${battle.picked ? 'btn-primary' : 'btn-ghost'}`} disabled={busy} onClick={onConfirm}>
+        <button type="button" className={`btn grow ${battle.typed ? 'btn-primary' : 'btn-ghost'}`} disabled={busy} onClick={onConfirm}>
           {battle.pending === 'enemy'
             ? `${e.emoji} Enemy's turn…`
             : battle.pending === 'deal'
               ? 'Dealing your moves…'
-              : battle.picked
+              : battle.typed
                 ? 'End Turn · do it!'
                 : 'End Turn (skip move)'}
         </button>

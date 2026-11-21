@@ -6,7 +6,7 @@ import { moveRewardOptions, starterDeck } from './deck';
 import { type MapNode, generateMap, nodeById } from './map';
 import { type Rng, pick, shuffle } from './rng';
 import { type SrsStats, dueKana } from './srs';
-import type { Difficulty, Profile } from './storage';
+import type { Profile } from './storage';
 
 export type RunPhase = 'map' | 'battle' | 'reward' | 'rest' | 'over';
 
@@ -16,8 +16,7 @@ export type RewardStep =
   | { kind: 'relics'; options: string[] };
 
 export interface RunState {
-  version: 2;
-  difficulty: Difficulty;
+  version: 3;
   floor: number;
   hp: number;
   maxHp: number;
@@ -36,14 +35,12 @@ export interface RunState {
   stats: { fights: number; correct: number; wrong: number; words: number; missed: string[]; unlocked: string[] };
 }
 
-/** Battle context for a run. The run's own difficulty wins over the profile's last pick. */
-export function runCtx(profile: Profile, rng: Rng, weightOf: (id: string) => number, difficulty?: Difficulty): BattleCtx {
+export function runCtx(profile: Profile, rng: Rng, weightOf: (id: string) => number): BattleCtx {
   const unlocked = unlockedKanaIds(profile.unlocked);
   return {
     unlocked,
     words: availableWords(new Set(unlocked)),
     wordsUnlocked: wordMovesUnlocked(profile.unlocked),
-    difficulty: difficulty ?? profile.difficulty,
     weightOf,
     rng,
   };
@@ -56,8 +53,7 @@ function hasDue(srs: SrsStats, unlocked: readonly string[], now: number) {
 export function newRun(profile: Profile, ctx: BattleCtx, now: number): RunState {
   const deck = starterDeck(ctx.rng);
   return {
-    version: 2,
-    difficulty: ctx.difficulty,
+    version: 3,
     floor: 1,
     hp: CONFIG.player.startHp,
     maxHp: CONFIG.player.startHp,
@@ -227,8 +223,8 @@ export function studyReward(run: RunState, correct: number): RunState {
 export function parseRun(raw: unknown): RunState | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Partial<RunState>;
-  if (r.version !== 2 || !Array.isArray(r.deck) || !Array.isArray(r.map) || typeof r.hp !== 'number' || typeof r.floor !== 'number') return null;
+  if (r.version !== 3 || !Array.isArray(r.deck) || !Array.isArray(r.map) || typeof r.hp !== 'number' || typeof r.floor !== 'number') return null;
   if (!r.phase || !['map', 'battle', 'reward', 'rest', 'over'].includes(r.phase)) return null;
-  if (r.phase === 'battle' && (!r.battle || !Array.isArray(r.battle.tiles))) return null;
-  return { rewards: [], relics: [], visited: [], afterRewards: 'map', difficulty: 'normal', ...r } as RunState;
+  if (r.phase === 'battle' && (!r.battle || typeof r.battle.typed !== 'string')) return null;
+  return { rewards: [], relics: [], visited: [], afterRewards: 'map', ...r } as RunState;
 }

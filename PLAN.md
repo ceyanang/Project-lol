@@ -14,26 +14,21 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
 
 1. **Deal.** At the start of your turn, **4 moves** are dealt from your deck
    (`movesPerTurn`). A move is not tied to any kana: each one gets a fresh label every
-   turn, the **romaji of a different kana** (e.g. `ka`, `mi`, `su`, `te`).
-2. **Tiles.** Below the moves sits a grid of **kana tiles**. How many depends on the
-   **difficulty** you pick when starting a run (`CONFIG.difficulty`):
-   | Difficulty | Tiles |
-   |---|---|
-   | 🟢 Easy | 4: just the right answers |
-   | 🟡 Normal | 8: the 4 answers + 4 decoys (look-alikes like シ/ツ, ね/れ/わ, or same-row / same-vowel kana, from kana you've unlocked). A decoy never shares a reading with any move. |
-   | 🔴 Hard | every kana you've unlocked, in chart order (scrolls). Kana with the same reading as a label also cast it (か and カ both cast `ka`). |
-3. **Pick.** Tap the kana for the move you want. Tapping does **nothing visible**
-   except highlight the tile: the game never shows which move a tile belongs to
-   before you confirm (no audio either), so you can't probe for the answer.
-4. **Confirm.** Press **End Turn**. The pick is revealed (`き = ki → 🛡 Guard`):
-   - the tile belongs to a move → that move happens (even if it's not the one you meant!);
-   - the tile is a decoy → **fizzle**, you take **3 damage** (`decoyHpCost`), and the kana
-     it imitates is marked missed in your SRS (on Hard, a non-look-alike tile marks the
-     tapped kana itself as missed);
-   - no tile picked → you skip your move.
-5. **Beat, then the enemy acts.** After your move resolves there's a pause (1.3 s,
+   turn, a **kana** (or, later, a whole word), all with different readings.
+2. **Type.** Type the **romaji** of the move you want on the in-game QWERTY keyboard
+   (a physical keyboard works too: letters, Backspace, Enter). The phone's own keyboard
+   never opens, so autocorrect can't interfere. Hepburn and common alternates are
+   accepted: `shi/si`, `chi/ti`, `tsu/tu`, `fu/hu`, `ji/zi/di`, `zu/du`, `n/nn`, `wo/o`.
+   Nothing is highlighted while you type, so you can't probe for the answer.
+3. **Confirm.** Press **End Turn** (or Enter). What you typed is revealed
+   (`き = ki → 🛡 Guard`):
+   - it reads as one of the moves → that move happens (even if it's not the one you meant!);
+   - it matches no move → **fizzle**, you take **3 damage** (`wrongHpCost`). If it was a near
+     miss of one move's reading (edit distance), that kana is marked missed in your SRS;
+   - nothing typed → you skip your move.
+4. **Beat, then the enemy acts.** After your move resolves there's a pause (1.3 s,
    `enemyDelayMs`), then the enemy acts (its intent was shown all turn), then another
-   pause (0.9 s, `dealDelayMs`) before your next moves are dealt. Nothing is tappable
+   pause (0.9 s, `dealDelayMs`) before your next moves are dealt. Nothing is typeable
    during the pauses, and a save made mid-pause resumes correctly.
 
 **One move per turn.** Attacks, blocks and spells all work the same way. There is no energy.
@@ -68,8 +63,8 @@ the whole fight. They never rotate.
 
 ### Word moves
 After the Word moves unlock (the last unlock), each move has a 25% chance to be labelled
-with a **whole word's romaji** (`neko`) instead of a single kana; its tile shows the word
-(ねこ). Word moves get **×1.5 power** (Suzuri: ×2).
+with a **whole word** instead of a single kana
+(the card shows ねこ, you type `neko`). Word moves get **×1.5 power** (Suzuri: ×2).
 
 ### Other numbers
 | Thing | Value |
@@ -94,9 +89,9 @@ the final boss (Ryūjin) should kill a perfect reader < 10% of the time. Add `SI
 Per kana (profile key `kanaslayer.profile.v1`): `seen`, `correct`, `lastSeen`, `streak`,
 `missDebt`, `bucket` (new → learning → known → mastered), `reviewStage`, `nextReview`.
 
-- **Correct**: you confirm a tile that belongs to a move → its kana are marked correct.
-- **Miss**: you confirm a decoy → the kana that decoy imitates is marked missed.
-- Study drills at rest sites (kana → romaji, 4 options) also count.
+- **Correct**: you type a move's reading and confirm → its kana are marked correct.
+- **Miss**: you type a near miss of a move's reading → that kana is marked missed.
+- Study drills at rest sites (kana → romaji, 4 options) and the Skip-ahead Quiz also count.
 
 Buckets: `learning` once seen; `known` at a streak of 3; `mastered` at a streak of 6.
 A miss resets the streak and drops known/mastered back to learning.
@@ -152,7 +147,7 @@ Unlocks are stored as a list of group ids (`profile.unlocked`; old saves with a 
 - **A row** (e.g. か row): every kana in it, no misses → that row unlocks.
 - **A family** (Hiragana, Hiragana dakuten, Katakana, Katakana dakuten): 14 questions with at
   least one per row, at most 1 miss → every row in the family unlocks.
-- Kana → romaji, 4 options, distractors from the same family. Answers count toward SRS.
+- Kana → **type the romaji** on the in-game keyboard (Enter to submit). Answers count toward SRS.
 - Word moves can't be quizzed; they unlock from a boss once every kana group is unlocked.
 
 ## 5. Relics (`data/relics.json`)
@@ -160,7 +155,7 @@ Unlocks are stored as a list of group ids (`profile.unlocked`; old saves with a 
 |---|---|
 | 🗡️ Dakuten Blade | moves labelled with a voiced kana (ga, za, pa…) +5 dmg and pierce |
 | 🎎 Daruma Doll | +12 max HP |
-| 🧧 Omamori | first decoy pick per fight costs no HP |
+| 🧧 Omamori | first misread per fight costs no HP |
 | 🖋️ Suzuri Inkstone | word moves ×2 instead of ×1.5 |
 | 🏮 Paper Lantern | 5 moves per turn instead of 4 |
 | 🍵 Matcha Bowl | heal 5 after every fight |
@@ -177,11 +172,11 @@ Reward → … → Run Over. Kana Library: every kana by row with mastery, tap t
 
 ## 7. Pronunciation & sound
 `speechSynthesis` with a Japanese voice when present (hint shown if missing). In battle the
-picked kana is spoken **after** End Turn, never on tap. Sound effects are synthesized with
+matched kana is spoken **after** End Turn, never while typing. Sound effects are synthesized with
 Web Audio (no files).
 
 ## 8. Persistence keys
 | Key | Content |
 |---|---|
 | `kanaslayer.profile.v1` | unlocks, SRS stats, settings, lifetime stats |
-| `kanaslayer.run.v2` | current run incl. in-progress battle (v1 runs from the old card combat are dropped) |
+| `kanaslayer.run.v3` | current run incl. in-progress battle (older runs from previous combat versions are dropped) |

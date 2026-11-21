@@ -18,8 +18,8 @@ Follow these in every change.
 2. Viewport meta: `width=device-width, initial-scale=1, viewport-fit=cover`. Do **not** disable zoom with `user-scalable=no`; prevent accidental double-tap zoom with `touch-action: manipulation` instead.
 3. Use `100dvh` (with `100vh` fallback) for full-height screens, never fixed pixel heights.
 4. Respect notches: pad the app shell with `env(safe-area-inset-*)`.
-5. **Tap targets ≥ 48×48 px** with ≥ 8 px between them. Primary actions (Play, End Turn) sit in the bottom third — the thumb zone.
-6. **No text inputs anywhere.** All answers are tile pickers. No keyboard, no autocorrect.
+5. **Tap targets ≥ 48×48 px** with ≥ 8 px between them. Primary actions (End Turn) sit in the bottom third, the thumb zone. Exception: the in-game QWERTY keyboard uses phone-keyboard-sized keys (≥ 40 px tall, full row width).
+6. **No native text inputs.** Answers use tile pickers or the in-game keyboard (`src/components/Keyboard.tsx`), which never opens the OS keyboard, so autocorrect can't interfere. A physical keyboard may also be listened to (keydown), never via an `<input>`.
 7. No hover-only affordances. Every interaction works with a single tap; no long-press-only actions, no drag-only actions.
 8. Base font size ≥ 16 px; kana on cards ≥ 40 px. Use the system Japanese font stack (`Hiragino Sans`, `Noto Sans JP`, `Yu Gothic`…) — no web fonts, so nothing is fetched at runtime.
 9. Disable text selection and the iOS tap highlight on game UI (`user-select: none; -webkit-tap-highlight-color: transparent`).

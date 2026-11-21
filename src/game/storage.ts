@@ -2,17 +2,13 @@ import { UNLOCK_GROUPS, firstGroups } from '../data';
 import type { SrsStats } from './srs';
 
 export const PROFILE_KEY = 'kanaslayer.profile.v1';
-/** v2: move-deck combat. Old v1 runs are dropped; the profile (unlocks + SRS) carries over. */
-export const RUN_KEY = 'kanaslayer.run.v2';
-
-export type Difficulty = 'easy' | 'normal' | 'hard';
+/** v3: typed move-deck combat. Older runs are dropped; the profile (unlocks + SRS) carries over. */
+export const RUN_KEY = 'kanaslayer.run.v3';
 
 export interface Profile {
   version: 1;
   /** Unlocked UNLOCK_GROUPS ids (always includes the あ row). Bosses unlock in order; the quiz can unlock any. */
   unlocked: string[];
-  /** Difficulty picked for the last run (remembered for the next one). */
-  difficulty: Difficulty;
   srs: SrsStats;
   runs: number;
   wins: number;
@@ -21,7 +17,7 @@ export interface Profile {
 }
 
 export function newProfile(): Profile {
-  return { version: 1, unlocked: firstGroups(1), difficulty: 'normal', srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true } };
+  return { version: 1, unlocked: firstGroups(1), srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true } };
 }
 
 function safeGet(key: string): unknown {
@@ -58,7 +54,6 @@ export function loadProfile(): Profile {
   return {
     version: 1,
     unlocked: parseUnlocked(raw),
-    difficulty: raw.difficulty === 'easy' || raw.difficulty === 'hard' ? raw.difficulty : 'normal',
     srs,
     runs: num(raw.runs, 0),
     wins: num(raw.wins, 0),

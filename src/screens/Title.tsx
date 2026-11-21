@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { CONFIG } from '../config';
 import { UNLOCK_GROUPS, nextLockedGroup, unlockedKanaIds } from '../data';
-import type { Difficulty, Profile } from '../game/storage';
+import type { Profile } from '../game/storage';
 
 interface Props {
   profile: Profile;
   canContinue: boolean;
   continueLabel?: string;
-  onNewRun: (difficulty: Difficulty) => void;
+  onNewRun: () => void;
   onContinue: () => void;
   onLibrary: () => void;
   onQuiz: () => void;
@@ -15,12 +14,9 @@ interface Props {
   onToggleAutoSpeak: () => void;
 }
 
-const DIFFS: Difficulty[] = ['easy', 'normal', 'hard'];
-
 export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onToggleSfx, onToggleAutoSpeak }: Props) {
   const next = nextLockedGroup(profile.unlocked);
-  const [sheet, setSheet] = useState<null | 'abandon' | 'difficulty'>(null);
-  const [difficulty, setDifficulty] = useState<Difficulty>(profile.difficulty);
+  const [sheet, setSheet] = useState<null | 'abandon'>(null);
   const kanaCount = unlockedKanaIds(profile.unlocked).length;
 
   return (
@@ -37,7 +33,7 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
             ▶ Continue{continueLabel ? ` · ${continueLabel}` : ''}
           </button>
         )}
-        <button type="button" className={`btn btn-wide ${canContinue ? '' : 'btn-primary'}`} onClick={() => setSheet(canContinue ? 'abandon' : 'difficulty')}>
+        <button type="button" className={`btn btn-wide ${canContinue ? '' : 'btn-primary'}`} onClick={() => (canContinue ? setSheet('abandon') : onNewRun())}>
           ⚔️ New Run
         </button>
         <button type="button" className="btn btn-wide btn-blue" onClick={onLibrary}>
@@ -74,7 +70,7 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
           <div className="sheet center" onClick={(e) => e.stopPropagation()}>
             <h3 className="sheet-title">Abandon your current run?</h3>
             <p className="muted">Unlocked kana and kana stats are kept. Floor progress, deck and relics are lost.</p>
-            <button type="button" className="btn btn-primary btn-wide" onClick={() => setSheet('difficulty')}>
+            <button type="button" className="btn btn-primary btn-wide" onClick={onNewRun}>
               Abandon and start fresh
             </button>
             <button type="button" className="btn btn-ghost btn-wide" onClick={() => setSheet(null)}>
@@ -84,42 +80,6 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
         </div>
       )}
 
-      {sheet === 'difficulty' && (
-        <div className="sheet-backdrop" onClick={() => setSheet(null)}>
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            <h3 className="sheet-title center">Choose a difficulty</h3>
-            <p className="muted small center">How many kana tiles you pick from each turn.</p>
-            <div className="diff-options" role="radiogroup" aria-label="Difficulty">
-              {DIFFS.map((d) => {
-                const meta = CONFIG.difficulty[d];
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    role="radio"
-                    aria-checked={difficulty === d}
-                    className={`diff-option ${difficulty === d ? 'is-chosen' : ''}`}
-                    onClick={() => setDifficulty(d)}
-                  >
-                    <span className="diff-emoji">{meta.emoji}</span>
-                    <span>
-                      <b>{meta.label}</b>
-                      <br />
-                      <span className="small muted">
-                        {meta.blurb}
-                        {d === 'hard' ? ` (${kanaCount} now)` : ''}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <button type="button" className="btn btn-primary btn-wide" onClick={() => onNewRun(difficulty)}>
-              ⚔️ Start {CONFIG.difficulty[difficulty].label} run
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

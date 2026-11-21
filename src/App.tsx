@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { advanceBeat, confirmTurn, pickTile } from './game/battle';
+import { advanceBeat, confirmTurn, matchSlot, setTyped } from './game/battle';
 import { CONFIG } from './config';
 import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
-import { type Difficulty, type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
+import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { VOICE_HELP, initSpeech, speak as speakJa, voicesKnown } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
@@ -46,8 +46,7 @@ export default function App() {
   useEffect(() => saveRunRaw(run), [run]);
 
   const weightOf = useMemo(() => makeWeightOf(profile.srs, Date.now()), [profile.srs]);
-  const runDifficulty = run?.difficulty;
-  const ctx = useMemo(() => runCtx(profile, defaultRng, weightOf, runDifficulty), [profile, weightOf, runDifficulty]);
+  const ctx = useMemo(() => runCtx(profile, defaultRng, weightOf), [profile, weightOf]);
 
   const [toast, setToast] = useState<string | null>(null);
   const voiceHintShown = useRef(false);
@@ -80,27 +79,26 @@ export default function App() {
     setProfile({ ...p, srs: recordAnswers(p.srs, answers, Date.now()) });
   }, [setProfile]);
 
-  function startNewRun(difficulty: Difficulty) {
-    const p = { ...profileRef.current, difficulty };
-    setProfile(p);
-    setRun(newRun(p, runCtx(p, defaultRng, weightOf, difficulty), Date.now()));
+  function startNewRun() {
+    setRun(newRun(profileRef.current, ctx, Date.now()));
     setView('run');
   }
 
-  function onPick(tileId: string) {
+  function onType(typed: string) {
     if (!run?.battle) return;
-    setRun({ ...run, battle: pickTile(run.battle, tileId) });
+    setRun({ ...run, battle: setTyped(run.battle, typed) });
   }
 
-  /** End Turn: the picked kana is revealed and its move resolves, then the enemy acts. */
+  /** End Turn: what you typed is revealed and its move resolves; the enemy acts on the next beat. */
   function onConfirm() {
-    if (!run?.battle) return;
-    const picked = run.battle.tiles.find((t) => t.id === run.battle!.picked);
+    if (!run?.battle || run.battle.pending || run.battle.outcome !== 'ongoing') return;
+    const typed = run.battle.typed;
+    const slot = typed ? matchSlot(run.battle, typed) : undefined;
     const r = confirmTurn(run.battle);
-    if (picked) {
-      playSfx(r.battle.lastResult?.ok ? 'correct' : 'wrong');
+    if (typed) {
+      playSfx(slot ? 'correct' : 'wrong');
       // speak only after confirming, so audio never gives the reading away early
-      speakAuto(picked.text);
+      if (slot) speakAuto(slot.label.text);
     }
     recordSrs(r.answers);
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
@@ -117,7 +115,7 @@ export default function App() {
       const r = runRef.current;
       if (!r || r.phase !== 'battle' || !r.battle || r.battle.outcome === 'ongoing') return;
       const p = profileRef.current;
-      const res = finishBattle(r, p, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()), r.difficulty));
+      const res = finishBattle(r, p, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now())));
       setProfile(res.profile);
       setRun(res.run);
     }, 900);
@@ -135,7 +133,7 @@ export default function App() {
         const r = runRef.current;
         if (!r?.battle || r.phase !== 'battle' || r.battle.pending !== beat) return;
         const p = profileRef.current;
-        setRun({ ...r, battle: advanceBeat(r.battle, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()), r.difficulty)) });
+        setRun({ ...r, battle: advanceBeat(r.battle, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()))) });
       },
       beat === 'enemy' ? CONFIG.combat.enemyDelayMs : CONFIG.combat.dealDelayMs,
     );
@@ -214,7 +212,7 @@ export default function App() {
         key={run.battleNode ?? 'battle'}
         battle={run.battle}
         floor={run.floor}
-        onPick={onPick}
+        onType={onType}
         onConfirm={onConfirm}
         onMenu={() => setView('title')}
       />

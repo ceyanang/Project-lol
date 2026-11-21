@@ -1,16 +1,14 @@
 import { CONFIG } from '../config';
 import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
-import type { Difficulty } from './storage';
 import type { Card, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
-import { confusablesOf, kanaOptions } from './distractors';
+import { editDistance, matchesReading, normalizeTyped } from './romaji';
 import { type Rng, chance, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
 
 /*
  * Combat (see PLAN.md §1):
- * each turn N moves are dealt from your deck, each labelled with the romaji of a different kana
- * (or a whole word). Below them is a row of kana tiles: the right ones plus look-alike decoys.
- * Tap the kana for the move you want, then End Turn confirms it. One move per turn.
+ * each turn N moves are dealt from your deck, each labelled with a different kana (or a whole word).
+ * Type the romaji of the move you want on the in-game keyboard; End Turn confirms it. One move per turn.
  */
 
 export interface EnemyState {
@@ -48,17 +46,6 @@ export interface Slot {
   label: Label;
 }
 
-export interface Tile {
-  id: string;
-  text: string;
-  romaji: string;
-  kana: string[];
-  /** Slot this tile casts, or null for a decoy. */
-  slot: string | null;
-  /** For decoys: the slot whose kana it imitates. */
-  decoyOf: string | null;
-}
-
 export interface TurnResult {
   ok: boolean;
   tileText: string;
@@ -78,9 +65,8 @@ export interface BattleState {
   drawPile: Card[];
   discard: Card[];
   slots: Slot[];
-  tiles: Tile[];
-  /** Tile id the player tapped; resolved on End Turn. */
-  picked: string | null;
+  /** What the player has typed this turn; resolved on End Turn. */
+  typed: string;
   playerHp: number;
   playerMaxHp: number;
   playerBlock: number;
@@ -109,7 +95,6 @@ export interface BattleCtx {
   unlocked: readonly string[];
   words: readonly Vocab[];
   wordsUnlocked: boolean;
-  difficulty: Difficulty;
   rng: Rng;
 }
 
@@ -193,8 +178,7 @@ export function createBattle(opts: {
     drawPile: shuffle(ctx.rng, opts.deck),
     discard: [],
     slots: [],
-    tiles: [],
-    picked: null,
+    typed: '',
     playerHp: opts.hp,
     playerMaxHp: opts.maxHp,
     playerBlock: 0,
@@ -244,48 +228,6 @@ export function makeLabels(n: number, b: Pick<BattleState, 'reviewKana'>, ctx: B
   return labels;
 }
 
-/**
- * Kana tiles for this turn, by difficulty:
- * easy = just the answers; normal = answers + look-alike decoys; hard = every unlocked kana
- * (kana that read the same as a label, e.g. か/カ for "ka", also cast that move).
- */
-export function makeTiles(slots: Slot[], ctx: BattleCtx): Tile[] {
-  const tiles: Tile[] = slots.map((s) => ({ id: uid('t'), text: s.label.text, romaji: s.label.romaji, kana: s.label.kana, slot: s.uid, decoyOf: null }));
-  const decoys = CONFIG.difficulty[ctx.difficulty]?.decoys ?? CONFIG.difficulty.normal.decoys;
-  const usedText = new Set(tiles.map((t) => t.text));
-
-  if (decoys === 'all') {
-    const bySlotRomaji = new Map(slots.map((s) => [s.label.romaji, s.uid]));
-    const kanaSlots = slots.filter((s) => s.label.kind === 'kana');
-    for (const k of ctx.unlocked) {
-      const kana = KANA_BY_ID[k];
-      if (usedText.has(kana.char)) continue;
-      usedText.add(kana.char);
-      const slot = bySlotRomaji.get(kana.romaji) ?? null;
-      // a wrong pick that looks like a move's kana counts as missing that kana; otherwise the tapped one
-      const lookalikeOf = slot ? null : (kanaSlots.find((s) => confusablesOf(s.label.text).includes(kana.char))?.uid ?? null);
-      tiles.push({ id: uid('t'), text: kana.char, romaji: kana.romaji, kana: [k], slot, decoyOf: lookalikeOf });
-    }
-    // chart order keeps a big grid searchable; whole-word tiles go first
-    const order = new Map(ctx.unlocked.map((k, i) => [k, i]));
-    return tiles.sort((x, y) => (x.kana.length > 1 ? -1 : y.kana.length > 1 ? 1 : (order.get(x.kana[0]) ?? 0) - (order.get(y.kana[0]) ?? 0)));
-  }
-
-  const usedRomaji = new Set(tiles.map((t) => t.romaji));
-  const kanaSlots = shuffle(ctx.rng, slots.filter((s) => s.label.kind === 'kana'));
-  for (let i = 0; i < decoys && kanaSlots.length; i++) {
-    const target = kanaSlots[i % kanaSlots.length];
-    const decoy = kanaOptions(target.label.ref, ctx.unlocked, ctx.rng, 10).find(
-      (k) => !usedRomaji.has(KANA_BY_ID[k].romaji) && !usedText.has(KANA_BY_ID[k].char),
-    );
-    if (!decoy) continue;
-    usedRomaji.add(KANA_BY_ID[decoy].romaji);
-    usedText.add(KANA_BY_ID[decoy].char);
-    tiles.push({ id: uid('t'), text: KANA_BY_ID[decoy].char, romaji: KANA_BY_ID[decoy].romaji, kana: [decoy], slot: null, decoyOf: target.uid });
-  }
-  return shuffle(ctx.rng, tiles);
-}
-
 export function startPlayerTurn(b: BattleState, ctx: BattleCtx): BattleState {
   // last turn's moves go to the discard; reshuffle when the pile runs low
   const n = movesPerTurn(b.relics);
@@ -302,11 +244,10 @@ export function startPlayerTurn(b: BattleState, ctx: BattleCtx): BattleState {
     ...b,
     turn: b.turn + 1,
     playerBlock: 0,
-    picked: null,
+    typed: '',
     drawPile: pile.slice(n),
     discard: [...discard, ...cards.slice(labels.length)],
     slots,
-    tiles: makeTiles(slots, ctx),
   };
 }
 
@@ -387,10 +328,17 @@ function hitPlayer(b: BattleState, dmg: number): BattleState {
   return next;
 }
 
-/** Tap a kana tile (tap again to un-pick). Nothing happens until End Turn. */
-export function pickTile(b: BattleState, tileId: string | null): BattleState {
+export const MAX_TYPED = 10;
+
+/** Update the typed reading. Nothing happens (and nothing is revealed) until End Turn. */
+export function setTyped(b: BattleState, typed: string): BattleState {
   if (b.outcome !== 'ongoing' || b.pending) return b;
-  return { ...b, picked: b.picked === tileId ? null : tileId };
+  return { ...b, typed: normalizeTyped(typed).slice(0, MAX_TYPED) };
+}
+
+/** The move whose label reads as `typed` (Hepburn or a common alternate), if any. */
+export function matchSlot(b: Pick<BattleState, 'slots'>, typed: string): Slot | undefined {
+  return b.slots.find((s) => matchesReading(s.label.kana, typed));
 }
 
 function performMove(b: BattleState, slot: Slot): BattleState {
@@ -454,46 +402,49 @@ function enemyTurn(b: BattleState): BattleState {
   return { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
 }
 
-/** End Turn: resolve the picked tile (if any), then the enemy acts, then a new turn is dealt. */
+/** End Turn: resolve what was typed (if anything); the enemy acts on the next beat. */
 export function confirmTurn(b: BattleState): PlayResult {
   if (b.outcome !== 'ongoing' || b.pending) return { battle: b, answers: [] };
-  const tile = b.tiles.find((t) => t.id === b.picked) ?? null;
+  const typed = normalizeTyped(b.typed);
   const answers: SrsAnswer[] = [];
   let next: BattleState = b;
 
-  if (!tile) {
+  if (!typed) {
     next = { ...next, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
-  } else if (tile.slot) {
-    const slot = b.slots.find((s) => s.uid === tile.slot)!;
-    const move = MOVE_BY_ID[slot.card.moveId];
-    tile.kana.forEach((k) => answers.push({ id: k, correct: true }));
-    next = performMove(next, slot);
-    next = {
-      ...next,
-      movesMade: next.movesMade + 1,
-      stats: { ...next.stats, correct: next.stats.correct + 1, words: next.stats.words + (slot.label.kind === 'word' ? 1 : 0) },
-      lastResult: { ok: true, tileText: tile.text, tileRomaji: tile.romaji, text: `${tile.text} = ${tile.romaji} → ${move.emoji} ${move.name}` },
-    };
   } else {
-    const target = b.slots.find((s) => s.uid === tile.decoyOf);
-    (target ? target.label.kana : tile.kana).forEach((k) => answers.push({ id: k, correct: false }));
-    next = { ...next, movesMade: next.movesMade + 1, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
-    if (has(next, 'omamori') && !next.freeMissUsed) {
-      next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
+    const slot = matchSlot(b, typed);
+    if (slot) {
+      const move = MOVE_BY_ID[slot.card.moveId];
+      slot.label.kana.forEach((k) => answers.push({ id: k, correct: true }));
+      next = performMove(next, slot);
+      next = {
+        ...next,
+        movesMade: next.movesMade + 1,
+        stats: { ...next.stats, correct: next.stats.correct + 1, words: next.stats.words + (slot.label.kind === 'word' ? 1 : 0) },
+        lastResult: { ok: true, tileText: slot.label.text, tileRomaji: typed, text: `${slot.label.text} = ${slot.label.romaji} → ${move.emoji} ${move.name}` },
+      };
     } else {
-      next = pushFx({ ...next, playerHp: Math.max(0, next.playerHp - CONFIG.combat.decoyHpCost) }, 'miss', `Fizzle! -${CONFIG.combat.decoyHpCost}`);
+      // a typo: guess which move it was aiming at (closest reading) and mark that kana missed
+      const ranked = b.slots
+        .map((s) => ({ s, d: editDistance(typed, s.label.romaji) }))
+        .sort((x, y) => x.d - y.d);
+      const target = ranked[0] && ranked[0].d <= Math.max(1, Math.floor(ranked[0].s.label.romaji.length / 2)) && ranked[1]?.d !== ranked[0].d ? ranked[0].s : undefined;
+      if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
+      next = { ...next, movesMade: next.movesMade + 1, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
+      if (has(next, 'omamori') && !next.freeMissUsed) {
+        next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
+      } else {
+        next = pushFx({ ...next, playerHp: Math.max(0, next.playerHp - CONFIG.combat.wrongHpCost) }, 'miss', `Fizzle! -${CONFIG.combat.wrongHpCost}`);
+      }
+      const hint = target ? ` (${target.label.text} is “${target.label.romaji}”)` : '';
+      next = { ...next, lastResult: { ok: false, tileText: typed, tileRomaji: typed, text: `“${typed}” isn't any move's reading${hint}` } };
+      if (next.playerHp <= 0) return { battle: { ...next, outcome: 'lost', typed: '' }, answers };
     }
-    const hint = target ? ` (“${target.label.romaji}” was ${target.label.text})` : '';
-    next = {
-      ...next,
-      lastResult: { ok: false, tileText: tile.text, tileRomaji: tile.romaji, text: `${tile.text} = ${tile.romaji}: no move has that reading${hint}` },
-    };
-    if (next.playerHp <= 0) return { battle: { ...next, outcome: 'lost' }, answers };
   }
 
-  if (next.enemy.hp <= 0) return { battle: log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`), answers };
+  if (next.enemy.hp <= 0) return { battle: log({ ...next, outcome: 'won', typed: '' }, `${next.enemy.name} is slain!`), answers };
   // the enemy acts on the next beat (see advanceBeat)
-  return { battle: { ...next, pending: 'enemy', picked: null }, answers };
+  return { battle: { ...next, pending: 'enemy', typed: '' }, answers };
 }
 
 /** Run the next pending beat: the enemy's action, then dealing the next turn. */

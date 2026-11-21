@@ -42,8 +42,3 @@ export function quizPassed(plan: QuizPlan, results: readonly boolean[]): boolean
 export function applyQuizUnlock(profile: Profile, plan: QuizPlan): Profile {
   return { ...profile, unlocked: [...new Set([...profile.unlocked, ...plan.groups])] };
 }
-
-/** All kana in a family (used as the distractor pool so options stay relevant). */
-export function familyKana(groups: readonly string[]): string[] {
-  return groups.flatMap((id) => groupById(id).kana);
-}

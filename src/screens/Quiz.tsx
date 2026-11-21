@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import ReadingCheck from '../components/ReadingCheck';
+import TypingCheck from '../components/TypingCheck';
 import { CONFIG } from '../config';
 import { FAMILIES, KANA_BY_ID, UNLOCK_GROUPS } from '../data';
-import { type QuizPlan, familyKana, familyQuiz, quizPassed, rowQuiz } from '../game/quiz';
+import { type QuizPlan, familyQuiz, quizPassed, rowQuiz } from '../game/quiz';
 import { defaultRng } from '../game/rng';
 import { playSfx } from '../game/sfx';
 import type { Answer } from '../game/srs';
@@ -52,7 +52,7 @@ export default function Quiz({ profile, onBack, onSpeak, onFinish }: Props) {
         <h2 className="grow lib-title">Skip-ahead Quiz</h2>
       </header>
       <p className="muted small">
-        Know some kana already? Pass a quiz to unlock them right away. A row: get all {groupById('h-ka').kana.length} right. A whole family:{' '}
+        Know some kana already? Type their readings to unlock them right away. A row: get all {groupById('h-ka').kana.length} right. A whole family:{' '}
         {CONFIG.quiz.familyQuestions} questions, at most {CONFIG.quiz.familyMaxMisses} miss.
       </p>
 
@@ -98,12 +98,11 @@ export default function Quiz({ profile, onBack, onSpeak, onFinish }: Props) {
       </div>
 
       {plan && (
-        <ReadingCheck
+        <TypingCheck
           key={plan.title + plan.kana.join('')}
-          steps={plan.kana.map((ref) => ({ ref, kind: 'romaji' as const }))}
-          unlocked={familyKana(plan.groups)}
+          kana={plan.kana}
           title={`Quiz: ${plan.title}`}
-          onAnswer={(s) => onSpeak(KANA_BY_ID[s.ref].char)}
+          onAnswer={(k) => onSpeak(KANA_BY_ID[k].char)}
           onDone={finish}
           onCancel={() => setPlan(null)}
         />

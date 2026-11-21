@@ -11,8 +11,8 @@ export const CONFIG = {
     /** Moves dealt each turn, each labelled with a different romaji. */
     movesPerTurn: 4,
 
-    /** Picking a decoy tile: the move fizzles and you take this much damage. */
-    decoyHpCost: 3,
+    /** Typing a reading that matches no move: it fizzles and you take this much damage. */
+    wrongHpCost: 3,
     weaknessMultiplier: 2,
     resistMultiplier: 0.5,
     /** Chance a move is labelled with a whole word instead of one kana (once Word moves are unlocked). */
@@ -25,18 +25,9 @@ export const CONFIG = {
     /** Reading-check tiles in Study drills. */
     readingOptions: 4,
   },
-  /**
-   * Difficulty = how many kana tiles you pick from each turn (chosen when starting a run).
-   * decoys: extra tiles that match no move; 'all' = every kana you've unlocked is a tile.
-   */
-  difficulty: {
-    easy: { label: 'Easy', emoji: '🟢', decoys: 0, blurb: '4 tiles: just the right kana' },
-    normal: { label: 'Normal', emoji: '🟡', decoys: 4, blurb: '8 tiles: 4 right + 4 look-alikes' },
-    hard: { label: 'Hard', emoji: '🔴', decoys: 'all', blurb: 'Every kana you’ve unlocked is a tile' },
-  },
   /** Skip-ahead Quiz: pass to unlock kana groups without beating bosses. */
   quiz: {
-    /** A single row: every kana in it, no misses allowed. */
+    /** Typed answers. A single row: every kana in it, no misses allowed. */
     rowMaxMisses: 0,
     /** A whole family: one question per row plus extras, up to this many misses. */
     familyQuestions: 14,

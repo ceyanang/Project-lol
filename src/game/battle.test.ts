@@ -1,42 +1,48 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../config';
 import { ENEMY_BY_ID, KANA_BY_ID, MOVE_BY_ID, availableWords, firstGroups, unlockedKanaIds } from '../data';
-import { type BattleCtx, type BattleState, advanceBeat, confirmTurn, createBattle, incomingDamage, pickTile, playTurn, previewMove } from './battle';
+import { type BattleCtx, type BattleState, advanceBeat, confirmTurn, createBattle, incomingDamage, matchSlot, playTurn, previewMove, setTyped } from './battle';
 import { makeCard, moveRewardOptions } from './deck';
 import { seeded } from './rng';
+import { matchesReading, readingsOf } from './romaji';
 
 const H = CONFIG.player.startHp;
 
 const ctxFor = (unlockedCount = 3, seed = 1): BattleCtx => {
   const groups = firstGroups(unlockedCount);
   const unlocked = unlockedKanaIds(groups);
-  return { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), wordsUnlocked: groups.includes('words'), difficulty: 'normal', rng: seeded(seed) };
+  return { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), wordsUnlocked: groups.includes('words'), rng: seeded(seed) };
 };
 
 function battle(deck: string[], enemy = 'kodama', ctx = ctxFor()): BattleState {
-  return createBattle({ enemy: ENEMY_BY_ID[enemy], floor: 1, deck: deck.map(makeCard), hp: CONFIG.player.startHp, maxHp: CONFIG.player.startHp, relics: [], ctx });
+  return createBattle({ enemy: ENEMY_BY_ID[enemy], floor: 1, deck: deck.map(makeCard), hp: H, maxHp: H, relics: [], ctx });
 }
 
-const tileFor = (b: BattleState, moveId: string) => {
-  const slot = b.slots.find((s) => s.card.moveId === moveId)!;
-  return b.tiles.find((t) => t.slot === slot.uid)!;
-};
+/** Type the reading of the slot holding `moveId`. */
+const typeFor = (b: BattleState, moveId: string) => setTyped(b, b.slots.find((s) => s.card.moveId === moveId)!.label.romaji);
+
+describe('romaji', () => {
+  it('accepts Hepburn and common alternates, case-insensitive', () => {
+    expect(matchesReading(['し'], 'shi')).toBe(true);
+    expect(matchesReading(['し'], 'SI')).toBe(true);
+    expect(matchesReading(['つ'], 'tu')).toBe(true);
+    expect(matchesReading(['ふ'], 'hu')).toBe(true);
+    expect(matchesReading(['し'], 'chi')).toBe(false);
+    expect(matchesReading(['ん'], 'nn')).toBe(true);
+    expect(readingsOf(['す', 'し'])).toContain('susi');
+    expect(matchesReading(['ね', 'こ'], 'neko')).toBe(true);
+  });
+});
 
 describe('dealing moves', () => {
-  it('deals N moves with distinct romaji labels, plus decoy tiles that match nothing', () => {
+  it('deals N moves, each labelled with a kana of a distinct reading', () => {
     for (let seed = 1; seed < 30; seed++) {
       const ctx = ctxFor(3, seed);
       const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctx);
       expect(b.slots).toHaveLength(CONFIG.combat.movesPerTurn);
       const romaji = b.slots.map((s) => s.label.romaji);
       expect(new Set(romaji).size).toBe(romaji.length);
-      expect(b.tiles.filter((t) => t.slot)).toHaveLength(b.slots.length);
-      const decoys = b.tiles.filter((t) => !t.slot);
-      expect(decoys.length).toBe(CONFIG.difficulty.normal.decoys);
-      // a decoy never shares a reading with any move, so exactly one tile reads each label
-      for (const d of decoys) expect(romaji).not.toContain(d.romaji);
-      // tiles are kana from the unlocked pool
-      for (const t of b.tiles) expect(t.kana.every((k) => ctx.unlocked.includes(k))).toBe(true);
+      for (const s of b.slots) expect(s.label.kana.every((k) => ctx.unlocked.includes(k))).toBe(true);
     }
   });
 
@@ -52,104 +58,61 @@ describe('dealing moves', () => {
   });
 });
 
-describe('difficulty', () => {
-  it('easy: only the 4 right tiles', () => {
-    const ctx = { ...ctxFor(3, 4), difficulty: 'easy' as const };
-    const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctx);
-    expect(b.tiles).toHaveLength(CONFIG.combat.movesPerTurn);
-    expect(b.tiles.every((t) => t.slot)).toBe(true);
-  });
-
-  it('normal: 4 right + 4 decoys = 8 tiles', () => {
-    const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctxFor(3, 4));
-    expect(b.tiles).toHaveLength(8);
-  });
-
-  it('hard: every unlocked kana is a tile; same-reading kana also cast the move', () => {
-    const groups = ['h-a', 'h-ka', 'k-a', 'k-ka'];
-    const unlocked = unlockedKanaIds(groups);
-    const ctx: BattleCtx = { ...ctxFor(), unlocked, words: availableWords(new Set(unlocked)), difficulty: 'hard' };
-    const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctx);
-    expect(b.tiles).toHaveLength(unlocked.length);
-    for (const s of b.slots) {
-      const casting = b.tiles.filter((t) => t.slot === s.uid);
-      // e.g. both か and カ cast the "ka" move
-      expect(casting.length).toBe(unlocked.filter((k) => KANA_BY_ID[k].romaji === s.label.romaji).length);
-    }
-    // a non-matching tile records a miss (on the look-alike move's kana or on itself)
-    const decoy = b.tiles.find((t) => !t.slot)!;
-    const { answers } = playTurn(pickTile(b, decoy.id), ctx);
-    expect(answers.every((a) => !a.correct)).toBe(true);
-    expect(answers.length).toBeGreaterThan(0);
-  });
-});
-
-describe('confirming a turn', () => {
-  it('picking does nothing until End Turn; then the move resolves and the enemy acts', () => {
+describe('typing and confirming a turn', () => {
+  it('typing does nothing until End Turn; then the matching move resolves', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
-    const t = tileFor(b, 'strike');
-    const picked = pickTile(b, t.id);
-    expect(picked.enemy.hp).toBe(b.enemy.hp);
-    const { battle: after, answers } = playTurn(picked, ctx);
+    const typed = typeFor(b, 'strike');
+    expect(typed.enemy.hp).toBe(b.enemy.hp);
+    const slot = matchSlot(typed, typed.typed)!;
+    const { battle: after, answers } = playTurn(typed, ctx);
     expect(b.enemy.hp - after.enemy.hp).toBe(MOVE_BY_ID.strike.value);
-    expect(answers).toEqual(t.kana.map((k) => ({ id: k, correct: true })));
+    expect(answers).toEqual(slot.label.kana.map((k) => ({ id: k, correct: true })));
     expect(after.turn).toBe(2);
     expect(after.lastResult?.ok).toBe(true);
     expect(after.playerHp).toBe(H - incomingDamage(b.enemy));
+    expect(after.typed).toBe('');
   });
 
   it('turn beats: your move, then (later) the enemy, then (later) the next deal', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
-    const confirmed = confirmTurn(pickTile(b, tileFor(b, 'strike').id)).battle;
+    const confirmed = confirmTurn(typeFor(b, 'strike')).battle;
     expect(confirmed.pending).toBe('enemy');
-    expect(confirmed.enemy.hp).toBeLessThan(b.enemy.hp); // your hit landed
-    expect(confirmed.playerHp).toBe(H); // the enemy hasn't acted yet
-    expect(pickTile(confirmed, confirmed.tiles[0].id)).toBe(confirmed); // no input mid-beat
+    expect(confirmed.enemy.hp).toBeLessThan(b.enemy.hp);
+    expect(confirmed.playerHp).toBe(H);
+    expect(setTyped(confirmed, 'ka')).toBe(confirmed); // no input mid-beat
     const enemyActed = advanceBeat(confirmed, ctx);
     expect(enemyActed.pending).toBe('deal');
     expect(enemyActed.playerHp).toBe(H - incomingDamage(b.enemy));
-    expect(enemyActed.turn).toBe(1);
     const dealt = advanceBeat(enemyActed, ctx);
     expect(dealt.pending).toBeNull();
     expect(dealt.turn).toBe(2);
   });
 
-  it('enemy HP is scaled by tier', () => {
-    const b = battle(['strike']);
-    expect(b.enemy.maxHp).toBe(Math.round(ENEMY_BY_ID.kodama.hp * CONFIG.scaling.tierHp.normal));
-  });
-
-  it('enemy weakness doubles damage, resistance halves it', () => {
-    const ctx = ctxFor();
-    const b = battle(['fire_talisman', 'water_jet', 'guard', 'strike']); // kodama: weak fire, resists water
-    const fire = playTurn(pickTile(b, tileFor(b, 'fire_talisman').id), ctx).battle;
-    expect(b.enemy.hp - fire.enemy.hp).toBe(Math.min(b.enemy.hp, MOVE_BY_ID.fire_talisman.value * 2));
-    const water = playTurn(pickTile(b, tileFor(b, 'water_jet').id), ctx).battle;
-    expect(b.enemy.hp - water.enemy.hp).toBe(Math.round(MOVE_BY_ID.water_jet.value * 0.5));
-  });
-
-  it('block is applied before the enemy attacks', () => {
-    const ctx = ctxFor();
-    const b = battle(['guard', 'strike', 'strike', 'strike']);
-    const after = playTurn(pickTile(b, tileFor(b, 'guard').id), ctx).battle;
-    expect(after.playerHp).toBe(H); // 8 block vs 5 damage
-  });
-
-  it('a decoy fizzles, costs HP and marks the imitated kana as missed', () => {
+  it('a reading that matches no move fizzles, costs HP and marks the closest move’s kana missed', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
-    const decoy = b.tiles.find((t) => !t.slot)!;
-    const target = b.slots.find((s) => s.uid === decoy.decoyOf)!;
-    const { battle: after, answers } = playTurn(pickTile(b, decoy.id), ctx);
+    const target = b.slots[0];
+    // one wrong letter, e.g. "ka" → "kx"
+    const typo = target.label.romaji.slice(0, -1) + 'x';
+    const others = b.slots.slice(1).map((s) => s.label.romaji);
+    const { battle: after, answers } = playTurn(setTyped(b, typo), ctx);
     expect(after.enemy.hp).toBe(b.enemy.hp);
-    expect(after.playerHp).toBe(H - CONFIG.combat.decoyHpCost - incomingDamage(b.enemy));
-    expect(answers).toEqual(target.label.kana.map((k) => ({ id: k, correct: false })));
+    expect(after.playerHp).toBe(H - CONFIG.combat.wrongHpCost - incomingDamage(b.enemy));
     expect(after.lastResult?.ok).toBe(false);
+    // only asserted when the typo is unambiguously closest to the target
+    if (!others.some((r) => r.length === target.label.romaji.length && r.slice(0, -1) === target.label.romaji.slice(0, -1))) {
+      expect(answers).toEqual(target.label.kana.map((k) => ({ id: k, correct: false })));
+    }
   });
 
-  it('skipping (no pick) just passes the turn', () => {
+  it('typed input is normalized (letters only, lowercase)', () => {
+    const b = battle(['strike']);
+    expect(setTyped(b, 'K a!').typed).toBe('ka');
+  });
+
+  it('skipping (nothing typed) just passes the turn', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
     const { battle: after, answers } = playTurn(b, ctx);
@@ -157,18 +120,37 @@ describe('confirming a turn', () => {
     expect(after.enemy.hp).toBe(b.enemy.hp);
   });
 
+  it('enemy weakness doubles damage, resistance halves it', () => {
+    const ctx = ctxFor();
+    const b = battle(['fire_talisman', 'water_jet', 'guard', 'strike']); // kodama: weak fire, resists water
+    const fire = playTurn(typeFor(b, 'fire_talisman'), ctx).battle;
+    expect(b.enemy.hp - fire.enemy.hp).toBe(MOVE_BY_ID.fire_talisman.value * 2);
+    const water = playTurn(typeFor(b, 'water_jet'), ctx).battle;
+    expect(b.enemy.hp - water.enemy.hp).toBe(Math.round(MOVE_BY_ID.water_jet.value * 0.5));
+  });
+
+  it('block is applied before the enemy attacks', () => {
+    const ctx = ctxFor();
+    const b = battle(['guard', 'strike', 'strike', 'strike']);
+    expect(playTurn(typeFor(b, 'guard'), ctx).battle.playerHp).toBe(H);
+  });
+
   it('killing the enemy ends the fight before it can act', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
     const low = { ...b, enemy: { ...b.enemy, hp: 3 } };
-    const after = playTurn(pickTile(low, tileFor(low, 'strike').id), ctx).battle;
+    const after = playTurn(typeFor(low, 'strike'), ctx).battle;
     expect(after.outcome).toBe('won');
     expect(after.playerHp).toBe(H);
+  });
+
+  it('enemy HP is scaled by tier', () => {
+    expect(battle(['strike']).enemy.maxHp).toBe(Math.round(ENEMY_BY_ID.kodama.hp * CONFIG.scaling.tierHp.normal));
   });
 });
 
 describe('relics and words', () => {
-  it('word labels give ×1.5 power once word moves are unlocked', () => {
+  it('word labels give ×1.5 power and appear once word moves are unlocked', () => {
     const b = battle(['strike']);
     const word = { kind: 'word' as const, ref: 'ねこ', text: 'ねこ', romaji: 'neko', kana: ['ね', 'こ'] };
     expect(previewMove(MOVE_BY_ID.strike, word, b).damagePerHit).toBe(Math.round(MOVE_BY_ID.strike.value * CONFIG.combat.wordMultiplier));
@@ -186,7 +168,7 @@ describe('relics and words', () => {
     expect(p.pierce).toBe(true);
   });
 
-  it('reward options never offer starter moves and respect count', () => {
+  it('reward options never offer starter moves', () => {
     const opts = moveRewardOptions(3, CONFIG.run.rarityOdds, seeded(2));
     expect(opts).toHaveLength(3);
     expect(opts.every((c) => MOVE_BY_ID[c.moveId].rarity !== 'starter')).toBe(true);

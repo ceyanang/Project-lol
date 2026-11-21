@@ -4,8 +4,8 @@ import type { MoveDef } from '../types';
 
 interface Props {
   move: MoveDef;
-  /** This turn's romaji label (battle only). */
-  romaji?: string;
+  /** This turn's kana (or word) label (battle only). */
+  label?: string;
   /** Numbers against the current enemy; falls back to the move's base description. */
   preview?: MovePreview;
   count?: number;
@@ -24,7 +24,7 @@ function summary(move: MoveDef, p?: MovePreview): string {
 }
 
 /** A move from your deck. In battle it carries this turn's romaji label. */
-export default function MoveCard({ move, romaji, preview, count, selected, onTap }: Props) {
+export default function MoveCard({ move, label, preview, count, selected, onTap }: Props) {
   const el = move.element ? ELEMENT_META[move.element] : null;
   const Tag = onTap ? 'button' : 'div';
   return (
@@ -32,7 +32,7 @@ export default function MoveCard({ move, romaji, preview, count, selected, onTap
       {...(onTap ? { type: 'button' as const, onClick: onTap, 'aria-pressed': selected } : {})}
       className={`move-card kind-${move.kind} ${selected ? 'is-selected' : ''} ${preview?.matchup ? `is-${preview.matchup}` : ''}`}
     >
-      {romaji !== undefined && <span className="move-romaji">{romaji}</span>}
+      {label !== undefined && <span className={`move-label jp ${label.length > 1 ? 'is-word' : ''}`}>{label}</span>}
       <span className="move-body">
         <span className="move-name">
           {move.emoji} {move.name}

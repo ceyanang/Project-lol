@@ -4,7 +4,7 @@
   { "id": "daruma", "name": "Daruma Doll", "emoji": "🎎", "effect": "maxHp",
     "description": "+12 max HP (and heal 12). Fall seven times, stand up eight." },
   { "id": "omamori", "name": "Omamori Charm", "emoji": "🧧", "effect": "firstMissFree",
-    "description": "Your first decoy pick each fight costs no HP." },
+    "description": "Your first misread (a reading that matches no move) each fight costs no HP." },
   { "id": "suzuri", "name": "Suzuri Inkstone", "emoji": "🖋️", "effect": "wordBoost",
     "description": "Word moves get ×2 power instead of ×1.5." },
   { "id": "chochin", "name": "Paper Lantern", "emoji": "🏮", "effect": "extraMove",
