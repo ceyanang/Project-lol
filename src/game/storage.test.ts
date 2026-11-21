@@ -29,6 +29,14 @@ describe('storage', () => {
     expect(loadProfile().unlocked).toEqual(['h-a', 'h-ka', 'h-sa']);
   });
 
+  it('keyboard setting defaults to the in-game keyboard and keeps "phone"', () => {
+    expect(newProfile().settings.keyboard).toBe('game');
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { autoSpeak: true, sfx: true, keyboard: 'phone' } }));
+    expect(loadProfile().settings.keyboard).toBe('phone');
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { keyboard: 'weird' } }));
+    expect(loadProfile().settings.keyboard).toBe('game');
+  });
+
   it('falls back to a fresh profile on garbage', () => {
     mem.set(PROFILE_KEY, '{not json');
     expect(loadProfile()).toEqual(newProfile());

@@ -12,9 +12,10 @@ interface Props {
   onQuiz: () => void;
   onToggleSfx: () => void;
   onToggleAutoSpeak: () => void;
+  onToggleKeyboard: () => void;
 }
 
-export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onToggleSfx, onToggleAutoSpeak }: Props) {
+export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onToggleSfx, onToggleAutoSpeak, onToggleKeyboard }: Props) {
   const next = nextLockedGroup(profile.unlocked);
   const [sheet, setSheet] = useState<null | 'abandon'>(null);
   const kanaCount = unlockedKanaIds(profile.unlocked).length;
@@ -52,6 +53,14 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
         </button>
         <button type="button" className="pill pill-btn" onClick={onToggleAutoSpeak} aria-pressed={profile.settings.autoSpeak}>
           {profile.settings.autoSpeak ? '🗣️ Read aloud on' : '🤐 Read aloud off'}
+        </button>
+        <button
+          type="button"
+          className="pill pill-btn"
+          onClick={onToggleKeyboard}
+          title="Type with the in-game keyboard or your phone's own keyboard"
+        >
+          {profile.settings.keyboard === 'phone' ? '📱 Phone keyboard' : '⌨️ Game keyboard'}
         </button>
       </div>
 

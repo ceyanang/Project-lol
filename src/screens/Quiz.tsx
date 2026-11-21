@@ -103,6 +103,7 @@ export default function Quiz({ profile, onBack, onSpeak, onFinish }: Props) {
           kana={plan.kana}
           title={`Quiz: ${plan.title}`}
           onAnswer={(k) => onSpeak(KANA_BY_ID[k].char)}
+          keyboardMode={profile.settings.keyboard}
           onDone={finish}
           onCancel={() => setPlan(null)}
         />

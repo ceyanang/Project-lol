@@ -15,9 +15,13 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
 1. **Deal.** At the start of your turn, **4 moves** are dealt from your deck
    (`movesPerTurn`). A move is not tied to any kana: each one gets a fresh label every
    turn, a **kana** (or, later, a whole word), all with different readings.
-2. **Type.** Type the **romaji** of the move you want on the in-game QWERTY keyboard
-   (a physical keyboard works too: letters, Backspace, Enter). The phone's own keyboard
-   never opens, so autocorrect can't interfere. Hepburn and common alternates are
+2. **Type.** Type the **romaji** of the move you want. Two keyboard options (title screen toggle):
+   - **⌨️ Game keyboard** (default): in-game QWERTY docked at the bottom (a physical keyboard
+     works too: letters, Backspace, Enter). The phone's own keyboard never opens.
+   - **📱 Phone keyboard**: a real text field with autocorrect, autocapitalize, spellcheck and
+     autofill off; its Go key ends the turn. While it's open the game shrinks to the visible
+     area above it (compact battle layout), and focus is kept between turns so it stays open.
+     Use an English/latin keyboard layout (a Japanese IME would turn letters into kana). Hepburn and common alternates are
    accepted: `shi/si`, `chi/ti`, `tsu/tu`, `fu/hu`, `ji/zi/di`, `zu/du`, `n/nn`, `wo/o`.
    Nothing is highlighted while you type, so you can't probe for the answer.
 3. **Confirm.** Press **⏎** on the keyboard (it's End Turn; ⏎ with nothing typed skips your move). The keyboard

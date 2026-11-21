@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { KANA_BY_ID } from '../data';
 import { kanaReadings, matchesReading, normalizeTyped } from '../game/romaji';
 import { playSfx } from '../game/sfx';
-import Keyboard from './Keyboard';
+import type { KeyboardMode } from '../game/storage';
+import ReadingInput from './ReadingInput';
 
 interface Props {
   /** Kana ids to ask, in order. */
@@ -11,10 +12,11 @@ interface Props {
   onAnswer?: (kanaId: string, correct: boolean) => void;
   onDone: (results: boolean[]) => void;
   onCancel?: () => void;
+  keyboardMode?: KeyboardMode;
 }
 
 /** Typed reading check: see a kana, type its romaji on the in-game keyboard, press Enter. */
-export default function TypingCheck({ kana, title, onAnswer, onDone, onCancel }: Props) {
+export default function TypingCheck({ kana, title, onAnswer, onDone, onCancel, keyboardMode = 'game' }: Props) {
   const [index, setIndex] = useState(0);
   const [typed, setTyped] = useState('');
   const [results, setResults] = useState<boolean[]>([]);
@@ -52,30 +54,30 @@ export default function TypingCheck({ kana, title, onAnswer, onDone, onCancel }:
         </div>
         <div className="tc-row">
           <div className={`rc-glyph jp tc-glyph ${verdict === 'ok' ? 'flash-ok' : verdict === 'bad' ? 'flash-bad' : ''}`}>{k.char}</div>
-          <div className={`typed-box tc-typed ${verdict === 'ok' ? 'is-ok' : verdict === 'bad' ? 'is-bad' : ''}`} aria-live="polite">
-            {typed || <span className="typed-placeholder">type it…</span>}
-            {!verdict && <span className="caret" />}
-          </div>
         </div>
 
-        {verdict === 'bad' ? (
+        {verdict === 'bad' && (
           <div className="rc-feedback">
             <p>
               <span className="jp big-inline">{k.char}</span> is <strong>{kanaReadings(id)[0]}</strong>, not “{normalizeTyped(typed)}”.
             </p>
             <p className="muted">💡 {k.mnemonic}</p>
             <button type="button" className="btn btn-gold btn-wide" onClick={() => next(results)}>
-              Got it
+              Got it (⏎)
             </button>
           </div>
-        ) : (
-          <Keyboard
-            disabled={!!verdict}
-            onLetter={(l) => setTyped((t) => (t + l).slice(0, 6))}
-            onBackspace={() => setTyped((t) => t.slice(0, -1))}
-            onEnter={submit}
-          />
         )}
+        {/* stays mounted after a miss so the phone keyboard doesn't close; ⏎ = Got it */}
+        <ReadingInput
+          mode={keyboardMode}
+          value={verdict === 'bad' ? '' : typed}
+          onChange={(v) => !verdict && setTyped(normalizeTyped(v).slice(0, 6))}
+          onEnter={submit}
+          disabled={verdict === 'ok'}
+          autoFocus={keyboardMode === 'phone'}
+          status={verdict === 'ok' ? 'ok' : null}
+          placeholder={verdict === 'bad' ? '⏎ to continue' : keyboardMode === 'phone' ? 'tap to type · Go submits' : 'type it…'}
+        />
         {!verdict && index === 0 && !typed && onCancel && (
           <button type="button" className="btn btn-ghost btn-wide" onClick={onCancel}>
             Cancel

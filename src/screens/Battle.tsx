@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import HpBar from '../components/HpBar';
-import Keyboard from '../components/Keyboard';
+import ReadingInput from '../components/ReadingInput';
 import MoveCard from '../components/MoveCard';
 import { ELEMENT_META, MOVE_BY_ID, RELIC_BY_ID } from '../data';
 import { type BattleState, type Fx, currentIntent, intentDamage, previewMove } from '../game/battle';
 import { type Sfx, playSfx } from '../game/sfx';
+import type { KeyboardMode } from '../game/storage';
 
 interface Props {
   battle: BattleState;
   floor: number;
   onType: (typed: string) => void;
   onConfirm: () => void;
+  keyboardMode: KeyboardMode;
   onMenu?: () => void;
 }
 
@@ -29,8 +31,10 @@ const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
 const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
-export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Props) {
+export default function Battle({ battle, floor, onType, onConfirm, onMenu, keyboardMode }: Props) {
   const [fx, setFx] = useState<Fx[]>([]);
+  // phone keyboard open → compact layout so everything fits above it
+  const [typing, setTyping] = useState(false);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
   const intent = currentIntent(e);
@@ -68,7 +72,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Pro
   const resist = e.resist ? ELEMENT_META[e.resist] : null;
 
   return (
-    <main className="screen battle">
+    <main className={`screen battle ${typing ? 'is-typing' : ''}`}>
       <header className="battle-top">
         <span className="pill">Floor {floor}</span>
         <span className="pill">Turn {battle.turn}</span>
@@ -157,32 +161,33 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Pro
 
       {/* Docked like the quiz's keyboard sheet: ⏎ is End Turn (empty ⏎ skips your move). */}
       <section className={`kbd-dock ${battle.pending ? 'is-waiting' : ''}`} aria-label="Type the reading">
-        <div className="dock-row">
-          <span className="pile" aria-label="Draw pile">
-            🂠 {battle.drawPile.length}
-          </span>
-          <div className="typed-box grow" aria-live="polite" aria-label="Typed reading">
-            {battle.pending === 'enemy' ? (
-              <span className="typed-placeholder">{e.emoji} Enemy's turn…</span>
-            ) : battle.pending === 'deal' ? (
-              <span className="typed-placeholder">Dealing your moves…</span>
-            ) : battle.typed ? (
-              battle.typed
-            ) : (
-              <span className="typed-placeholder">type a reading · ⏎ ends turn</span>
-            )}
-            {!busy && <span className="caret" />}
-          </div>
-          <span className="pile" aria-label="Discard pile">
-            ♻ {battle.discard.length}
-          </span>
-        </div>
-        <Keyboard
-          disabled={busy}
-          onLetter={(l) => onType(battle.typed + l)}
-          onBackspace={() => onType(battle.typed.slice(0, -1))}
+        <ReadingInput
+          mode={keyboardMode}
+          value={battle.typed}
+          onChange={onType}
           onEnter={onConfirm}
-          enterLabel="⏎"
+          disabled={busy}
+          autoFocus={keyboardMode === 'phone' && typing}
+          onTypingChange={setTyping}
+          placeholder={
+            battle.pending === 'enemy'
+              ? `${e.emoji} Enemy's turn…`
+              : battle.pending === 'deal'
+                ? 'Dealing your moves…'
+                : keyboardMode === 'phone'
+                  ? 'tap to type · Go ends turn'
+                  : 'type a reading · ⏎ ends turn'
+          }
+          left={
+            <span className="pile" aria-label="Draw pile">
+              🂠 {battle.drawPile.length}
+            </span>
+          }
+          right={
+            <span className="pile" aria-label="Discard pile">
+              ♻ {battle.discard.length}
+            </span>
+          }
         />
       </section>
     </main>

@@ -443,3 +443,42 @@ button {
 .kbd-dock.is-waiting .kbd { opacity: 0.45; }
 .dock-row { display: flex; align-items: center; gap: 8px; }
 .dock-row .typed-box { flex: 1; }
+
+/* ---------- Phone keyboard mode ---------- */
+.reading-input { display: flex; flex-direction: column; gap: 10px; }
+.typed-input {
+  flex: 1; min-width: 0; width: 100%; color: var(--ink); text-align: center; caret-color: var(--gold);
+  font: inherit; font-size: 1.6rem; /* ≥ 16px or iOS zooms the page when focused */
+  font-weight: 900; letter-spacing: 0.06em; padding: 0 10px; outline: none;
+  -webkit-user-select: text; user-select: text;
+}
+.typed-input::placeholder { font-size: 0.95rem; font-weight: 600; letter-spacing: 0; color: var(--muted); }
+.typed-input:focus { border-color: var(--gold); }
+.dock-enter { flex: 0 0 auto; max-width: none; width: 52px; min-height: 48px; }
+
+/* while the phone keyboard is open, the app fits the visible area above it */
+html.phone-kbd-open, html.phone-kbd-open body { overflow: hidden; }
+html.phone-kbd-open body { position: fixed; inset: 0; }
+html.phone-kbd-open .app { height: var(--app-h, 100dvh); transform: translateY(var(--app-top, 0px)); }
+
+/* compact battle while typing with the phone keyboard */
+.battle.is-typing { gap: 6px; padding-top: 6px; }
+.battle.is-typing .battle-top { display: none; }
+.battle.is-typing .enemy { padding-block: 4px 6px; gap: 3px; }
+.battle.is-typing .enemy-emoji { font-size: 34px; }
+.battle.is-typing .intent-bubble { top: 2px; font-size: 0.85rem; padding: 2px 8px; }
+.battle.is-typing .move-card { min-height: 44px; padding: 4px 6px; }
+.battle.is-typing .move-label { height: 36px; min-width: 36px; font-size: 1.5rem; }
+.battle.is-typing .kbd-dock { padding-block: 8px; }
+.reading-input.dock-row { flex-direction: row; align-items: center; gap: 8px; }
+.battle.is-typing .turn-result:not(.is-ok):not(.is-bad) { display: none; }
+/* very little room above the phone keyboard (small phones): drop the enemy art */
+html.phone-kbd-tight .battle.is-typing .enemy-emoji { display: none; }
+html.phone-kbd-tight .battle.is-typing .move-card { min-height: 40px; }
+html.phone-kbd-tight .battle.is-typing .move-label { height: 32px; min-width: 32px; font-size: 1.3rem; }
+html.phone-kbd-tight .battle.is-typing .kbd-dock { padding-block: 6px; }
+html.phone-kbd-tight .battle.is-typing .matchups { flex-wrap: nowrap; gap: 4px; }
+html.phone-kbd-tight .battle.is-typing .matchup { font-size: 0.7rem; padding: 2px 7px; white-space: nowrap; }
+html.phone-kbd-tight .battle.is-typing { gap: 5px; }
+/* the typed field never slides under the phone keyboard; if space runs out, the top scrolls instead */
+.battle.is-typing .kbd-dock { position: sticky; bottom: -10px; z-index: 5; }
