@@ -5,7 +5,7 @@ import App from './App';
 import './styles.css';
 
 // Precache everything and auto-update the service worker so the game runs offline.
-registerSW({ immediate: true });
+if (!import.meta.env.VITE_NO_SW) registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

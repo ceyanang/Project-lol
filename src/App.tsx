@@ -65,7 +65,6 @@ export default function App() {
   }, [setProfile]);
 
   function startNewRun() {
-    if (run && run.phase !== 'over' && !window.confirm('Abandon your current run? Unlocks and kana stats are kept.')) return;
     setRun(newRun(profile, ctx, Date.now()));
     setView('run');
   }
