@@ -3,7 +3,6 @@ import { KANA_BY_ID, SPELL_BY_ID, VOCAB_BY_ID, isVoiced } from '../data';
 import type { Card, EnemyDef, EnemyTier, Intent, Vocab } from '../types';
 import { cardCost, cardRomaji, formableWords, makeCard, matchWord, weightedDraw, wordAssist } from './deck';
 import { type Rng, chance, pick, shuffle, weightedPick, weightedSample } from './rng';
-import { isCorrectTyped } from './romaji';
 import type { Answer } from './srs';
 
 export interface EnemyState {
@@ -268,12 +267,22 @@ export function incomingDamage(e: EnemyState): number {
   return intentDamage(e, i) * (i.type === 'multi' ? (i.times ?? 2) : 1);
 }
 
-/** Cast a spell by typing its kana's reading. Wrong → fizzles and costs HP. Either way it uses the turn's cast. */
-export function castSpell(b: BattleState, uid: string, typed: string, ctx: BattleCtx): PlayResult {
+/** Is `pickedKana` a right answer for a spell asking for `targetKana`'s reading (same script, same romaji)? */
+export function isRightKana(targetKana: string, pickedKana: string): boolean {
+  const t = KANA_BY_ID[targetKana];
+  const p = KANA_BY_ID[pickedKana];
+  return !!t && !!p && t.script === p.script && t.romaji === p.romaji;
+}
+
+/**
+ * Cast a spell: it shows a romaji reading and you pick the matching kana.
+ * Wrong → fizzles and costs HP. Either way it uses the turn's cast.
+ */
+export function castSpell(b: BattleState, uid: string, pickedKana: string, ctx: BattleCtx): PlayResult {
   const s = b.spellHand.find((x) => x.uid === uid);
   if (!s || !canCastSpell(b)) return { battle: b, answers: [] };
   const def = SPELL_BY_ID[s.spellId];
-  const ok = isCorrectTyped(s.kana, typed);
+  const ok = isRightKana(s.kana, pickedKana);
   let next: BattleState = {
     ...b,
     spellsCast: b.spellsCast + 1,

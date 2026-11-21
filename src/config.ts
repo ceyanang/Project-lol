@@ -53,6 +53,8 @@ export const CONFIG = {
     drawPerTurn: 2,
     castsPerTurn: 1,
     wrongHpCost: 2,
+    /** Kana tiles to choose from when casting. */
+    kanaOptions: 6,
     eliteSpellOptions: 2,
   },
   scaling: {

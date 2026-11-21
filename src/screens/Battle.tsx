@@ -32,7 +32,7 @@ interface Props {
   floor: number;
   onPlay: (plan: PlayPlan, results: boolean[]) => void;
   onEndTurn: () => void;
-  onCastSpell: (uid: string, typed: string) => void;
+  onCastSpell: (uid: string, pickedKana: string) => void;
   onSpeak: (text: string) => void;
   onMenu?: () => void;
   /** Kana ids currently flagged as missed by the SRS. */
@@ -208,7 +208,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
       <section className="spellbook" aria-label="Spellbook">
         <div className="spellbook-head">
           <span>🪄 Spellbook</span>
-          <span className="muted small">{canCastSpell(battle) ? '1 spell per turn · type its kana' : (battle.spellHand?.length ?? 0) ? 'Spell used — next turn!' : 'No spells this turn'}</span>
+          <span className="muted small">{canCastSpell(battle) ? '1 spell per turn · pick its kana' : (battle.spellHand?.length ?? 0) ? 'Spell used — next turn!' : 'No spells this turn'}</span>
         </div>
         <div className="spell-row">
           {(battle.spellHand ?? []).map((s) => {
@@ -223,9 +223,12 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
                   playSfx('select');
                   setCasting(s);
                 }}
-                aria-label={`${def.name}: ${def.description} Cast by reading ${KANA_BY_ID[s.kana].char}`}
+                aria-label={`${def.name}: ${def.description} Cast by picking the kana for ${KANA_BY_ID[s.kana].romaji}`}
               >
-                <span className="spell-kana jp">{KANA_BY_ID[s.kana].char}</span>
+                <span className="spell-kana spell-kana-romaji">
+                  {KANA_BY_ID[s.kana].romaji}
+                  <small className="jp">{KANA_BY_ID[s.kana].script === 'hiragana' ? 'ひら' : 'カタ'}</small>
+                </span>
                 <span className="spell-info">
                   <b>
                     {def.emoji} {def.name}
@@ -297,12 +300,13 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
       {casting && (
         <SpellCast
           spell={casting}
+          unlocked={unlocked}
           onCancel={() => setCasting(null)}
-          onCast={(typed) => {
+          onCast={(picked) => {
             const s = casting;
             setCasting(null);
             onSpeak(KANA_BY_ID[s.kana].char);
-            onCastSpell(s.uid, typed);
+            onCastSpell(s.uid, picked);
           }}
         />
       )}

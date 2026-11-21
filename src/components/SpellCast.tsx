@@ -1,41 +1,32 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { CONFIG } from '../config';
 import { KANA_BY_ID, SPELL_BY_ID } from '../data';
-import type { SpellInHand } from '../game/battle';
-import { acceptedReadings, isCorrectTyped } from '../game/romaji';
+import { type SpellInHand, isRightKana } from '../game/battle';
+import { kanaOptions } from '../game/distractors';
+import { defaultRng } from '../game/rng';
 import { playSfx } from '../game/sfx';
 
 interface Props {
   spell: SpellInHand;
-  onCast: (typed: string) => void;
+  unlocked: readonly string[];
+  onCast: (pickedKana: string) => void;
   onCancel: () => void;
 }
 
-const VOWELS = ['a', 'i', 'u', 'e', 'o'];
-const CONSONANTS = ['k', 's', 't', 'n', 'h', 'm', 'y', 'r', 'w', 'g', 'z', 'd', 'b', 'p', 'j', 'c', 'f'];
-const MAX_LEN = 4;
-
-/**
- * Cast a spell by typing the reading of its kana on an in-game romaji keypad.
- * No device keyboard, so autocorrect can never interfere.
- */
-export default function SpellCast({ spell, onCast, onCancel }: Props) {
-  const [typed, setTyped] = useState('');
-  const [result, setResult] = useState<'ok' | 'bad' | null>(null);
+/** Cast a spell: the spell shows a romaji reading, you tap the matching kana. */
+export default function SpellCast({ spell, unlocked, onCast, onCancel }: Props) {
+  const [picked, setPicked] = useState<string | null>(null);
   const def = SPELL_BY_ID[spell.spellId];
-  const kana = KANA_BY_ID[spell.kana];
+  const target = KANA_BY_ID[spell.kana];
+  const options = useMemo(() => kanaOptions(spell.kana, unlocked, defaultRng, CONFIG.spells.kanaOptions), [spell.kana, unlocked]);
+  const ok = picked !== null && isRightKana(spell.kana, picked);
 
-  function key(k: string) {
-    if (result || typed.length >= MAX_LEN) return;
-    playSfx('tap');
-    setTyped(typed + k);
-  }
-
-  function submit() {
-    if (!typed || result) return;
-    const ok = isCorrectTyped(spell.kana, typed);
-    setResult(ok ? 'ok' : 'bad');
-    playSfx(ok ? 'correct' : 'wrong');
-    if (ok) window.setTimeout(() => onCast(typed), 380);
+  function choose(id: string) {
+    if (picked) return;
+    const right = isRightKana(spell.kana, id);
+    setPicked(id);
+    playSfx(right ? 'correct' : 'wrong');
+    if (right) window.setTimeout(() => onCast(id), 380);
   }
 
   return (
@@ -48,54 +39,39 @@ export default function SpellCast({ spell, onCast, onCancel }: Props) {
           <span className="small muted">{def.description}</span>
         </div>
 
-        <div className="spell-cast-row">
-          <div className={`rc-glyph jp spell-glyph ${result === 'ok' ? 'flash-ok' : result === 'bad' ? 'flash-bad' : ''}`}>{kana.char}</div>
-          <div className={`typed ${result === 'ok' ? 'is-ok' : result === 'bad' ? 'is-bad' : ''}`} aria-live="polite" aria-label="Typed reading">
-            {typed || <span className="typed-placeholder">type it…</span>}
-            {!result && <span className="caret" />}
-          </div>
+        <div className={`spell-romaji ${picked ? (ok ? 'is-ok' : 'is-bad') : ''}`}>
+          <span className="spell-romaji-text">{target.romaji}</span>
+          <span className="script-tag jp">{target.script === 'hiragana' ? 'ひらがな' : 'カタカナ'}</span>
+        </div>
+        <p className="center muted small">Tap the {target.script} for “{target.romaji}”</p>
+
+        <div className="kana-options">
+          {options.map((id) => {
+            const state = !picked ? '' : isRightKana(spell.kana, id) ? 'is-correct' : id === picked ? 'is-wrong' : 'is-faded';
+            return (
+              <button key={id} type="button" className={`tile kana-tile jp ${state}`} onClick={() => choose(id)} disabled={!!picked} aria-label={`Kana ${KANA_BY_ID[id].char}`}>
+                {KANA_BY_ID[id].char}
+              </button>
+            );
+          })}
         </div>
 
-        {result === 'bad' ? (
+        {picked && !ok && (
           <div className="rc-feedback">
             <p>
-              <span className="jp big-inline">{kana.char}</span> is <strong>{acceptedReadings(spell.kana)[0]}</strong>, not “{typed}”. The spell fizzles.
+              “{target.romaji}” is <span className="jp big-inline">{target.char}</span> — you picked <span className="jp big-inline">{KANA_BY_ID[picked].char}</span> ({KANA_BY_ID[picked].romaji}). The spell fizzles.
             </p>
-            <p className="muted">💡 {kana.mnemonic}</p>
-            <button type="button" className="btn btn-gold btn-wide" onClick={() => onCast(typed)}>
+            <p className="muted">💡 {target.mnemonic}</p>
+            <button type="button" className="btn btn-gold btn-wide" onClick={() => onCast(picked)}>
               Got it
             </button>
           </div>
-        ) : (
-          <>
-            <div className="keypad" role="group" aria-label="Romaji keypad">
-              <div className="keypad-vowels">
-                {VOWELS.map((k) => (
-                  <button key={k} type="button" className="key key-vowel" onClick={() => key(k)}>
-                    {k}
-                  </button>
-                ))}
-              </div>
-              <div className="keypad-consonants">
-                {CONSONANTS.map((k) => (
-                  <button key={k} type="button" className="key" onClick={() => key(k)}>
-                    {k}
-                  </button>
-                ))}
-                <button type="button" className="key key-back" onClick={() => setTyped(typed.slice(0, -1))} aria-label="Delete">
-                  ⌫
-                </button>
-              </div>
-            </div>
-            <div className="spell-actions">
-              <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={!!result}>
-                Cancel
-              </button>
-              <button type="button" className="btn btn-primary grow" onClick={submit} disabled={!typed || !!result}>
-                🪄 Cast
-              </button>
-            </div>
-          </>
+        )}
+
+        {!picked && (
+          <button type="button" className="btn btn-ghost btn-wide" onClick={onCancel}>
+            Cancel
+          </button>
         )}
       </div>
     </div>

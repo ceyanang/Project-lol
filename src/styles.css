@@ -446,28 +446,6 @@ button {
 .fx-heal { color: var(--green); }
 
 .spell-cast .rc-head { flex-direction: column; align-items: flex-start; gap: 2px; }
-.spell-cast-row { display: flex; gap: 12px; align-items: center; justify-content: center; }
-.spell-glyph { width: 110px; height: 110px; font-size: 72px; }
-.typed {
-  min-width: 120px; height: 64px; border-radius: 14px; background: var(--panel); border: 2px solid var(--panel2);
-  display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; letter-spacing: 0.06em;
-}
-.typed.is-ok { border-color: var(--green); color: var(--green); }
-.typed.is-bad { border-color: var(--red); color: var(--red); }
-.typed-placeholder { font-size: 1rem; color: var(--muted); font-weight: 600; letter-spacing: 0; }
-.caret { width: 2px; height: 30px; background: var(--gold); margin-left: 3px; animation: blink 1s steps(2) infinite; }
-@keyframes blink { 50% { opacity: 0; } }
-.keypad { display: flex; flex-direction: column; gap: 8px; }
-.keypad-vowels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.keypad-consonants { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-.key {
-  min-height: 48px; border-radius: 10px; border: 0; background: var(--panel2); font-size: 1.25rem; font-weight: 800;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-.key:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
-.key-vowel { background: #5a4499; }
-.key-back { background: #5a2f4e; }
-.spell-actions { display: flex; gap: 8px; }
 .spell-list { display: flex; flex-direction: column; gap: 6px; }
 .spell-chip { background: var(--panel); border-radius: 10px; padding: 8px 10px; }
 /* battle sections keep their natural height; only the hand flexes */
@@ -490,3 +468,20 @@ button {
   .battle-top .icon-btn { min-height: 40px; }
 }
 .battle { overflow-y: auto; }
+
+/* spells: romaji prompt → pick the kana */
+.spell-kana-romaji { flex-direction: column; font-family: system-ui, sans-serif; font-size: 20px; font-weight: 900; line-height: 1; gap: 2px; }
+.spell-kana-romaji small { font-size: 9px; font-weight: 700; color: #6b5a8c; }
+.spell-romaji {
+  align-self: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-width: 150px; padding: 14px 24px; border-radius: 20px; background: var(--panel); border: 3px solid var(--purple);
+}
+.spell-romaji.is-ok { border-color: var(--green); }
+.spell-romaji.is-bad { border-color: var(--red); }
+.spell-romaji-text { font-size: 3.2rem; font-weight: 900; letter-spacing: 0.04em; line-height: 1; }
+.script-tag { font-size: 0.8rem; font-weight: 700; color: var(--muted); background: var(--bg); border-radius: 99px; padding: 2px 10px; }
+.spell-cast > p { margin: 0; }
+.kana-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.kana-tile { min-height: 72px; font-size: 2.4rem; font-weight: 700; background: #fffaf0; color: #2a1f3d; }
+.kana-tile.is-correct { background: var(--green); }
+.kana-tile.is-wrong { background: var(--red); color: white; }

@@ -89,9 +89,9 @@ export default function App() {
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
   }
 
-  function onCastSpell(uid: string, typed: string) {
+  function onCastSpell(uid: string, pickedKana: string) {
     if (!run?.battle) return;
-    const r = castSpell(run.battle, uid, typed, ctx);
+    const r = castSpell(run.battle, uid, pickedKana, ctx);
     recordSrs(r.answers);
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
   }

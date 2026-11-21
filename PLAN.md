@@ -26,12 +26,14 @@ Kana you miss come back more often (spaced repetition baked into the draw math).
 
 ### 🪄 Spells (spellbook)
 A second, separate deck of **spells** (`data/spells.json`) that aren't tied to any kana.
-- Each turn **2 spells** are drawn into the spellbook row. Each one is labelled with a
-  **random kana** (SRS-weighted, distinct, re-rolled every turn; due kana ×3 in review fights).
-- To cast, tap the spell and **type the kana's reading** on the in-game romaji keypad
-  (no device keyboard). Hepburn plus common alternates are accepted: si/shi, ti/chi, tu/tsu, hu/fu, zi/ji, nn/n.
-- **One spell per turn**, no energy cost. A wrong reading fizzles the spell and costs 2 HP
-  (Omamori protects). Correct/wrong counts toward SRS like any reading.
+- Each turn **2 spells** are drawn into the spellbook row. Each one shows a **romaji
+  reading** (from a random SRS-weighted kana, distinct, re-rolled every turn; due kana ×3
+  in review fights) plus a small ひらがな/カタカナ tag.
+- To cast, tap the spell and **pick the matching kana from 6 tiles** (romaji → kana, the
+  reverse of the card check). Tiles are all from the same script and include look-alikes
+  (シ/ツ, ソ/ン, ね/れ/わ…) and same-row / same-vowel kana; only one tile has that reading.
+- **One spell per turn**, no energy cost. Picking the wrong kana fizzles the spell and costs
+  2 HP (Omamori protects). Right/wrong counts toward SRS like any reading.
 - Start every run with Fire Talisman (10 dmg), Stone Ward (10 block) and Wind Slash (4×3).
   Elite fights offer **1 of 2 new spells** (before the relic pick).
 

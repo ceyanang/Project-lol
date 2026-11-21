@@ -38,6 +38,40 @@ export function romajiOptions(kanaId: string, unlocked: readonly string[], rng: 
   return shuffle(rng, [...chosen]);
 }
 
+/**
+ * n kana options for a romaji prompt (spells): the correct kana plus look-alikes and
+ * near-sounding kana, all from the same script and never another kana with the same reading.
+ */
+export function kanaOptions(kanaId: string, unlocked: readonly string[], rng: Rng, n = 6): string[] {
+  const k = KANA_BY_ID[kanaId];
+  const ok = (id: string) => {
+    const o = KANA_BY_ID[id];
+    return !!o && o.script === k.script && o.romaji !== k.romaji;
+  };
+  const chosen = new Set<string>([kanaId]);
+  const addFrom = (ids: readonly string[], max = n) => {
+    for (const id of ids) {
+      if (chosen.size >= max) return;
+      if (ok(id)) chosen.add(id);
+    }
+  };
+  // Prefer kana the player has unlocked (a never-seen kana is too easy to rule out);
+  // fall back to locked ones only when there aren't enough.
+  const unlockedSet = new Set(unlocked);
+  const known = (ids: string[]) => ids.filter((id) => unlockedSet.has(id));
+  const confusable = shuffle(rng, confusablesOf(k.char));
+  const sameRow = shuffle(rng, KANA.filter((o) => o.row === k.row).map((o) => o.id));
+  const sameVowel = shuffle(rng, KANA.filter((o) => vowelOf(o.romaji) === vowelOf(k.romaji)).map((o) => o.id));
+  addFrom(known(confusable), Math.min(n, 3));
+  addFrom(known(sameRow), Math.min(n, 4));
+  addFrom(known(sameVowel), Math.min(n, 5));
+  addFrom(shuffle(rng, [...unlocked]));
+  addFrom(confusable);
+  addFrom(sameRow);
+  addFrom(shuffle(rng, KANA.map((o) => o.id)));
+  return shuffle(rng, [...chosen]);
+}
+
 /** n English meaning options for a vocab word. */
 export function meaningOptions(vocabId: string, rng: Rng, n = 4): string[] {
   const correct = VOCAB.find((v) => v.id === vocabId)!.meaning;
