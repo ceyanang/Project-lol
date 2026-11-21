@@ -1,0 +1,1090 @@
+[
+ {
+  "id": "あい",
+  "reading": "あい",
+  "romaji": "ai",
+  "meaning": "love",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "い"
+  ]
+ },
+ {
+  "id": "あお",
+  "reading": "あお",
+  "romaji": "ao",
+  "meaning": "blue",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "お"
+  ]
+ },
+ {
+  "id": "いえ",
+  "reading": "いえ",
+  "romaji": "ie",
+  "meaning": "house",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "え"
+  ]
+ },
+ {
+  "id": "うえ",
+  "reading": "うえ",
+  "romaji": "ue",
+  "meaning": "up / above",
+  "script": "hiragana",
+  "kana": [
+   "う",
+   "え"
+  ]
+ },
+ {
+  "id": "あう",
+  "reading": "あう",
+  "romaji": "au",
+  "meaning": "to meet",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "う"
+  ]
+ },
+ {
+  "id": "いう",
+  "reading": "いう",
+  "romaji": "iu",
+  "meaning": "to say",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "う"
+  ]
+ },
+ {
+  "id": "いいえ",
+  "reading": "いいえ",
+  "romaji": "iie",
+  "meaning": "no",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "い",
+   "え"
+  ]
+ },
+ {
+  "id": "おい",
+  "reading": "おい",
+  "romaji": "oi",
+  "meaning": "hey!",
+  "script": "hiragana",
+  "kana": [
+   "お",
+   "い"
+  ]
+ },
+ {
+  "id": "あか",
+  "reading": "あか",
+  "romaji": "aka",
+  "meaning": "red",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "か"
+  ]
+ },
+ {
+  "id": "かお",
+  "reading": "かお",
+  "romaji": "kao",
+  "meaning": "face",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "お"
+  ]
+ },
+ {
+  "id": "あき",
+  "reading": "あき",
+  "romaji": "aki",
+  "meaning": "autumn",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "き"
+  ]
+ },
+ {
+  "id": "いけ",
+  "reading": "いけ",
+  "romaji": "ike",
+  "meaning": "pond",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "け"
+  ]
+ },
+ {
+  "id": "えき",
+  "reading": "えき",
+  "romaji": "eki",
+  "meaning": "station",
+  "script": "hiragana",
+  "kana": [
+   "え",
+   "き"
+  ]
+ },
+ {
+  "id": "いか",
+  "reading": "いか",
+  "romaji": "ika",
+  "meaning": "squid",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "か"
+  ]
+ },
+ {
+  "id": "こい",
+  "reading": "こい",
+  "romaji": "koi",
+  "meaning": "carp",
+  "script": "hiragana",
+  "kana": [
+   "こ",
+   "い"
+  ]
+ },
+ {
+  "id": "かき",
+  "reading": "かき",
+  "romaji": "kaki",
+  "meaning": "persimmon",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "き"
+  ]
+ },
+ {
+  "id": "きく",
+  "reading": "きく",
+  "romaji": "kiku",
+  "meaning": "chrysanthemum",
+  "script": "hiragana",
+  "kana": [
+   "き",
+   "く"
+  ]
+ },
+ {
+  "id": "ここ",
+  "reading": "ここ",
+  "romaji": "koko",
+  "meaning": "here",
+  "script": "hiragana",
+  "kana": [
+   "こ",
+   "こ"
+  ]
+ },
+ {
+  "id": "あさ",
+  "reading": "あさ",
+  "romaji": "asa",
+  "meaning": "morning",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "さ"
+  ]
+ },
+ {
+  "id": "かさ",
+  "reading": "かさ",
+  "romaji": "kasa",
+  "meaning": "umbrella",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "さ"
+  ]
+ },
+ {
+  "id": "すし",
+  "reading": "すし",
+  "romaji": "sushi",
+  "meaning": "sushi",
+  "script": "hiragana",
+  "kana": [
+   "す",
+   "し"
+  ]
+ },
+ {
+  "id": "しお",
+  "reading": "しお",
+  "romaji": "shio",
+  "meaning": "salt",
+  "script": "hiragana",
+  "kana": [
+   "し",
+   "お"
+  ]
+ },
+ {
+  "id": "いす",
+  "reading": "いす",
+  "romaji": "isu",
+  "meaning": "chair",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "す"
+  ]
+ },
+ {
+  "id": "せき",
+  "reading": "せき",
+  "romaji": "seki",
+  "meaning": "seat",
+  "script": "hiragana",
+  "kana": [
+   "せ",
+   "き"
+  ]
+ },
+ {
+  "id": "うそ",
+  "reading": "うそ",
+  "romaji": "uso",
+  "meaning": "a lie",
+  "script": "hiragana",
+  "kana": [
+   "う",
+   "そ"
+  ]
+ },
+ {
+  "id": "すいか",
+  "reading": "すいか",
+  "romaji": "suika",
+  "meaning": "watermelon",
+  "script": "hiragana",
+  "kana": [
+   "す",
+   "い",
+   "か"
+  ]
+ },
+ {
+  "id": "さけ",
+  "reading": "さけ",
+  "romaji": "sake",
+  "meaning": "salmon",
+  "script": "hiragana",
+  "kana": [
+   "さ",
+   "け"
+  ]
+ },
+ {
+  "id": "たこ",
+  "reading": "たこ",
+  "romaji": "tako",
+  "meaning": "octopus",
+  "script": "hiragana",
+  "kana": [
+   "た",
+   "こ"
+  ]
+ },
+ {
+  "id": "くち",
+  "reading": "くち",
+  "romaji": "kuchi",
+  "meaning": "mouth",
+  "script": "hiragana",
+  "kana": [
+   "く",
+   "ち"
+  ]
+ },
+ {
+  "id": "つき",
+  "reading": "つき",
+  "romaji": "tsuki",
+  "meaning": "moon",
+  "script": "hiragana",
+  "kana": [
+   "つ",
+   "き"
+  ]
+ },
+ {
+  "id": "した",
+  "reading": "した",
+  "romaji": "shita",
+  "meaning": "down / below",
+  "script": "hiragana",
+  "kana": [
+   "し",
+   "た"
+  ]
+ },
+ {
+  "id": "そと",
+  "reading": "そと",
+  "romaji": "soto",
+  "meaning": "outside",
+  "script": "hiragana",
+  "kana": [
+   "そ",
+   "と"
+  ]
+ },
+ {
+  "id": "ちかてつ",
+  "reading": "ちかてつ",
+  "romaji": "chikatetsu",
+  "meaning": "subway",
+  "script": "hiragana",
+  "kana": [
+   "ち",
+   "か",
+   "て",
+   "つ"
+  ]
+ },
+ {
+  "id": "ねこ",
+  "reading": "ねこ",
+  "romaji": "neko",
+  "meaning": "cat",
+  "script": "hiragana",
+  "kana": [
+   "ね",
+   "こ"
+  ]
+ },
+ {
+  "id": "いぬ",
+  "reading": "いぬ",
+  "romaji": "inu",
+  "meaning": "dog",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "ぬ"
+  ]
+ },
+ {
+  "id": "さかな",
+  "reading": "さかな",
+  "romaji": "sakana",
+  "meaning": "fish",
+  "script": "hiragana",
+  "kana": [
+   "さ",
+   "か",
+   "な"
+  ]
+ },
+ {
+  "id": "なつ",
+  "reading": "なつ",
+  "romaji": "natsu",
+  "meaning": "summer",
+  "script": "hiragana",
+  "kana": [
+   "な",
+   "つ"
+  ]
+ },
+ {
+  "id": "にく",
+  "reading": "にく",
+  "romaji": "niku",
+  "meaning": "meat",
+  "script": "hiragana",
+  "kana": [
+   "に",
+   "く"
+  ]
+ },
+ {
+  "id": "なに",
+  "reading": "なに",
+  "romaji": "nani",
+  "meaning": "what?",
+  "script": "hiragana",
+  "kana": [
+   "な",
+   "に"
+  ]
+ },
+ {
+  "id": "きのこ",
+  "reading": "きのこ",
+  "romaji": "kinoko",
+  "meaning": "mushroom",
+  "script": "hiragana",
+  "kana": [
+   "き",
+   "の",
+   "こ"
+  ]
+ },
+ {
+  "id": "はな",
+  "reading": "はな",
+  "romaji": "hana",
+  "meaning": "flower",
+  "script": "hiragana",
+  "kana": [
+   "は",
+   "な"
+  ]
+ },
+ {
+  "id": "ひと",
+  "reading": "ひと",
+  "romaji": "hito",
+  "meaning": "person",
+  "script": "hiragana",
+  "kana": [
+   "ひ",
+   "と"
+  ]
+ },
+ {
+  "id": "ふね",
+  "reading": "ふね",
+  "romaji": "fune",
+  "meaning": "ship",
+  "script": "hiragana",
+  "kana": [
+   "ふ",
+   "ね"
+  ]
+ },
+ {
+  "id": "ほし",
+  "reading": "ほし",
+  "romaji": "hoshi",
+  "meaning": "star",
+  "script": "hiragana",
+  "kana": [
+   "ほ",
+   "し"
+  ]
+ },
+ {
+  "id": "へそ",
+  "reading": "へそ",
+  "romaji": "heso",
+  "meaning": "belly button",
+  "script": "hiragana",
+  "kana": [
+   "へ",
+   "そ"
+  ]
+ },
+ {
+  "id": "はし",
+  "reading": "はし",
+  "romaji": "hashi",
+  "meaning": "chopsticks / bridge",
+  "script": "hiragana",
+  "kana": [
+   "は",
+   "し"
+  ]
+ },
+ {
+  "id": "ひこうき",
+  "reading": "ひこうき",
+  "romaji": "hikouki",
+  "meaning": "airplane",
+  "script": "hiragana",
+  "kana": [
+   "ひ",
+   "こ",
+   "う",
+   "き"
+  ]
+ },
+ {
+  "id": "うみ",
+  "reading": "うみ",
+  "romaji": "umi",
+  "meaning": "sea",
+  "script": "hiragana",
+  "kana": [
+   "う",
+   "み"
+  ]
+ },
+ {
+  "id": "やま",
+  "reading": "やま",
+  "romaji": "yama",
+  "meaning": "mountain",
+  "script": "hiragana",
+  "kana": [
+   "や",
+   "ま"
+  ]
+ },
+ {
+  "id": "みみ",
+  "reading": "みみ",
+  "romaji": "mimi",
+  "meaning": "ear",
+  "script": "hiragana",
+  "kana": [
+   "み",
+   "み"
+  ]
+ },
+ {
+  "id": "むし",
+  "reading": "むし",
+  "romaji": "mushi",
+  "meaning": "bug",
+  "script": "hiragana",
+  "kana": [
+   "む",
+   "し"
+  ]
+ },
+ {
+  "id": "あめ",
+  "reading": "あめ",
+  "romaji": "ame",
+  "meaning": "rain",
+  "script": "hiragana",
+  "kana": [
+   "あ",
+   "め"
+  ]
+ },
+ {
+  "id": "もも",
+  "reading": "もも",
+  "romaji": "momo",
+  "meaning": "peach",
+  "script": "hiragana",
+  "kana": [
+   "も",
+   "も"
+  ]
+ },
+ {
+  "id": "くま",
+  "reading": "くま",
+  "romaji": "kuma",
+  "meaning": "bear",
+  "script": "hiragana",
+  "kana": [
+   "く",
+   "ま"
+  ]
+ },
+ {
+  "id": "ゆき",
+  "reading": "ゆき",
+  "romaji": "yuki",
+  "meaning": "snow",
+  "script": "hiragana",
+  "kana": [
+   "ゆ",
+   "き"
+  ]
+ },
+ {
+  "id": "ふゆ",
+  "reading": "ふゆ",
+  "romaji": "fuyu",
+  "meaning": "winter",
+  "script": "hiragana",
+  "kana": [
+   "ふ",
+   "ゆ"
+  ]
+ },
+ {
+  "id": "よる",
+  "reading": "よる",
+  "romaji": "yoru",
+  "meaning": "night",
+  "script": "hiragana",
+  "kana": [
+   "よ",
+   "る"
+  ]
+ },
+ {
+  "id": "へや",
+  "reading": "へや",
+  "romaji": "heya",
+  "meaning": "room",
+  "script": "hiragana",
+  "kana": [
+   "へ",
+   "や"
+  ]
+ },
+ {
+  "id": "とり",
+  "reading": "とり",
+  "romaji": "tori",
+  "meaning": "bird",
+  "script": "hiragana",
+  "kana": [
+   "と",
+   "り"
+  ]
+ },
+ {
+  "id": "そら",
+  "reading": "そら",
+  "romaji": "sora",
+  "meaning": "sky",
+  "script": "hiragana",
+  "kana": [
+   "そ",
+   "ら"
+  ]
+ },
+ {
+  "id": "はる",
+  "reading": "はる",
+  "romaji": "haru",
+  "meaning": "spring",
+  "script": "hiragana",
+  "kana": [
+   "は",
+   "る"
+  ]
+ },
+ {
+  "id": "もり",
+  "reading": "もり",
+  "romaji": "mori",
+  "meaning": "forest",
+  "script": "hiragana",
+  "kana": [
+   "も",
+   "り"
+  ]
+ },
+ {
+  "id": "くるま",
+  "reading": "くるま",
+  "romaji": "kuruma",
+  "meaning": "car",
+  "script": "hiragana",
+  "kana": [
+   "く",
+   "る",
+   "ま"
+  ]
+ },
+ {
+  "id": "いろ",
+  "reading": "いろ",
+  "romaji": "iro",
+  "meaning": "color",
+  "script": "hiragana",
+  "kana": [
+   "い",
+   "ろ"
+  ]
+ },
+ {
+  "id": "かわ",
+  "reading": "かわ",
+  "romaji": "kawa",
+  "meaning": "river",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "わ"
+  ]
+ },
+ {
+  "id": "わたし",
+  "reading": "わたし",
+  "romaji": "watashi",
+  "meaning": "I / me",
+  "script": "hiragana",
+  "kana": [
+   "わ",
+   "た",
+   "し"
+  ]
+ },
+ {
+  "id": "ほん",
+  "reading": "ほん",
+  "romaji": "hon",
+  "meaning": "book",
+  "script": "hiragana",
+  "kana": [
+   "ほ",
+   "ん"
+  ]
+ },
+ {
+  "id": "みかん",
+  "reading": "みかん",
+  "romaji": "mikan",
+  "meaning": "mandarin orange",
+  "script": "hiragana",
+  "kana": [
+   "み",
+   "か",
+   "ん"
+  ]
+ },
+ {
+  "id": "てんき",
+  "reading": "てんき",
+  "romaji": "tenki",
+  "meaning": "weather",
+  "script": "hiragana",
+  "kana": [
+   "て",
+   "ん",
+   "き"
+  ]
+ },
+ {
+  "id": "かぎ",
+  "reading": "かぎ",
+  "romaji": "kagi",
+  "meaning": "key",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "ぎ"
+  ]
+ },
+ {
+  "id": "かぜ",
+  "reading": "かぜ",
+  "romaji": "kaze",
+  "meaning": "wind",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "ぜ"
+  ]
+ },
+ {
+  "id": "ひざ",
+  "reading": "ひざ",
+  "romaji": "hiza",
+  "meaning": "knee",
+  "script": "hiragana",
+  "kana": [
+   "ひ",
+   "ざ"
+  ]
+ },
+ {
+  "id": "からだ",
+  "reading": "からだ",
+  "romaji": "karada",
+  "meaning": "body",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "ら",
+   "だ"
+  ]
+ },
+ {
+  "id": "まど",
+  "reading": "まど",
+  "romaji": "mado",
+  "meaning": "window",
+  "script": "hiragana",
+  "kana": [
+   "ま",
+   "ど"
+  ]
+ },
+ {
+  "id": "ゆび",
+  "reading": "ゆび",
+  "romaji": "yubi",
+  "meaning": "finger",
+  "script": "hiragana",
+  "kana": [
+   "ゆ",
+   "び"
+  ]
+ },
+ {
+  "id": "ぶた",
+  "reading": "ぶた",
+  "romaji": "buta",
+  "meaning": "pig",
+  "script": "hiragana",
+  "kana": [
+   "ぶ",
+   "た"
+  ]
+ },
+ {
+  "id": "ごはん",
+  "reading": "ごはん",
+  "romaji": "gohan",
+  "meaning": "rice / meal",
+  "script": "hiragana",
+  "kana": [
+   "ご",
+   "は",
+   "ん"
+  ]
+ },
+ {
+  "id": "でんわ",
+  "reading": "でんわ",
+  "romaji": "denwa",
+  "meaning": "telephone",
+  "script": "hiragana",
+  "kana": [
+   "で",
+   "ん",
+   "わ"
+  ]
+ },
+ {
+  "id": "かばん",
+  "reading": "かばん",
+  "romaji": "kaban",
+  "meaning": "bag",
+  "script": "hiragana",
+  "kana": [
+   "か",
+   "ば",
+   "ん"
+  ]
+ },
+ {
+  "id": "えんぴつ",
+  "reading": "えんぴつ",
+  "romaji": "enpitsu",
+  "meaning": "pencil",
+  "script": "hiragana",
+  "kana": [
+   "え",
+   "ん",
+   "ぴ",
+   "つ"
+  ]
+ },
+ {
+  "id": "さんぽ",
+  "reading": "さんぽ",
+  "romaji": "sanpo",
+  "meaning": "a walk",
+  "script": "hiragana",
+  "kana": [
+   "さ",
+   "ん",
+   "ぽ"
+  ]
+ },
+ {
+  "id": "てんぷら",
+  "reading": "てんぷら",
+  "romaji": "tenpura",
+  "meaning": "tempura",
+  "script": "hiragana",
+  "kana": [
+   "て",
+   "ん",
+   "ぷ",
+   "ら"
+  ]
+ },
+ {
+  "id": "カメラ",
+  "reading": "カメラ",
+  "romaji": "kamera",
+  "meaning": "camera",
+  "script": "katakana",
+  "kana": [
+   "カ",
+   "メ",
+   "ラ"
+  ]
+ },
+ {
+  "id": "ホテル",
+  "reading": "ホテル",
+  "romaji": "hoteru",
+  "meaning": "hotel",
+  "script": "katakana",
+  "kana": [
+   "ホ",
+   "テ",
+   "ル"
+  ]
+ },
+ {
+  "id": "テニス",
+  "reading": "テニス",
+  "romaji": "tenisu",
+  "meaning": "tennis",
+  "script": "katakana",
+  "kana": [
+   "テ",
+   "ニ",
+   "ス"
+  ]
+ },
+ {
+  "id": "ピアノ",
+  "reading": "ピアノ",
+  "romaji": "piano",
+  "meaning": "piano",
+  "script": "katakana",
+  "kana": [
+   "ピ",
+   "ア",
+   "ノ"
+  ]
+ },
+ {
+  "id": "パン",
+  "reading": "パン",
+  "romaji": "pan",
+  "meaning": "bread",
+  "script": "katakana",
+  "kana": [
+   "パ",
+   "ン"
+  ]
+ },
+ {
+  "id": "バナナ",
+  "reading": "バナナ",
+  "romaji": "banana",
+  "meaning": "banana",
+  "script": "katakana",
+  "kana": [
+   "バ",
+   "ナ",
+   "ナ"
+  ]
+ },
+ {
+  "id": "トマト",
+  "reading": "トマト",
+  "romaji": "tomato",
+  "meaning": "tomato",
+  "script": "katakana",
+  "kana": [
+   "ト",
+   "マ",
+   "ト"
+  ]
+ },
+ {
+  "id": "メロン",
+  "reading": "メロン",
+  "romaji": "meron",
+  "meaning": "melon",
+  "script": "katakana",
+  "kana": [
+   "メ",
+   "ロ",
+   "ン"
+  ]
+ },
+ {
+  "id": "アニメ",
+  "reading": "アニメ",
+  "romaji": "anime",
+  "meaning": "anime",
+  "script": "katakana",
+  "kana": [
+   "ア",
+   "ニ",
+   "メ"
+  ]
+ },
+ {
+  "id": "ペン",
+  "reading": "ペン",
+  "romaji": "pen",
+  "meaning": "pen",
+  "script": "katakana",
+  "kana": [
+   "ペ",
+   "ン"
+  ]
+ },
+ {
+  "id": "ラジオ",
+  "reading": "ラジオ",
+  "romaji": "rajio",
+  "meaning": "radio",
+  "script": "katakana",
+  "kana": [
+   "ラ",
+   "ジ",
+   "オ"
+  ]
+ },
+ {
+  "id": "ドア",
+  "reading": "ドア",
+  "romaji": "doa",
+  "meaning": "door",
+  "script": "katakana",
+  "kana": [
+   "ド",
+   "ア"
+  ]
+ },
+ {
+  "id": "テレビ",
+  "reading": "テレビ",
+  "romaji": "terebi",
+  "meaning": "TV",
+  "script": "katakana",
+  "kana": [
+   "テ",
+   "レ",
+   "ビ"
+  ]
+ },
+ {
+  "id": "ナイフ",
+  "reading": "ナイフ",
+  "romaji": "naifu",
+  "meaning": "knife",
+  "script": "katakana",
+  "kana": [
+   "ナ",
+   "イ",
+   "フ"
+  ]
+ }
+]

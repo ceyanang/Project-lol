@@ -1,0 +1,1330 @@
+[
+ {
+  "id": "あ",
+  "char": "あ",
+  "romaji": "a",
+  "script": "hiragana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "An apple with a stem — \"Ah!\""
+ },
+ {
+  "id": "い",
+  "char": "い",
+  "romaji": "i",
+  "script": "hiragana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "Two eels side by side — \"ee\""
+ },
+ {
+  "id": "う",
+  "char": "う",
+  "romaji": "u",
+  "script": "hiragana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "Someone with a sore tummy — \"Ooh\""
+ },
+ {
+  "id": "え",
+  "char": "え",
+  "romaji": "e",
+  "script": "hiragana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "An exotic bird with a tail — \"Eh?\""
+ },
+ {
+  "id": "お",
+  "char": "お",
+  "romaji": "o",
+  "script": "hiragana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "A UFO about to land — \"Oh!\""
+ },
+ {
+  "id": "か",
+  "char": "か",
+  "romaji": "ka",
+  "script": "hiragana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A karate chop with a little slash — \"Ka!\""
+ },
+ {
+  "id": "き",
+  "char": "き",
+  "romaji": "ki",
+  "script": "hiragana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A key with two teeth — \"ki\""
+ },
+ {
+  "id": "く",
+  "char": "く",
+  "romaji": "ku",
+  "script": "hiragana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A cuckoo bird's open beak — \"ku\""
+ },
+ {
+  "id": "け",
+  "char": "け",
+  "romaji": "ke",
+  "script": "hiragana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A keg tipped on its side — \"ke\""
+ },
+ {
+  "id": "こ",
+  "char": "こ",
+  "romaji": "ko",
+  "script": "hiragana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "Two coins lying flat — \"ko\""
+ },
+ {
+  "id": "さ",
+  "char": "さ",
+  "romaji": "sa",
+  "script": "hiragana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A samurai's sword hilt — \"sa\""
+ },
+ {
+  "id": "し",
+  "char": "し",
+  "romaji": "shi",
+  "script": "hiragana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A fishhook — \"she\" goes fishing"
+ },
+ {
+  "id": "す",
+  "char": "す",
+  "romaji": "su",
+  "script": "hiragana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A swing with a looped seat — \"su\""
+ },
+ {
+  "id": "せ",
+  "char": "せ",
+  "romaji": "se",
+  "script": "hiragana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A mouth with a tooth sticking out — \"say\""
+ },
+ {
+  "id": "そ",
+  "char": "そ",
+  "romaji": "so",
+  "script": "hiragana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A zig-zag sewing stitch — \"sew\""
+ },
+ {
+  "id": "た",
+  "char": "た",
+  "romaji": "ta",
+  "script": "hiragana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "Letters \"t\" + \"a\" side by side — \"ta\""
+ },
+ {
+  "id": "ち",
+  "char": "ち",
+  "romaji": "chi",
+  "script": "hiragana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A cheerleader doing a pose — \"chi\""
+ },
+ {
+  "id": "つ",
+  "char": "つ",
+  "romaji": "tsu",
+  "script": "hiragana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A tsunami wave curling — \"tsu\""
+ },
+ {
+  "id": "て",
+  "char": "て",
+  "romaji": "te",
+  "script": "hiragana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A telescope seen from the side — \"te\""
+ },
+ {
+  "id": "と",
+  "char": "と",
+  "romaji": "to",
+  "script": "hiragana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A toe with a splinter — \"to\""
+ },
+ {
+  "id": "な",
+  "char": "な",
+  "romaji": "na",
+  "script": "hiragana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "A nun praying at a cross — \"na\""
+ },
+ {
+  "id": "に",
+  "char": "に",
+  "romaji": "ni",
+  "script": "hiragana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "A knee next to a pole — \"ni\""
+ },
+ {
+  "id": "ぬ",
+  "char": "ぬ",
+  "romaji": "nu",
+  "script": "hiragana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "Noodles twisted on chopsticks — \"nu\""
+ },
+ {
+  "id": "ね",
+  "char": "ね",
+  "romaji": "ne",
+  "script": "hiragana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "A cat (neko) with a curly tail — \"ne\""
+ },
+ {
+  "id": "の",
+  "char": "の",
+  "romaji": "no",
+  "script": "hiragana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "A \"no entry\" swirl — \"no\""
+ },
+ {
+  "id": "は",
+  "char": "は",
+  "romaji": "ha",
+  "script": "hiragana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "An \"H\" next to an \"a\" — \"ha!\""
+ },
+ {
+  "id": "ひ",
+  "char": "ひ",
+  "romaji": "hi",
+  "script": "hiragana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A big grin — \"hee hee\""
+ },
+ {
+  "id": "ふ",
+  "char": "ふ",
+  "romaji": "fu",
+  "script": "hiragana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "Mount Fuji with puffs of cloud — \"fu\""
+ },
+ {
+  "id": "へ",
+  "char": "へ",
+  "romaji": "he",
+  "script": "hiragana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A little hill — \"hey!\" at the top"
+ },
+ {
+  "id": "ほ",
+  "char": "ほ",
+  "romaji": "ho",
+  "script": "hiragana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A holy tree with a mast — \"ho\""
+ },
+ {
+  "id": "ま",
+  "char": "ま",
+  "romaji": "ma",
+  "script": "hiragana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "Mama tying a knot — \"ma\""
+ },
+ {
+  "id": "み",
+  "char": "み",
+  "romaji": "mi",
+  "script": "hiragana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "The number 21 — \"me\" at 21"
+ },
+ {
+  "id": "む",
+  "char": "む",
+  "romaji": "mu",
+  "script": "hiragana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "A cow mooing with a horn — \"mu\""
+ },
+ {
+  "id": "め",
+  "char": "め",
+  "romaji": "me",
+  "script": "hiragana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "An eye (me) with a swirl — \"me\""
+ },
+ {
+  "id": "も",
+  "char": "も",
+  "romaji": "mo",
+  "script": "hiragana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "A fishhook catching \"more\" fish — \"mo\""
+ },
+ {
+  "id": "や",
+  "char": "や",
+  "romaji": "ya",
+  "script": "hiragana",
+  "row": "ya",
+  "group": "basic",
+  "mnemonic": "A yak with horns — \"ya\""
+ },
+ {
+  "id": "ゆ",
+  "char": "ゆ",
+  "romaji": "yu",
+  "script": "hiragana",
+  "row": "ya",
+  "group": "basic",
+  "mnemonic": "A U-turning fish — \"yu\""
+ },
+ {
+  "id": "よ",
+  "char": "よ",
+  "romaji": "yo",
+  "script": "hiragana",
+  "row": "ya",
+  "group": "basic",
+  "mnemonic": "A yo-yo on a string — \"yo\""
+ },
+ {
+  "id": "ら",
+  "char": "ら",
+  "romaji": "ra",
+  "script": "hiragana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A rabbit with a curved back — \"ra\""
+ },
+ {
+  "id": "り",
+  "char": "り",
+  "romaji": "ri",
+  "script": "hiragana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "Reeds swaying by a river — \"ri\""
+ },
+ {
+  "id": "る",
+  "char": "る",
+  "romaji": "ru",
+  "script": "hiragana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A route that loops at the end — \"ru\""
+ },
+ {
+  "id": "れ",
+  "char": "れ",
+  "romaji": "re",
+  "script": "hiragana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A man kneeling to retch — \"re\""
+ },
+ {
+  "id": "ろ",
+  "char": "ろ",
+  "romaji": "ro",
+  "script": "hiragana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A road with no loop at the end — \"ro\""
+ },
+ {
+  "id": "わ",
+  "char": "わ",
+  "romaji": "wa",
+  "script": "hiragana",
+  "row": "wa",
+  "group": "basic",
+  "mnemonic": "A wasp with a curved tail — \"wa\""
+ },
+ {
+  "id": "を",
+  "char": "を",
+  "romaji": "wo",
+  "script": "hiragana",
+  "row": "wa",
+  "group": "basic",
+  "mnemonic": "A surfer going \"whoa!\" — \"wo\""
+ },
+ {
+  "id": "ん",
+  "char": "ん",
+  "romaji": "n",
+  "script": "hiragana",
+  "row": "wa",
+  "group": "basic",
+  "mnemonic": "A lowercase n with a tail — \"n\""
+ },
+ {
+  "id": "が",
+  "char": "が",
+  "romaji": "ga",
+  "script": "hiragana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "か",
+  "mnemonic": "か + ゛(dakuten) voices it: ka → ga"
+ },
+ {
+  "id": "ぎ",
+  "char": "ぎ",
+  "romaji": "gi",
+  "script": "hiragana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "き",
+  "mnemonic": "き + ゛(dakuten) voices it: ki → gi"
+ },
+ {
+  "id": "ぐ",
+  "char": "ぐ",
+  "romaji": "gu",
+  "script": "hiragana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "く",
+  "mnemonic": "く + ゛(dakuten) voices it: ku → gu"
+ },
+ {
+  "id": "げ",
+  "char": "げ",
+  "romaji": "ge",
+  "script": "hiragana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "け",
+  "mnemonic": "け + ゛(dakuten) voices it: ke → ge"
+ },
+ {
+  "id": "ご",
+  "char": "ご",
+  "romaji": "go",
+  "script": "hiragana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "こ",
+  "mnemonic": "こ + ゛(dakuten) voices it: ko → go"
+ },
+ {
+  "id": "ざ",
+  "char": "ざ",
+  "romaji": "za",
+  "script": "hiragana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "さ",
+  "mnemonic": "さ + ゛(dakuten) voices it: sa → za"
+ },
+ {
+  "id": "じ",
+  "char": "じ",
+  "romaji": "ji",
+  "script": "hiragana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "し",
+  "mnemonic": "し + ゛(dakuten) voices it: shi → ji"
+ },
+ {
+  "id": "ず",
+  "char": "ず",
+  "romaji": "zu",
+  "script": "hiragana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "す",
+  "mnemonic": "す + ゛(dakuten) voices it: su → zu"
+ },
+ {
+  "id": "ぜ",
+  "char": "ぜ",
+  "romaji": "ze",
+  "script": "hiragana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "せ",
+  "mnemonic": "せ + ゛(dakuten) voices it: se → ze"
+ },
+ {
+  "id": "ぞ",
+  "char": "ぞ",
+  "romaji": "zo",
+  "script": "hiragana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "そ",
+  "mnemonic": "そ + ゛(dakuten) voices it: so → zo"
+ },
+ {
+  "id": "だ",
+  "char": "だ",
+  "romaji": "da",
+  "script": "hiragana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "た",
+  "mnemonic": "た + ゛(dakuten) voices it: ta → da"
+ },
+ {
+  "id": "ぢ",
+  "char": "ぢ",
+  "romaji": "ji",
+  "script": "hiragana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "ち",
+  "mnemonic": "ち + ゛(dakuten) voices it: chi → ji"
+ },
+ {
+  "id": "づ",
+  "char": "づ",
+  "romaji": "zu",
+  "script": "hiragana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "つ",
+  "mnemonic": "つ + ゛(dakuten) voices it: tsu → zu"
+ },
+ {
+  "id": "で",
+  "char": "で",
+  "romaji": "de",
+  "script": "hiragana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "て",
+  "mnemonic": "て + ゛(dakuten) voices it: te → de"
+ },
+ {
+  "id": "ど",
+  "char": "ど",
+  "romaji": "do",
+  "script": "hiragana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "と",
+  "mnemonic": "と + ゛(dakuten) voices it: to → do"
+ },
+ {
+  "id": "ば",
+  "char": "ば",
+  "romaji": "ba",
+  "script": "hiragana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "は",
+  "mnemonic": "は + ゛(dakuten) voices it: ha → ba"
+ },
+ {
+  "id": "び",
+  "char": "び",
+  "romaji": "bi",
+  "script": "hiragana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ひ",
+  "mnemonic": "ひ + ゛(dakuten) voices it: hi → bi"
+ },
+ {
+  "id": "ぶ",
+  "char": "ぶ",
+  "romaji": "bu",
+  "script": "hiragana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ふ",
+  "mnemonic": "ふ + ゛(dakuten) voices it: fu → bu"
+ },
+ {
+  "id": "べ",
+  "char": "べ",
+  "romaji": "be",
+  "script": "hiragana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "へ",
+  "mnemonic": "へ + ゛(dakuten) voices it: he → be"
+ },
+ {
+  "id": "ぼ",
+  "char": "ぼ",
+  "romaji": "bo",
+  "script": "hiragana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ほ",
+  "mnemonic": "ほ + ゛(dakuten) voices it: ho → bo"
+ },
+ {
+  "id": "ぱ",
+  "char": "ぱ",
+  "romaji": "pa",
+  "script": "hiragana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "は",
+  "mnemonic": "は + ゜(maru) pops the sound: ha → pa"
+ },
+ {
+  "id": "ぴ",
+  "char": "ぴ",
+  "romaji": "pi",
+  "script": "hiragana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ひ",
+  "mnemonic": "ひ + ゜(maru) pops the sound: hi → pi"
+ },
+ {
+  "id": "ぷ",
+  "char": "ぷ",
+  "romaji": "pu",
+  "script": "hiragana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ふ",
+  "mnemonic": "ふ + ゜(maru) pops the sound: fu → pu"
+ },
+ {
+  "id": "ぺ",
+  "char": "ぺ",
+  "romaji": "pe",
+  "script": "hiragana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "へ",
+  "mnemonic": "へ + ゜(maru) pops the sound: he → pe"
+ },
+ {
+  "id": "ぽ",
+  "char": "ぽ",
+  "romaji": "po",
+  "script": "hiragana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ほ",
+  "mnemonic": "ほ + ゜(maru) pops the sound: ho → po"
+ },
+ {
+  "id": "ア",
+  "char": "ア",
+  "romaji": "a",
+  "script": "katakana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "An axe swinging down — \"Ah!\""
+ },
+ {
+  "id": "イ",
+  "char": "イ",
+  "romaji": "i",
+  "script": "katakana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "An easel leaning over — \"ee\""
+ },
+ {
+  "id": "ウ",
+  "char": "ウ",
+  "romaji": "u",
+  "script": "katakana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "A shiny crown — \"Ooh!\""
+ },
+ {
+  "id": "エ",
+  "char": "エ",
+  "romaji": "e",
+  "script": "katakana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "An elevator shaft — \"Eh\""
+ },
+ {
+  "id": "オ",
+  "char": "オ",
+  "romaji": "o",
+  "script": "katakana",
+  "row": "a",
+  "group": "basic",
+  "mnemonic": "An opera singer, arms out — \"Oh!\""
+ },
+ {
+  "id": "カ",
+  "char": "カ",
+  "romaji": "ka",
+  "script": "katakana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "か without its dash — a sharp blade \"ka\""
+ },
+ {
+  "id": "キ",
+  "char": "キ",
+  "romaji": "ki",
+  "script": "katakana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A blocky key with two teeth — \"ki\""
+ },
+ {
+  "id": "ク",
+  "char": "ク",
+  "romaji": "ku",
+  "script": "katakana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A cook's hooked knife — \"ku\""
+ },
+ {
+  "id": "ケ",
+  "char": "ケ",
+  "romaji": "ke",
+  "script": "katakana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A crooked \"K\" — \"ke\""
+ },
+ {
+  "id": "コ",
+  "char": "コ",
+  "romaji": "ko",
+  "script": "katakana",
+  "row": "ka",
+  "group": "basic",
+  "mnemonic": "A corner of a box — \"ko\"rner"
+ },
+ {
+  "id": "サ",
+  "char": "サ",
+  "romaji": "sa",
+  "script": "katakana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A saloon signpost — \"sa\""
+ },
+ {
+  "id": "シ",
+  "char": "シ",
+  "romaji": "shi",
+  "script": "katakana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A face smiling sideways; strokes rise like \"she\" waves"
+ },
+ {
+  "id": "ス",
+  "char": "ス",
+  "romaji": "su",
+  "script": "katakana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "A superhero mid-run — \"su\""
+ },
+ {
+  "id": "セ",
+  "char": "セ",
+  "romaji": "se",
+  "script": "katakana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "Like せ with fewer lines — \"say\" it"
+ },
+ {
+  "id": "ソ",
+  "char": "ソ",
+  "romaji": "so",
+  "script": "katakana",
+  "row": "sa",
+  "group": "basic",
+  "mnemonic": "Two drops falling down — \"so\" (strokes go DOWN)"
+ },
+ {
+  "id": "タ",
+  "char": "タ",
+  "romaji": "ta",
+  "script": "katakana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A ta-da! pose with a sash — \"ta\""
+ },
+ {
+  "id": "チ",
+  "char": "チ",
+  "romaji": "chi",
+  "script": "katakana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A cheerleader holding a pole — \"chi\""
+ },
+ {
+  "id": "ツ",
+  "char": "ツ",
+  "romaji": "tsu",
+  "script": "katakana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "Rain falling down — \"tsu\" (strokes go DOWN)"
+ },
+ {
+  "id": "テ",
+  "char": "テ",
+  "romaji": "te",
+  "script": "katakana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A telephone pole — \"te\""
+ },
+ {
+  "id": "ト",
+  "char": "ト",
+  "romaji": "to",
+  "script": "katakana",
+  "row": "ta",
+  "group": "basic",
+  "mnemonic": "A totem pole with a branch — \"to\""
+ },
+ {
+  "id": "ナ",
+  "char": "ナ",
+  "romaji": "na",
+  "script": "katakana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "A knife crossing a stick — \"na\""
+ },
+ {
+  "id": "ニ",
+  "char": "ニ",
+  "romaji": "ni",
+  "script": "katakana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "Two lines — \"ni\" means two!"
+ },
+ {
+  "id": "ヌ",
+  "char": "ヌ",
+  "romaji": "nu",
+  "script": "katakana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "Chopsticks lifting noodles — \"nu\""
+ },
+ {
+  "id": "ネ",
+  "char": "ネ",
+  "romaji": "ne",
+  "script": "katakana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "A necklace hanging on a hook — \"ne\""
+ },
+ {
+  "id": "ノ",
+  "char": "ノ",
+  "romaji": "no",
+  "script": "katakana",
+  "row": "na",
+  "group": "basic",
+  "mnemonic": "One slash — \"No!\""
+ },
+ {
+  "id": "ハ",
+  "char": "ハ",
+  "romaji": "ha",
+  "script": "katakana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A tiny roof — \"ha\" ha"
+ },
+ {
+  "id": "ヒ",
+  "char": "ヒ",
+  "romaji": "hi",
+  "script": "katakana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A heel — \"hi\""
+ },
+ {
+  "id": "フ",
+  "char": "フ",
+  "romaji": "fu",
+  "script": "katakana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A hook — \"who?\""
+ },
+ {
+  "id": "ヘ",
+  "char": "ヘ",
+  "romaji": "he",
+  "script": "katakana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "Same as へ — \"hey,\" a hill"
+ },
+ {
+  "id": "ホ",
+  "char": "ホ",
+  "romaji": "ho",
+  "script": "katakana",
+  "row": "ha",
+  "group": "basic",
+  "mnemonic": "A holy cross with legs — \"ho\""
+ },
+ {
+  "id": "マ",
+  "char": "マ",
+  "romaji": "ma",
+  "script": "katakana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "Mama's apron — \"ma\""
+ },
+ {
+  "id": "ミ",
+  "char": "ミ",
+  "romaji": "mi",
+  "script": "katakana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "Three lines — \"me, me, me\""
+ },
+ {
+  "id": "ム",
+  "char": "ム",
+  "romaji": "mu",
+  "script": "katakana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "A cow's face — \"moo\""
+ },
+ {
+  "id": "メ",
+  "char": "メ",
+  "romaji": "me",
+  "script": "katakana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "An X marks the meal — \"me\""
+ },
+ {
+  "id": "モ",
+  "char": "モ",
+  "romaji": "mo",
+  "script": "katakana",
+  "row": "ma",
+  "group": "basic",
+  "mnemonic": "A totem with more bars — \"mo\""
+ },
+ {
+  "id": "ヤ",
+  "char": "ヤ",
+  "romaji": "ya",
+  "script": "katakana",
+  "row": "ya",
+  "group": "basic",
+  "mnemonic": "A yacht sail — \"ya\""
+ },
+ {
+  "id": "ユ",
+  "char": "ユ",
+  "romaji": "yu",
+  "script": "katakana",
+  "row": "ya",
+  "group": "basic",
+  "mnemonic": "A U-boat — \"yu\""
+ },
+ {
+  "id": "ヨ",
+  "char": "ヨ",
+  "romaji": "yo",
+  "script": "katakana",
+  "row": "ya",
+  "group": "basic",
+  "mnemonic": "A backwards E — \"yo!\""
+ },
+ {
+  "id": "ラ",
+  "char": "ラ",
+  "romaji": "ra",
+  "script": "katakana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A rabbit wearing a flat hat — \"ra\""
+ },
+ {
+  "id": "リ",
+  "char": "リ",
+  "romaji": "ri",
+  "script": "katakana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "Reeds — just like り"
+ },
+ {
+  "id": "ル",
+  "char": "ル",
+  "romaji": "ru",
+  "script": "katakana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "Two roots — \"ru\""
+ },
+ {
+  "id": "レ",
+  "char": "レ",
+  "romaji": "re",
+  "script": "katakana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A check mark — \"re\"ady!"
+ },
+ {
+  "id": "ロ",
+  "char": "ロ",
+  "romaji": "ro",
+  "script": "katakana",
+  "row": "ra",
+  "group": "basic",
+  "mnemonic": "A square road block — \"ro\""
+ },
+ {
+  "id": "ワ",
+  "char": "ワ",
+  "romaji": "wa",
+  "script": "katakana",
+  "row": "wa",
+  "group": "basic",
+  "mnemonic": "A wine glass — \"wa\""
+ },
+ {
+  "id": "ヲ",
+  "char": "ヲ",
+  "romaji": "wo",
+  "script": "katakana",
+  "row": "wa",
+  "group": "basic",
+  "mnemonic": "A \"whoa\" surfer with a fin — \"wo\""
+ },
+ {
+  "id": "ン",
+  "char": "ン",
+  "romaji": "n",
+  "script": "katakana",
+  "row": "wa",
+  "group": "basic",
+  "mnemonic": "A smile; the stroke goes UP — \"n\""
+ },
+ {
+  "id": "ガ",
+  "char": "ガ",
+  "romaji": "ga",
+  "script": "katakana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "カ",
+  "mnemonic": "カ + ゛(dakuten) voices it: ka → ga"
+ },
+ {
+  "id": "ギ",
+  "char": "ギ",
+  "romaji": "gi",
+  "script": "katakana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "キ",
+  "mnemonic": "キ + ゛(dakuten) voices it: ki → gi"
+ },
+ {
+  "id": "グ",
+  "char": "グ",
+  "romaji": "gu",
+  "script": "katakana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "ク",
+  "mnemonic": "ク + ゛(dakuten) voices it: ku → gu"
+ },
+ {
+  "id": "ゲ",
+  "char": "ゲ",
+  "romaji": "ge",
+  "script": "katakana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "ケ",
+  "mnemonic": "ケ + ゛(dakuten) voices it: ke → ge"
+ },
+ {
+  "id": "ゴ",
+  "char": "ゴ",
+  "romaji": "go",
+  "script": "katakana",
+  "row": "ga",
+  "group": "dakuten",
+  "base": "コ",
+  "mnemonic": "コ + ゛(dakuten) voices it: ko → go"
+ },
+ {
+  "id": "ザ",
+  "char": "ザ",
+  "romaji": "za",
+  "script": "katakana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "サ",
+  "mnemonic": "サ + ゛(dakuten) voices it: sa → za"
+ },
+ {
+  "id": "ジ",
+  "char": "ジ",
+  "romaji": "ji",
+  "script": "katakana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "シ",
+  "mnemonic": "シ + ゛(dakuten) voices it: shi → ji"
+ },
+ {
+  "id": "ズ",
+  "char": "ズ",
+  "romaji": "zu",
+  "script": "katakana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "ス",
+  "mnemonic": "ス + ゛(dakuten) voices it: su → zu"
+ },
+ {
+  "id": "ゼ",
+  "char": "ゼ",
+  "romaji": "ze",
+  "script": "katakana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "セ",
+  "mnemonic": "セ + ゛(dakuten) voices it: se → ze"
+ },
+ {
+  "id": "ゾ",
+  "char": "ゾ",
+  "romaji": "zo",
+  "script": "katakana",
+  "row": "za",
+  "group": "dakuten",
+  "base": "ソ",
+  "mnemonic": "ソ + ゛(dakuten) voices it: so → zo"
+ },
+ {
+  "id": "ダ",
+  "char": "ダ",
+  "romaji": "da",
+  "script": "katakana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "タ",
+  "mnemonic": "タ + ゛(dakuten) voices it: ta → da"
+ },
+ {
+  "id": "ヂ",
+  "char": "ヂ",
+  "romaji": "ji",
+  "script": "katakana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "チ",
+  "mnemonic": "チ + ゛(dakuten) voices it: chi → ji"
+ },
+ {
+  "id": "ヅ",
+  "char": "ヅ",
+  "romaji": "zu",
+  "script": "katakana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "ツ",
+  "mnemonic": "ツ + ゛(dakuten) voices it: tsu → zu"
+ },
+ {
+  "id": "デ",
+  "char": "デ",
+  "romaji": "de",
+  "script": "katakana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "テ",
+  "mnemonic": "テ + ゛(dakuten) voices it: te → de"
+ },
+ {
+  "id": "ド",
+  "char": "ド",
+  "romaji": "do",
+  "script": "katakana",
+  "row": "da",
+  "group": "dakuten",
+  "base": "ト",
+  "mnemonic": "ト + ゛(dakuten) voices it: to → do"
+ },
+ {
+  "id": "バ",
+  "char": "バ",
+  "romaji": "ba",
+  "script": "katakana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ハ",
+  "mnemonic": "ハ + ゛(dakuten) voices it: ha → ba"
+ },
+ {
+  "id": "ビ",
+  "char": "ビ",
+  "romaji": "bi",
+  "script": "katakana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ヒ",
+  "mnemonic": "ヒ + ゛(dakuten) voices it: hi → bi"
+ },
+ {
+  "id": "ブ",
+  "char": "ブ",
+  "romaji": "bu",
+  "script": "katakana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "フ",
+  "mnemonic": "フ + ゛(dakuten) voices it: fu → bu"
+ },
+ {
+  "id": "ベ",
+  "char": "ベ",
+  "romaji": "be",
+  "script": "katakana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ヘ",
+  "mnemonic": "ヘ + ゛(dakuten) voices it: he → be"
+ },
+ {
+  "id": "ボ",
+  "char": "ボ",
+  "romaji": "bo",
+  "script": "katakana",
+  "row": "ba",
+  "group": "dakuten",
+  "base": "ホ",
+  "mnemonic": "ホ + ゛(dakuten) voices it: ho → bo"
+ },
+ {
+  "id": "パ",
+  "char": "パ",
+  "romaji": "pa",
+  "script": "katakana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ハ",
+  "mnemonic": "ハ + ゜(maru) pops the sound: ha → pa"
+ },
+ {
+  "id": "ピ",
+  "char": "ピ",
+  "romaji": "pi",
+  "script": "katakana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ヒ",
+  "mnemonic": "ヒ + ゜(maru) pops the sound: hi → pi"
+ },
+ {
+  "id": "プ",
+  "char": "プ",
+  "romaji": "pu",
+  "script": "katakana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "フ",
+  "mnemonic": "フ + ゜(maru) pops the sound: fu → pu"
+ },
+ {
+  "id": "ペ",
+  "char": "ペ",
+  "romaji": "pe",
+  "script": "katakana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ヘ",
+  "mnemonic": "ヘ + ゜(maru) pops the sound: he → pe"
+ },
+ {
+  "id": "ポ",
+  "char": "ポ",
+  "romaji": "po",
+  "script": "katakana",
+  "row": "pa",
+  "group": "handakuten",
+  "base": "ホ",
+  "mnemonic": "ホ + ゜(maru) pops the sound: ho → po"
+ }
+]
