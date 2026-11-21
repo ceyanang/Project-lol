@@ -2,16 +2,19 @@ import kanaJson from '../data/kana.json';
 import vocabJson from '../data/vocab.json';
 import enemiesJson from '../data/enemies.json';
 import relicsJson from '../data/relics.json';
-import type { EnemyDef, Kana, RelicDef, UnlockGroup, Vocab, Script } from './types';
+import spellsJson from '../data/spells.json';
+import type { EnemyDef, Kana, RelicDef, SpellDef, UnlockGroup, Vocab, Script } from './types';
 
 export const KANA = kanaJson as Kana[];
 export const VOCAB = vocabJson as Vocab[];
 export const ENEMIES = enemiesJson as EnemyDef[];
 export const RELICS = relicsJson as RelicDef[];
+export const SPELLS = spellsJson as SpellDef[];
 
 export const KANA_BY_ID: Record<string, Kana> = Object.fromEntries(KANA.map((k) => [k.id, k]));
 export const VOCAB_BY_ID: Record<string, Vocab> = Object.fromEntries(VOCAB.map((v) => [v.id, v]));
 export const ENEMY_BY_ID: Record<string, EnemyDef> = Object.fromEntries(ENEMIES.map((e) => [e.id, e]));
+export const SPELL_BY_ID: Record<string, SpellDef> = Object.fromEntries(SPELLS.map((s) => [s.id, s]));
 export const RELIC_BY_ID: Record<string, RelicDef> = Object.fromEntries(RELICS.map((r) => [r.id, r]));
 
 const BASIC_ROWS = ['a', 'ka', 'sa', 'ta', 'na', 'ha', 'ma', 'ya', 'ra', 'wa'];

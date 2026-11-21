@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { endTurn, resolvePlay, type PlayPlan } from './game/battle';
+import { castSpell, endTurn, resolvePlay, type PlayPlan } from './game/battle';
 import { defaultRng } from './game/rng';
-import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
+import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, takeSpell, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { VOICE_HELP, initSpeech, speak as speakJa, voicesKnown } from './game/speech';
@@ -85,6 +85,13 @@ export default function App() {
   function onPlay(plan: PlayPlan, results: boolean[]) {
     if (!run?.battle) return;
     const r = resolvePlay(run.battle, plan, results);
+    recordSrs(r.answers);
+    setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
+  }
+
+  function onCastSpell(uid: string, typed: string) {
+    if (!run?.battle) return;
+    const r = castSpell(run.battle, uid, typed, ctx);
     recordSrs(r.answers);
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
   }
@@ -175,6 +182,7 @@ export default function App() {
         missed={missed}
         onPlay={onPlay}
         onEndTurn={onEndTurn}
+        onCastSpell={onCastSpell}
         onSpeak={speakAuto}
         onMenu={() => setView('title')}
       />
@@ -206,6 +214,10 @@ export default function App() {
         onTakeCard={(card) => {
           playSfx('pickup');
           claim((r) => takeCard(r, card));
+        }}
+        onTakeSpell={(id) => {
+          playSfx('pickup');
+          claim((r) => takeSpell(r, id));
         }}
         onTakeRelic={(id) => {
           playSfx('pickup');

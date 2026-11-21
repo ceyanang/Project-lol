@@ -2,13 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import HpBar from '../components/HpBar';
 import KanaCard from '../components/KanaCard';
 import ReadingCheck from '../components/ReadingCheck';
-import { RELIC_BY_ID, VOCAB_BY_ID, KANA_BY_ID } from '../data';
+import SpellCast from '../components/SpellCast';
+import { RELIC_BY_ID, SPELL_BY_ID, VOCAB_BY_ID, KANA_BY_ID } from '../data';
 import {
   type BattleState,
   type Fx,
   type PlayPlan,
   type PlayStep,
   blindView,
+  canCastSpell,
+  type SpellInHand,
   cardMatch,
   cardValue,
   currentIntent,
@@ -29,6 +32,7 @@ interface Props {
   floor: number;
   onPlay: (plan: PlayPlan, results: boolean[]) => void;
   onEndTurn: () => void;
+  onCastSpell: (uid: string, typed: string) => void;
   onSpeak: (text: string) => void;
   onMenu?: () => void;
   /** Kana ids currently flagged as missed by the SRS. */
@@ -45,11 +49,14 @@ const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
   buff: 'buff',
   combo: 'combo',
   reveal: 'combo',
+  spell: 'spell',
+  heal: 'heal',
 };
 
-export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTurn, onSpeak, onMenu, missed }: Props) {
+export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTurn, onCastSpell, onSpeak, onMenu, missed }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [checking, setChecking] = useState<PlayPlan | null>(null);
+  const [casting, setCasting] = useState<SpellInHand | null>(null);
   const [fx, setFx] = useState<Fx[]>([]);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
@@ -155,7 +162,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         <HpBar hp={e.hp} max={e.maxHp} block={e.block} label="Enemy HP" />
         <div className="fx-layer">
           {fx
-            .filter((f) => f.kind === 'enemyHit' || f.kind === 'enemyBlock' || f.kind === 'buff' || f.kind === 'combo' || f.kind === 'reveal')
+            .filter((f) => f.kind === 'enemyHit' || f.kind === 'enemyBlock' || f.kind === 'buff' || f.kind === 'combo' || f.kind === 'reveal' || f.kind === 'spell')
             .map((f) => (
               <span key={f.id} className={`fx fx-${f.kind}`}>
                 {f.text}
@@ -198,6 +205,39 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         )}
       </section>
 
+      <section className="spellbook" aria-label="Spellbook">
+        <div className="spellbook-head">
+          <span>🪄 Spellbook</span>
+          <span className="muted small">{canCastSpell(battle) ? '1 spell per turn · type its kana' : (battle.spellHand?.length ?? 0) ? 'Spell used — next turn!' : 'No spells this turn'}</span>
+        </div>
+        <div className="spell-row">
+          {(battle.spellHand ?? []).map((s) => {
+            const def = SPELL_BY_ID[s.spellId];
+            return (
+              <button
+                key={s.uid}
+                type="button"
+                className="spell-card"
+                disabled={!canCastSpell(battle)}
+                onClick={() => {
+                  playSfx('select');
+                  setCasting(s);
+                }}
+                aria-label={`${def.name}: ${def.description} Cast by reading ${KANA_BY_ID[s.kana].char}`}
+              >
+                <span className="spell-kana jp">{KANA_BY_ID[s.kana].char}</span>
+                <span className="spell-info">
+                  <b>
+                    {def.emoji} {def.name}
+                  </b>
+                  <span className="small">{def.description}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section className={`player-bar ${playerHit ? 'shake' : ''}`}>
         <div className="player-hp">
           <span className="who">🧑‍🎤 You</span>
@@ -208,7 +248,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         </div>
         <div className="fx-layer">
           {fx
-            .filter((f) => f.kind === 'playerHit' || f.kind === 'block' || f.kind === 'miss')
+            .filter((f) => f.kind === 'playerHit' || f.kind === 'block' || f.kind === 'miss' || f.kind === 'heal')
             .map((f) => (
               <span key={f.id} className={`fx fx-${f.kind}`}>
                 {f.text}
@@ -253,6 +293,19 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
           ♻ {battle.discard.length}
         </span>
       </footer>
+
+      {casting && (
+        <SpellCast
+          spell={casting}
+          onCancel={() => setCasting(null)}
+          onCast={(typed) => {
+            const s = casting;
+            setCasting(null);
+            onSpeak(KANA_BY_ID[s.kana].char);
+            onCastSpell(s.uid, typed);
+          }}
+        />
+      )}
 
       {checking && (
         <ReadingCheck

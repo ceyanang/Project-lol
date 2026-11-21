@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { playSfx } from '../game/sfx';
 import KanaCard from '../components/KanaCard';
-import { KANA_BY_ID, RELIC_BY_ID, UNLOCK_GROUPS, VOCAB_BY_ID } from '../data';
+import { KANA_BY_ID, RELIC_BY_ID, SPELL_BY_ID, UNLOCK_GROUPS, VOCAB_BY_ID } from '../data';
 import { cardValue } from '../game/battle';
 import { cardCost } from '../game/deck';
 import type { RewardStep } from '../game/run';
@@ -13,12 +13,13 @@ interface Props {
   onSpeak: (text: string) => void;
   onTakeCard: (card: Card) => void;
   onTakeRelic: (relicId: string) => void;
+  onTakeSpell: (spellId: string) => void;
   onSkip: () => void;
 }
 
 const noPrompts = { guard: null, weak: [], word: null };
 
-export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic, onSkip }: Props) {
+export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic, onTakeSpell, onSkip }: Props) {
   const [chosen, setChosen] = useState<string | null>(null);
   useEffect(() => {
     if (step.kind === 'unlock') playSfx('unlock');
@@ -76,6 +77,39 @@ export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic,
         <div className="menu">
           <button type="button" className="btn btn-gold btn-wide" disabled={!picked} onClick={() => picked && onTakeCard(picked)}>
             {picked ? `Take ${picked.type === 'word' ? VOCAB_BY_ID[picked.ref].reading : KANA_BY_ID[picked.ref].char}` : 'Pick a card'}
+          </button>
+          <button type="button" className="btn btn-ghost btn-wide" onClick={onSkip}>
+            Skip
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (step.kind === 'spells') {
+    return (
+      <main className="screen reward-screen">
+        <div className="big-emoji">🪄</div>
+        <h2 className="center">Learn a spell</h2>
+        <p className="center muted small">Spells join your spellbook. Each turn they show a random kana — type its reading to cast.</p>
+        <div className="relic-options">
+          {step.options.map((id) => {
+            const s = SPELL_BY_ID[id];
+            return (
+              <button key={id} type="button" className={`reward-option relic-option ${chosen === id ? 'is-chosen' : ''}`} onClick={() => setChosen(id)}>
+                <span className="relic-emoji">{s.emoji}</span>
+                <span>
+                  <b>{s.name}</b>
+                  <br />
+                  <span className="small">{s.description}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="menu">
+          <button type="button" className="btn btn-gold btn-wide" disabled={!chosen} onClick={() => chosen && onTakeSpell(chosen)}>
+            {chosen ? `Learn ${SPELL_BY_ID[chosen].name}` : 'Pick a spell'}
           </button>
           <button type="button" className="btn btn-ghost btn-wide" onClick={onSkip}>
             Skip

@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { ENEMIES, RELICS, UNLOCK_GROUPS, VOCAB, availableWords, unlockedKanaIds, wordScrollsUnlocked } from '../data';
+import { ENEMIES, RELICS, SPELLS, UNLOCK_GROUPS, VOCAB, availableWords, unlockedKanaIds, wordScrollsUnlocked } from '../data';
 import type { Card, EnemyDef, EnemyTier } from '../types';
 import { type BattleCtx, type BattleState, createBattle } from './battle';
 import { buildStartingDeck, makeCard } from './deck';
@@ -13,7 +13,8 @@ export type RunPhase = 'map' | 'battle' | 'reward' | 'rest' | 'over';
 export type RewardStep =
   | { kind: 'unlock'; groupId: string }
   | { kind: 'cards'; options: Card[] }
-  | { kind: 'relics'; options: string[] };
+  | { kind: 'relics'; options: string[] }
+  | { kind: 'spells'; options: string[] };
 
 export interface RunState {
   version: 1;
@@ -22,6 +23,8 @@ export interface RunState {
   maxHp: number;
   deck: Card[];
   relics: string[];
+  /** Spell ids in the spell deck. */
+  spells: string[];
   map: MapNode[];
   position: string | null;
   visited: string[];
@@ -54,6 +57,7 @@ export function newRun(profile: Profile, ctx: BattleCtx, now: number): RunState 
     maxHp: CONFIG.player.startHp,
     deck,
     relics: [],
+    spells: STARTER_SPELLS.slice(),
     map: generateMap(1, hasDue(profile.srs, ctx.unlocked, now), ctx.rng),
     position: null,
     visited: [],
@@ -93,6 +97,7 @@ export function enterNode(run: RunState, nodeId: string, srs: SrsStats, ctx: Bat
     hp: run.hp,
     maxHp: run.maxHp,
     relics: run.relics,
+    spells: run.spells,
     reviewKana,
     ctx,
   });
@@ -135,6 +140,7 @@ export function finishBattle(run: RunState, profile: Profile, ctx: BattleCtx): {
 
   const rewards: RewardStep[] = [];
   if (node?.type !== 'boss') rewards.push({ kind: 'cards', options: cardRewardOptions(nextProfile, ctx) });
+  if (node?.type === 'elite') rewards.push({ kind: 'spells', options: spellOptions(next, CONFIG.spells.eliteSpellOptions, ctx.rng) });
   if (node?.type === 'elite') rewards.push({ kind: 'relics', options: relicOptions(next, CONFIG.run.eliteRelicOptions, ctx.rng) });
   if (node?.type === 'boss') {
     if (nextProfile.unlockedCount < UNLOCK_GROUPS.length) {
@@ -181,6 +187,19 @@ export function relicOptions(run: RunState, n: number, rng: Rng): string[] {
 
 export function takeCard(run: RunState, card: Card): RunState {
   return { ...run, deck: [...run.deck, card] };
+}
+
+export const STARTER_SPELLS = SPELLS.filter((s) => s.starter).map((s) => s.id);
+
+/** Spells you don't own yet first; duplicates only once you own them all. */
+export function spellOptions(run: RunState, n: number, rng: Rng): string[] {
+  const fresh = SPELLS.filter((s) => !run.spells.includes(s.id)).map((s) => s.id);
+  const pool = fresh.length >= n ? fresh : SPELLS.map((s) => s.id);
+  return shuffle(rng, pool).slice(0, n);
+}
+
+export function takeSpell(run: RunState, spellId: string): RunState {
+  return { ...run, spells: [...run.spells, spellId] };
 }
 
 export function takeRelic(run: RunState, relicId: string): RunState {
@@ -245,5 +264,10 @@ export function parseRun(raw: unknown): RunState | null {
   if (r.version !== 1 || !Array.isArray(r.deck) || !Array.isArray(r.map) || typeof r.hp !== 'number' || typeof r.floor !== 'number') return null;
   if (!r.phase || !['map', 'battle', 'reward', 'rest', 'over'].includes(r.phase)) return null;
   if (r.phase === 'battle' && !r.battle) return null;
-  return { rewards: [], relics: [], visited: [], afterRewards: 'map', ...r } as RunState;
+  const run = { rewards: [], relics: [], visited: [], afterRewards: 'map', spells: STARTER_SPELLS.slice(), ...r } as RunState;
+  // saves from before spells existed: give the battle an empty spellbook
+  if (run.battle && !Array.isArray(run.battle.spellHand)) {
+    run.battle = { ...run.battle, spellPile: run.spells.slice(), spellDiscard: [], spellHand: [], spellsCast: 0 };
+  }
+  return run;
 }

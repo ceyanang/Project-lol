@@ -24,6 +24,30 @@ Kana you miss come back more often (spaced repetition baked into the draw math).
    - ❌ wrong → lose **2 HP**, that card fizzles, kana marked missed. In a chain, one miss breaks the combo multiplier (the other correct cards still resolve at base value).
 5. **End Turn** → hand is discarded, enemy acts, repeat.
 
+### 🪄 Spells (spellbook)
+A second, separate deck of **spells** (`data/spells.json`) that aren't tied to any kana.
+- Each turn **2 spells** are drawn into the spellbook row. Each one is labelled with a
+  **random kana** (SRS-weighted, distinct, re-rolled every turn; due kana ×3 in review fights).
+- To cast, tap the spell and **type the kana's reading** on the in-game romaji keypad
+  (no device keyboard). Hepburn plus common alternates are accepted: si/shi, ti/chi, tu/tsu, hu/fu, zi/ji, nn/n.
+- **One spell per turn**, no energy cost. A wrong reading fizzles the spell and costs 2 HP
+  (Omamori protects). Correct/wrong counts toward SRS like any reading.
+- Start every run with Fire Talisman (10 dmg), Stone Ward (10 block) and Wind Slash (4×3).
+  Elite fights offer **1 of 2 new spells** (before the relic pick).
+
+| Spell | Effect |
+|---|---|
+| 🔥 Fire Talisman | 10 damage |
+| 🪨 Stone Ward | 10 block |
+| 🌪️ Wind Slash | 4 damage ×3 |
+| ⚡ Lightning Seal | 8 damage, ignores armor |
+| 💧 Spring Water | heal 7 |
+| 🪢 Binding Charm | enemy −3 strength |
+| 🖋️ Ink Burst | draw 2 kana cards |
+| 🧘 Zen Focus | +2 energy this turn |
+| 🪞 Yata Mirror | block = enemy's incoming attack |
+| 🥁 Thunder Drum | 16 damage |
+
 ### Prompt generation (keeps hands playable)
 - The guard prompt is taken from a Block card in your hand with probability `guardFromHandChance` (0.8), otherwise it is a decoy from your unlocked kana — so you have to actually read, not just pattern-match.
 - Weak spots: up to 2; at least one comes from an Attack card in hand when possible.
@@ -143,7 +167,7 @@ Due kana:
   Row 1 is always fights. The row before the boss always has at least one rest.
 - Rewards:
   - Fight → pick 1 of 3 kana cards (or skip). Offers are SRS-weighted and favour your newest row.
-  - Elite → card pick + pick 1 of 2 relics.
+  - Elite → card pick + pick 1 of 2 spells + pick 1 of 2 relics.
   - Boss → **unlock the next kana group** (its kana are added to your deck right away; the Word Scroll unlock adds 2 scrolls) + pick 1 of 3 relics + heal 50% of missing HP.
 - **Permadeath**: dying ends the run (map, deck, relics, HP gone). Unlocked kana and SRS stats are kept forever.
 

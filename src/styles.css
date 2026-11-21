@@ -424,3 +424,69 @@ button {
 .fx-reveal { color: var(--block); top: 32%; font-size: 1.3rem; }
 .fx-combo { font-size: 1.3rem; }
 .settings-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+
+/* ---------- Spells ---------- */
+.spellbook { display: flex; flex-direction: column; gap: 6px; }
+.spellbook-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; font-size: 0.9rem; gap: 8px; }
+.spell-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.spell-card {
+  display: flex; gap: 8px; align-items: center; text-align: left; min-height: 64px; padding: 6px 8px;
+  border-radius: 14px; border: 2px solid var(--purple); background: linear-gradient(160deg, #3b2a6e, #2a2050);
+  box-shadow: 0 0 10px rgba(180, 140, 255, 0.25);
+}
+.spell-card:disabled { opacity: 0.4; box-shadow: none; }
+.spell-kana {
+  flex: 0 0 auto; width: 44px; height: 48px; border-radius: 10px; background: #fffaf0; color: #2a1f3d;
+  font-size: 30px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.spell-info { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.spell-info b { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spell-info .small { font-size: 0.7rem; color: var(--muted); }
+.fx-spell { color: var(--purple); top: 8%; font-size: 1.3rem; }
+.fx-heal { color: var(--green); }
+
+.spell-cast .rc-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+.spell-cast-row { display: flex; gap: 12px; align-items: center; justify-content: center; }
+.spell-glyph { width: 110px; height: 110px; font-size: 72px; }
+.typed {
+  min-width: 120px; height: 64px; border-radius: 14px; background: var(--panel); border: 2px solid var(--panel2);
+  display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; letter-spacing: 0.06em;
+}
+.typed.is-ok { border-color: var(--green); color: var(--green); }
+.typed.is-bad { border-color: var(--red); color: var(--red); }
+.typed-placeholder { font-size: 1rem; color: var(--muted); font-weight: 600; letter-spacing: 0; }
+.caret { width: 2px; height: 30px; background: var(--gold); margin-left: 3px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.keypad { display: flex; flex-direction: column; gap: 8px; }
+.keypad-vowels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.keypad-consonants { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.key {
+  min-height: 48px; border-radius: 10px; border: 0; background: var(--panel2); font-size: 1.25rem; font-weight: 800;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+.key:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+.key-vowel { background: #5a4499; }
+.key-back { background: #5a2f4e; }
+.spell-actions { display: flex; gap: 8px; }
+.spell-list { display: flex; flex-direction: column; gap: 6px; }
+.spell-chip { background: var(--panel); border-radius: 10px; padding: 8px 10px; }
+/* battle sections keep their natural height; only the hand flexes */
+.battle > * { flex-shrink: 0; }
+.battle > .hand { flex-shrink: 1; min-height: 108px; }
+.battle .enemy-emoji { font-size: clamp(56px, 13dvh, 104px); }
+.spell-info b { white-space: normal; overflow: visible; }
+@media (max-height: 720px) {
+  .battle { gap: 6px; }
+  .battle .play-preview .small { display: none; }
+  .enemy { padding-block: 6px 8px; }
+}
+@media (max-height: 720px) {
+  .battle .enemy-emoji { font-size: clamp(48px, 9dvh, 80px); }
+  .battle .play-preview { min-height: 20px; }
+  .spell-card { min-height: 52px; }
+  .spell-info .small { display: none; }
+  .energy { width: 46px; height: 46px; }
+  .battle .hand { padding-top: 14px; min-height: 100px; }
+  .battle-top .icon-btn { min-height: 40px; }
+}
+.battle { overflow-y: auto; }

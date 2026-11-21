@@ -78,6 +78,20 @@ export interface Card {
   echo?: boolean;
 }
 
+export type SpellEffect = 'damage' | 'block' | 'heal' | 'weaken' | 'draw' | 'energy' | 'mirror';
+
+export interface SpellDef {
+  id: string;
+  name: string;
+  emoji: string;
+  effect: SpellEffect;
+  value: number;
+  hits?: number;
+  pierce?: boolean;
+  starter?: boolean;
+  description: string;
+}
+
 export interface UnlockGroup {
   id: string;
   label: string;

@@ -18,7 +18,8 @@ export type Sfx =
   | 'unlock'
   | 'step'
   | 'pickup'
-  | 'heal';
+  | 'heal'
+  | 'spell';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -140,6 +141,11 @@ export function playSfx(name: Sfx) {
       case 'pickup':
         tone(ac, { freq: 784, dur: 0.08, type: 'square', vol: 0.25 });
         tone(ac, { freq: 1175, dur: 0.14, type: 'square', at: 0.07, vol: 0.25 });
+        break;
+      case 'spell':
+        noise(ac, { dur: 0.3, vol: 0.35, cutoff: 3500 });
+        tone(ac, { freq: 300, to: 1200, dur: 0.3, type: 'triangle', vol: 0.5 });
+        tone(ac, { freq: 1500, dur: 0.18, type: 'sine', at: 0.22, vol: 0.4 });
         break;
       case 'heal':
         tone(ac, { freq: 392, to: 784, dur: 0.45, type: 'sine', vol: 0.5 });

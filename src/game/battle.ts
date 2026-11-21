@@ -1,8 +1,9 @@
 import { CONFIG } from '../config';
-import { KANA_BY_ID, VOCAB_BY_ID, isVoiced } from '../data';
+import { KANA_BY_ID, SPELL_BY_ID, VOCAB_BY_ID, isVoiced } from '../data';
 import type { Card, EnemyDef, EnemyTier, Intent, Vocab } from '../types';
 import { cardCost, cardRomaji, formableWords, makeCard, matchWord, weightedDraw, wordAssist } from './deck';
-import { type Rng, chance, pick, shuffle, weightedPick } from './rng';
+import { type Rng, chance, pick, shuffle, weightedPick, weightedSample } from './rng';
+import { isCorrectTyped } from './romaji';
 import type { Answer } from './srs';
 
 export interface EnemyState {
@@ -29,15 +30,27 @@ export interface Prompts {
   word: string | null;
 }
 
-export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'combo' | 'enemyBlock' | 'buff' | 'reveal';
+export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'combo' | 'enemyBlock' | 'buff' | 'reveal' | 'spell' | 'heal';
 export interface Fx {
   id: number;
   kind: FxKind;
   text: string;
 }
 
+/** A spell in this turn's spellbook, labelled with the kana you must type to cast it. */
+export interface SpellInHand {
+  uid: string;
+  spellId: string;
+  kana: string;
+}
+
 export interface BattleState {
   enemy: EnemyState;
+  spellPile: string[];
+  spellDiscard: string[];
+  spellHand: SpellInHand[];
+  /** Spells cast this turn (limit CONFIG.spells.castsPerTurn). */
+  spellsCast: number;
   hand: Card[];
   drawPile: Card[];
   discard: Card[];
@@ -99,7 +112,7 @@ export function currentIntent(e: EnemyState): Intent {
 
 /** Damage per hit of the current intent, including floor scaling and strength. */
 export function intentDamage(e: EnemyState, intent: Intent = currentIntent(e)): number {
-  return Math.round(intent.value * e.dmgScale) + e.strength;
+  return Math.max(0, Math.round(intent.value * e.dmgScale) + e.strength);
 }
 
 export function isAttackIntent(i: Intent): boolean {
@@ -121,6 +134,7 @@ export function createBattle(opts: {
   hp: number;
   maxHp: number;
   relics: string[];
+  spells?: string[];
   reviewKana?: string[];
   ctx: BattleCtx;
 }): BattleState {
@@ -129,6 +143,10 @@ export function createBattle(opts: {
   const echoes = reviewKana.map((k, i) => makeCard(k, i % 2 ? 'block' : 'attack', true));
   const base: BattleState = {
     enemy: createEnemy(opts.enemy, opts.floor),
+    spellPile: shuffle(ctx.rng, opts.spells ?? []),
+    spellDiscard: [],
+    spellHand: [],
+    spellsCast: 0,
     hand: [],
     drawPile: shuffle(ctx.rng, [...opts.deck, ...echoes]),
     discard: [],
@@ -215,7 +233,102 @@ export function startPlayerTurn(b: BattleState, ctx: BattleCtx): BattleState {
     energy: maxEnergy(b.relics),
   };
   next = drawCards(next, handSize(b.relics), ctx);
+  next = drawSpells(next, ctx);
   return { ...next, prompts: generatePrompts(next, ctx) };
+}
+
+// ---------------------------------------------------------------- spells
+
+let spellUid = 0;
+
+/** Discard last turn's spellbook, draw new spells and label each with a fresh SRS-weighted kana. */
+export function drawSpells(b: BattleState, ctx: BattleCtx): BattleState {
+  let pile = b.spellPile ?? [];
+  let discard = [...(b.spellDiscard ?? []), ...(b.spellHand ?? []).map((s) => s.spellId)];
+  const n = Math.min(CONFIG.spells.drawPerTurn, pile.length + discard.length);
+  if (pile.length < n) {
+    pile = [...pile, ...shuffle(ctx.rng, discard)];
+    discard = [];
+  }
+  const drawn = pile.slice(0, n);
+  const review = new Set(b.reviewKana);
+  const kana = weightedSample(ctx.rng, ctx.unlocked, n, (k) => ctx.weightOf(k) * (review.has(k) ? 3 : 1));
+  const spellHand = drawn.map((spellId, i) => ({ uid: `s${++spellUid}`, spellId, kana: kana[i % Math.max(1, kana.length)] }));
+  return { ...b, spellPile: pile.slice(n), spellDiscard: discard, spellHand, spellsCast: 0 };
+}
+
+export function canCastSpell(b: BattleState): boolean {
+  return b.outcome === 'ongoing' && (b.spellsCast ?? 0) < CONFIG.spells.castsPerTurn && (b.spellHand ?? []).length > 0;
+}
+
+/** Block the mirror spell would give right now. */
+export function incomingDamage(e: EnemyState): number {
+  const i = currentIntent(e);
+  if (!isAttackIntent(i)) return 0;
+  return intentDamage(e, i) * (i.type === 'multi' ? (i.times ?? 2) : 1);
+}
+
+/** Cast a spell by typing its kana's reading. Wrong → fizzles and costs HP. Either way it uses the turn's cast. */
+export function castSpell(b: BattleState, uid: string, typed: string, ctx: BattleCtx): PlayResult {
+  const s = b.spellHand.find((x) => x.uid === uid);
+  if (!s || !canCastSpell(b)) return { battle: b, answers: [] };
+  const def = SPELL_BY_ID[s.spellId];
+  const ok = isCorrectTyped(s.kana, typed);
+  let next: BattleState = {
+    ...b,
+    spellsCast: b.spellsCast + 1,
+    spellHand: b.spellHand.filter((x) => x.uid !== uid),
+    spellDiscard: [...b.spellDiscard, s.spellId],
+    stats: { ...b.stats, correct: b.stats.correct + (ok ? 1 : 0), wrong: b.stats.wrong + (ok ? 0 : 1) },
+  };
+  const answers = [{ id: s.kana, correct: ok }];
+  if (!ok) {
+    if (next.relics.includes('omamori') && !next.freeMissUsed) {
+      next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
+    } else {
+      next = { ...next, playerHp: Math.max(0, next.playerHp - CONFIG.spells.wrongHpCost) };
+      next = pushFx(next, 'miss', `Fizzle! -${CONFIG.spells.wrongHpCost}`);
+      if (next.playerHp <= 0) next = { ...next, outcome: 'lost' };
+    }
+    return { battle: log(next, `${def.name} fizzled.`), answers };
+  }
+  next = pushFx(log(next, `You cast ${def.name}!`), 'spell', `${def.emoji} ${def.name}!`);
+  switch (def.effect) {
+    case 'damage': {
+      let dealt = 0;
+      for (let i = 0; i < (def.hits ?? 1) && next.enemy.hp > 0; i++) {
+        const r = hitEnemy(next, def.value, !!def.pierce);
+        next = r.b;
+        dealt += r.dealt;
+      }
+      next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!');
+      break;
+    }
+    case 'block':
+      next = pushFx({ ...next, playerBlock: next.playerBlock + def.value }, 'block', `+${def.value} 🛡`);
+      break;
+    case 'mirror': {
+      const amt = incomingDamage(next.enemy);
+      next = pushFx({ ...next, playerBlock: next.playerBlock + amt }, 'block', `+${amt} 🛡`);
+      break;
+    }
+    case 'heal': {
+      const amt = Math.min(def.value, next.playerMaxHp - next.playerHp);
+      next = pushFx({ ...next, playerHp: next.playerHp + amt }, 'heal', `+${amt} ❤️`);
+      break;
+    }
+    case 'weaken':
+      next = pushFx({ ...next, enemy: { ...next.enemy, strength: next.enemy.strength - def.value } }, 'enemyBlock', `-${def.value} 💪`);
+      break;
+    case 'draw':
+      next = drawCards(next, def.value, ctx);
+      break;
+    case 'energy':
+      next = { ...next, energy: next.energy + def.value };
+      break;
+  }
+  if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`);
+  return { battle: next, answers };
 }
 
 function pushFx(b: BattleState, kind: FxKind, text: string): BattleState {

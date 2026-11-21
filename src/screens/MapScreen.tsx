@@ -2,7 +2,7 @@ import { useState } from 'react';
 import HpBar from '../components/HpBar';
 import KanaCard from '../components/KanaCard';
 import { CONFIG } from '../config';
-import { RELIC_BY_ID } from '../data';
+import { RELIC_BY_ID, SPELL_BY_ID } from '../data';
 import { cardCost } from '../game/deck';
 import { cardValue } from '../game/battle';
 import { type MapNode, NODE_ICON, NODE_LABEL, reachableNodes } from '../game/map';
@@ -109,6 +109,14 @@ export default function MapScreen({ run, bossEmoji, onEnter, onMenu }: Props) {
             <div className="deck-grid">
               {run.deck.map((c) => (
                 <KanaCard key={c.uid} card={c} size="mini" cost={cardCost(c)} value={cardValue(c, { prompts: { guard: null, weak: [], word: null }, relics: run.relics })} revealRomaji />
+              ))}
+            </div>
+            <h3 className="sheet-title">Spellbook ({run.spells.length})</h3>
+            <div className="spell-list">
+              {run.spells.map((id, i) => (
+                <span key={`${id}${i}`} className="spell-chip">
+                  {SPELL_BY_ID[id]?.emoji} <b>{SPELL_BY_ID[id]?.name}</b> <span className="muted small">{SPELL_BY_ID[id]?.description}</span>
+                </span>
               ))}
             </div>
             <button type="button" className="btn btn-wide" onClick={() => setShowDeck(false)}>

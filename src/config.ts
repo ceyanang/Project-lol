@@ -48,6 +48,13 @@ export const CONFIG = {
     masteredStreak: 6,
     reviewIntervalsDays: [1, 3, 7, 14],
   },
+  spells: {
+    /** Spells drawn into the spellbook each turn. */
+    drawPerTurn: 2,
+    castsPerTurn: 1,
+    wrongHpCost: 2,
+    eliteSpellOptions: 2,
+  },
   scaling: {
     hpPerFloor: 0.3,
     damagePerFloor: 0.2,
