@@ -8,13 +8,16 @@ import {
   type Fx,
   type PlayPlan,
   type PlayStep,
+  blindView,
   cardMatch,
   cardValue,
   currentIntent,
   intentDamage,
   isAttackIntent,
   planPlay,
+  promptRomaji,
 } from '../game/battle';
+import { CONFIG } from '../config';
 import { cardCost } from '../game/deck';
 import type { Vocab } from '../types';
 
@@ -56,7 +59,11 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
     setSelected((s) => s.filter((u) => battle.hand.some((c) => c.uid === u)));
   }, [battle.hand]);
 
+  // The real plan is what gets resolved; the preview uses the blind view so it can't leak prompt matches.
   const plan = useMemo(() => planPlay(battle, selected, { words }), [battle, selected, words]);
+  const seen = useMemo(() => blindView(battle), [battle]);
+  const preview = useMemo(() => planPlay(seen, selected, { words }), [seen, selected, words]);
+  const hints = CONFIG.combat.showMatchHints;
   const enemyHit = fx.some((f) => f.kind === 'enemyHit');
   const playerHit = fx.some((f) => f.kind === 'playerHit' || f.kind === 'miss');
 
@@ -127,7 +134,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         <HpBar hp={e.hp} max={e.maxHp} block={e.block} label="Enemy HP" />
         <div className="fx-layer">
           {fx
-            .filter((f) => f.kind === 'enemyHit' || f.kind === 'enemyBlock' || f.kind === 'buff' || f.kind === 'combo')
+            .filter((f) => f.kind === 'enemyHit' || f.kind === 'enemyBlock' || f.kind === 'buff' || f.kind === 'combo' || f.kind === 'reveal')
             .map((f) => (
               <span key={f.id} className={`fx fx-${f.kind}`}>
                 {f.text}
@@ -160,9 +167,9 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
           <span className="muted small">Tap a card · tap several to spell a word</span>
         ) : plan.valid ? (
           <span>
-            {plan.label && <b className="preview-label jp">{plan.label} </b>}
-            {plan.damage > 0 && <span className="c-attack">⚔️ {plan.damage} </span>}
-            {plan.block > 0 && <span className="c-block">🛡 {plan.block} </span>}
+            {preview.label && <b className="preview-label jp">{preview.label} </b>}
+            {preview.damage > 0 && <span className="c-attack">⚔️ {preview.damage}{hints ? '' : '+'} </span>}
+            {preview.block > 0 && <span className="c-block">🛡 {preview.block}{hints ? '' : '+'} </span>}
             <span className="muted">({plan.cost}⚡)</span>
           </span>
         ) : (
@@ -198,8 +205,8 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
               key={c.uid}
               card={c}
               cost={cost}
-              value={cardValue(c, battle)}
-              match={cardMatch(c, battle.prompts)}
+              value={cardValue(c, seen)}
+              match={hints ? cardMatch(c, battle.prompts) : null}
               missed={c.type !== 'word' && !!missed?.has(c.ref)}
               selected={idx >= 0}
               order={selected.length > 1 && idx >= 0 ? idx + 1 : undefined}
@@ -231,6 +238,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
           steps={checking.steps}
           unlocked={unlocked}
           title={checking.word ? `Spell ${checking.word.reading}` : undefined}
+          decoys={CONFIG.combat.promptDecoysInCheck ? promptRomaji(battle.prompts) : []}
           onAnswer={onAnswer}
           onDone={finishCheck}
           onCancel={() => setChecking(null)}

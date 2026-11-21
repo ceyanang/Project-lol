@@ -14,13 +14,15 @@ function confusablesOf(char: string): string[] {
 const vowelOf = (r: string) => r.slice(-1);
 
 /** n romaji options for a kana: the correct one + distractors, shuffled. */
-export function romajiOptions(kanaId: string, unlocked: readonly string[], rng: Rng, n = 4): string[] {
+export function romajiOptions(kanaId: string, unlocked: readonly string[], rng: Rng, n = 4, prefer: readonly string[] = []): string[] {
   const k = KANA_BY_ID[kanaId];
   const correct = k.romaji;
   const chosen = new Set<string>([correct]);
   const add = (r: string | undefined) => {
     if (r && chosen.size < n) chosen.add(r);
   };
+  // e.g. the enemy's prompt readings: picking a card "because it must be ka" is still tested
+  for (const r of shuffle(rng, prefer).slice(0, n - 2)) add(r);
   const unlockedSet = new Set(unlocked);
   const romajiOf = (c: string) => KANA_BY_ID[c]?.romaji;
 

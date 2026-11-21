@@ -20,6 +20,13 @@ export const CONFIG = {
   combat: {
     /** false = unmatched cards still play at base value (see PLAN.md §1). */
     requireMatch: false,
+    /**
+     * false = cards never reveal which prompt they match before you play them
+     * (no glow, no ×2 preview). The bonus is revealed after the play.
+     */
+    showMatchHints: false,
+    /** Prompt readings added as distractors in the reading check, so guessing from the prompt can fail. */
+    promptDecoysInCheck: true,
     weakSpotMultiplier: 2,
     perfectGuardMultiplier: 2,
     weakSpotCount: 2,

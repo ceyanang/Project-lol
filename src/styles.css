@@ -421,3 +421,5 @@ button {
   background: #12101f; border: 2px solid var(--gold); border-radius: 14px; padding: 12px; font-size: 0.85rem;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); animation: slideUp 200ms ease-out; text-align: left; width: auto;
 }
+.fx-reveal { color: var(--block); top: 32%; font-size: 1.3rem; }
+.fx-combo { font-size: 1.3rem; }

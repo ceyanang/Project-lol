@@ -9,6 +9,8 @@ interface Props {
   steps: PlayStep[];
   unlocked: readonly string[];
   title?: string;
+  /** Readings to include as distractors when possible (e.g. the enemy's prompts). */
+  decoys?: readonly string[];
   /** Called after each answer, e.g. to speak the kana. */
   onAnswer?: (step: PlayStep, correct: boolean) => void;
   onDone: (results: boolean[]) => void;
@@ -19,7 +21,7 @@ interface Props {
  * The reading check: one big kana, four romaji tiles. No keyboard — tiles only.
  * For chains, steps through each kana in order.
  */
-export default function ReadingCheck({ steps, unlocked, title, onAnswer, onDone, onCancel }: Props) {
+export default function ReadingCheck({ steps, unlocked, title, decoys = [], onAnswer, onDone, onCancel }: Props) {
   const [index, setIndex] = useState(0);
   const [results, setResults] = useState<boolean[]>([]);
   const [picked, setPicked] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export default function ReadingCheck({ steps, unlocked, title, onAnswer, onDone,
     () =>
       step.kind === 'meaning'
         ? meaningOptions(step.ref, defaultRng, CONFIG.combat.readingOptions)
-        : romajiOptions(step.ref, unlocked, defaultRng, CONFIG.combat.readingOptions),
+        : romajiOptions(step.ref, unlocked, defaultRng, CONFIG.combat.readingOptions, decoys),
     [index, step.ref, step.kind],
   );
 

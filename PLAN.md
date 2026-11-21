@@ -29,6 +29,14 @@ Kana you miss come back more often (spaced repetition baked into the draw math).
 - Weak spots: up to 2; at least one comes from an Attack card in hand when possible.
 - Prompts are chosen with SRS weights, so kana you miss are asked about more.
 
+### No giveaways (`showMatchHints: false`)
+Cards never reveal which prompt they match before you play them: no glow, no badge,
+and the card and preview show base values (`⚔️ 6+`). You find the match by reading.
+The bonus is revealed after the play ("🎯 Weak spot!", "✨ Perfect Guard!").
+The reading check also uses the current prompt readings as distractors
+(`promptDecoysInCheck: true`), so playing い "because the prompt says o" and tapping `o` fails.
+Set `showMatchHints: true` for an easier mode with glowing matches.
+
 ### Matching rule
 The original pitch says a card *must* match a prompt (or be in a word) to be played.
 In testing that produced dead hands, so the default is **`requireMatch: false`**:

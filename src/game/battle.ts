@@ -29,7 +29,7 @@ export interface Prompts {
   word: string | null;
 }
 
-export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'combo' | 'enemyBlock' | 'buff';
+export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'combo' | 'enemyBlock' | 'buff' | 'reveal';
 export interface Fx {
   id: number;
   kind: FxKind;
@@ -430,8 +430,13 @@ export function resolvePlay(b: BattleState, plan: PlayPlan, results: readonly bo
   let totalBlock = 0;
   let misses = 0;
 
+  let weakHits = 0;
+  let guards = 0;
   plan.cards.forEach((card, i) => {
     const ok = !!results[i];
+    const m = ok ? cardMatch(card, b.prompts) : null;
+    if (m === 'weak' && card.type !== 'word') weakHits++;
+    if (m === 'guard') guards++;
     if (card.type === 'word') {
       VOCAB_BY_ID[card.ref].kana.forEach((k) => answers.push({ id: k, correct: ok }));
     } else {
@@ -468,6 +473,8 @@ export function resolvePlay(b: BattleState, plan: PlayPlan, results: readonly bo
     next = pushFx(next, 'block', `+${Math.round(totalBlock)} 🛡`);
   }
   if (totalDamage > 0 || plan.damage > 0) next = pushFx(next, 'enemyHit', totalDamage > 0 ? `-${totalDamage}` : 'Armor!');
+  if (weakHits) next = pushFx(next, 'combo', weakHits > 1 ? `🎯 Weak spots ×${weakHits}!` : '🎯 Weak spot!');
+  if (guards) next = pushFx(next, 'reveal', '✨ Perfect Guard!');
   if (plan.word && allCorrect) {
     next = pushFx(next, 'combo', `${plan.word.reading}! ×${plan.multiplier.toFixed(1).replace(/\.0$/, '')}`);
     next = log(next, `Combo ${plan.word.reading} (${plan.word.meaning})!`);
@@ -493,6 +500,17 @@ export function resolvePlay(b: BattleState, plan: PlayPlan, results: readonly bo
   if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`);
   else if (next.playerHp <= 0) next = { ...next, outcome: 'lost' };
   return { battle: next, answers };
+}
+
+/** The battle as the player is allowed to see it when match hints are off: no prompt matching. */
+export function blindView(b: BattleState): BattleState {
+  if (CONFIG.combat.showMatchHints) return b;
+  return { ...b, prompts: { guard: null, weak: [], word: null } };
+}
+
+/** Readings currently shown as prompts (used as decoys in the reading check). */
+export function promptRomaji(p: Prompts): string[] {
+  return [...(p.guard ? [p.guard] : []), ...p.weak];
 }
 
 /** Kana id whose romaji is shown in a prompt — handy for speech. */
