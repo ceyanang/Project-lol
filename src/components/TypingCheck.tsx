@@ -44,7 +44,7 @@ export default function TypingCheck({ kana, title, onAnswer, onDone, onCancel, k
   }
 
   return (
-    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Typing check">
+    <div className={`sheet-backdrop ${keyboardMode === 'phone' ? 'sheet-top' : ''}`} role="dialog" aria-modal="true" aria-label="Typing check">
       <div className="sheet typing-check">
         <div className="rc-head">
           <span className="rc-title">{title ?? 'Type the reading'}</span>

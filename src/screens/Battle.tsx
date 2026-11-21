@@ -33,8 +33,6 @@ const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
 export default function Battle({ battle, floor, onType, onConfirm, onMenu, keyboardMode }: Props) {
   const [fx, setFx] = useState<Fx[]>([]);
-  // phone keyboard open → compact layout so everything fits above it
-  const [typing, setTyping] = useState(false);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
   const intent = currentIntent(e);
@@ -72,7 +70,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
   const resist = e.resist ? ELEMENT_META[e.resist] : null;
 
   return (
-    <main className={`screen battle ${typing ? 'is-typing' : ''}`}>
+    <main className={`screen battle ${keyboardMode === 'phone' ? 'layout-phone' : ''}`}>
       <header className="battle-top">
         <span className="pill">Floor {floor}</span>
         <span className="pill">Turn {battle.turn}</span>
@@ -167,21 +165,26 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
           onChange={onType}
           onEnter={onConfirm}
           disabled={busy}
-          autoFocus={keyboardMode === 'phone' && typing}
-          onTypingChange={setTyping}
           placeholder={
             battle.pending === 'enemy'
               ? `${e.emoji} Enemy's turn…`
               : battle.pending === 'deal'
                 ? 'Dealing your moves…'
                 : keyboardMode === 'phone'
-                  ? 'tap to type · Go ends turn'
+                  ? 'type the reading'
                   : 'type a reading · ⏎ ends turn'
           }
           left={
-            <span className="pile" aria-label="Draw pile">
-              🂠 {battle.drawPile.length}
-            </span>
+            keyboardMode === 'phone' ? (
+              <span className="pile dock-hp" aria-label={`Your HP ${battle.playerHp}${battle.playerBlock ? `, block ${battle.playerBlock}` : ''}`}>
+                ❤️ {battle.playerHp}
+                {battle.playerBlock > 0 && <small> 🛡{battle.playerBlock}</small>}
+              </span>
+            ) : (
+              <span className="pile" aria-label="Draw pile">
+                🂠 {battle.drawPile.length}
+              </span>
+            )
           }
           right={
             <span className="pile" aria-label="Discard pile">
@@ -190,6 +193,11 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
           }
         />
       </section>
+      {keyboardMode === 'phone' && (
+        <div className="keyboard-space" aria-hidden="true">
+          <span>📱 your keyboard opens here</span>
+        </div>
+      )}
     </main>
   );
 }

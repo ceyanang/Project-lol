@@ -455,30 +455,95 @@ button {
 .typed-input::placeholder { font-size: 0.95rem; font-weight: 600; letter-spacing: 0; color: var(--muted); }
 .typed-input:focus { border-color: var(--gold); }
 .dock-enter { flex: 0 0 auto; max-width: none; width: 52px; min-height: 48px; }
-
-/* while the phone keyboard is open, the app fits the visible area above it */
-html.phone-kbd-open, html.phone-kbd-open body { overflow: hidden; }
-html.phone-kbd-open body { position: fixed; inset: 0; }
-html.phone-kbd-open .app { height: var(--app-h, 100dvh); transform: translateY(var(--app-top, 0px)); }
-
-/* compact battle while typing with the phone keyboard */
-.battle.is-typing { gap: 6px; padding-top: 6px; }
-.battle.is-typing .battle-top { display: none; }
-.battle.is-typing .enemy { padding-block: 4px 6px; gap: 3px; }
-.battle.is-typing .enemy-emoji { font-size: 34px; }
-.battle.is-typing .intent-bubble { top: 2px; font-size: 0.85rem; padding: 2px 8px; }
-.battle.is-typing .move-card { min-height: 44px; padding: 4px 6px; }
-.battle.is-typing .move-label { height: 36px; min-width: 36px; font-size: 1.5rem; }
-.battle.is-typing .kbd-dock { padding-block: 8px; }
 .reading-input.dock-row { flex-direction: row; align-items: center; gap: 8px; }
-.battle.is-typing .turn-result:not(.is-ok):not(.is-bad) { display: none; }
-/* very little room above the phone keyboard (small phones): drop the enemy art */
-html.phone-kbd-tight .battle.is-typing .enemy-emoji { display: none; }
-html.phone-kbd-tight .battle.is-typing .move-card { min-height: 40px; }
-html.phone-kbd-tight .battle.is-typing .move-label { height: 32px; min-width: 32px; font-size: 1.3rem; }
-html.phone-kbd-tight .battle.is-typing .kbd-dock { padding-block: 6px; }
-html.phone-kbd-tight .battle.is-typing .matchups { flex-wrap: nowrap; gap: 4px; }
-html.phone-kbd-tight .battle.is-typing .matchup { font-size: 0.7rem; padding: 2px 7px; white-space: nowrap; }
-html.phone-kbd-tight .battle.is-typing { gap: 5px; }
-/* the typed field never slides under the phone keyboard; if space runs out, the top scrolls instead */
-.battle.is-typing .kbd-dock { position: sticky; bottom: -10px; z-index: 5; }
+
+/* ---------- Phone keyboard mode: fixed top-half layout ----------
+   The phone keyboard covers roughly the bottom half of the screen. Instead of resizing
+   when it opens (which jumps), Phone mode always keeps everything you need in the top
+   half and leaves the bottom free for the keyboard. Nothing here depends on focus. */
+.battle.layout-phone { position: relative; gap: 6px; padding-top: 6px; overflow: hidden; }
+.layout-phone .battle-top { position: absolute; top: 6px; left: 10px; z-index: 6; }
+.layout-phone .battle-top .pill, .layout-phone .relic-strip { display: none; }
+.layout-phone .battle-top .icon-btn { min-width: 38px; min-height: 38px; font-size: 1rem; }
+
+.layout-phone .enemy {
+  order: 1; display: grid; grid-template-columns: 50px 1fr; grid-template-areas: 'art name' 'art hp' 'art match';
+  align-items: center; column-gap: 10px; row-gap: 3px; padding: 6px 10px 6px 50px; border-radius: 16px;
+}
+.layout-phone .enemy-emoji { grid-area: art; font-size: 42px; }
+.layout-phone .enemy-name { grid-area: name; justify-self: start; font-size: 0.95rem; padding-right: 72px; }
+.layout-phone .enemy .hpbar { grid-area: hp; }
+.layout-phone .matchups { grid-area: match; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; }
+.layout-phone .matchup { font-size: 0.7rem; padding: 2px 7px; white-space: nowrap; }
+.layout-phone .intent-bubble { top: 6px; right: 8px; font-size: 0.85rem; padding: 2px 8px; }
+.layout-phone .player-bar { order: 2; }
+.layout-phone .turn-result { order: 3; font-size: 0.8rem; min-height: 1.15em; }
+.layout-phone .moves { order: 4; gap: 6px; }
+.layout-phone .move-card { min-height: 48px; padding: 4px 6px; }
+.layout-phone .move-label { height: 38px; min-width: 38px; font-size: 1.55rem; }
+.layout-phone .kbd-dock {
+  order: 5; margin: 0; border-radius: 14px; padding: 6px 8px; box-shadow: none; background: var(--panel);
+}
+.layout-phone .keyboard-space {
+  order: 6; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--panel2); border-radius: 16px; color: var(--muted); font-size: 0.85rem; margin-bottom: 4px;
+}
+
+/* Quiz in Phone mode: the panel opens from the top so the keyboard can't cover it */
+.sheet-backdrop.sheet-top { align-items: flex-start; }
+.sheet-top .sheet {
+  border-radius: 0 0 22px 22px; padding: 12px 16px 16px; max-height: 55%;
+  animation: slideDown 180ms ease-out; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+@keyframes slideDown { from { transform: translateY(-40px); opacity: 0.5; } }
+.sheet-top .rc-head { order: 1; }
+.sheet-top .tc-row { order: 2; }
+.sheet-top .tc-glyph { width: 76px; height: 76px; font-size: 50px; border-radius: 16px; }
+.sheet-top .reading-input { order: 3; }
+.sheet-top .rc-feedback { order: 4; gap: 2px; }
+.sheet-top .rc-feedback .btn { display: none; } /* Go/⏎ continues */
+.sheet-top > .sheet > .btn-ghost { order: 5; }
+.dock-hp { color: var(--ink); font-weight: 800; min-width: 44px; white-space: nowrap; }
+.layout-phone .player-bar { order: 6; }
+
+/* short screens (e.g. iPhone SE in Safari): tighter, still static (no keyboard-driven changes) */
+@media (max-height: 600px) {
+  .battle.layout-phone { gap: 5px; padding-top: 4px; }
+  .layout-phone .enemy { grid-template-columns: 38px 1fr; padding: 4px 8px 4px 48px; row-gap: 2px; }
+  .layout-phone .enemy-emoji { font-size: 32px; }
+  .layout-phone .enemy-name { font-size: 0.85rem; }
+  .layout-phone .move-card { min-height: 42px; padding: 3px 6px; }
+  .layout-phone .move-label { height: 32px; min-width: 32px; font-size: 1.3rem; }
+  .layout-phone .move-name { font-size: 0.78rem; }
+  .layout-phone .move-sum { font-size: 0.7rem; }
+  .layout-phone .kbd-dock { padding: 4px 6px; }
+  .layout-phone .typed-input { min-height: 42px; }
+  .layout-phone .dock-enter { min-height: 42px; }
+  .layout-phone .turn-result { font-size: 0.75rem; }
+}
+/* intent sits in the name row (no overlap with the HP bar) */
+.layout-phone .enemy { grid-template-columns: 50px 1fr auto; grid-template-areas: 'art name intent' 'art hp hp' 'art match match'; }
+.layout-phone .intent-bubble { position: static; grid-area: intent; justify-self: end; }
+.layout-phone .enemy-name { padding-right: 0; }
+@media (max-height: 600px) {
+  .layout-phone .enemy { grid-template-columns: 38px 1fr auto; }
+}
+/* quiz in Phone mode: kana and typed box side by side → a short panel */
+.sheet-top .sheet { display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: 12px; row-gap: 8px; align-items: center; }
+.sheet-top .rc-head { grid-column: 1 / -1; grid-row: 1; }
+.sheet-top .tc-row { grid-column: 1; grid-row: 2; }
+.sheet-top .reading-input { grid-column: 2; grid-row: 2; }
+.sheet-top .rc-feedback { grid-column: 1 / -1; grid-row: 3; }
+.sheet-top .rc-feedback p { font-size: 0.85rem; }
+.sheet-top > .sheet > .btn-ghost { grid-column: 1 / -1; grid-row: 4; }
+@media (max-height: 600px) {
+  .battle.layout-phone { gap: 4px; }
+  .layout-phone .kbd-dock { padding: 3px 6px; }
+  .layout-phone .move-card { min-height: 40px; }
+  .layout-phone .moves { gap: 5px; }
+}
+@media (max-height: 600px) {
+  .layout-phone .turn-result { font-size: 0.72rem; min-height: 0; line-height: 1.2; }
+  .layout-phone .enemy { padding-block: 3px; }
+  .layout-phone .enemy .hpbar { height: 15px; }
+}

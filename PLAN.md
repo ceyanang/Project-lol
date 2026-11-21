@@ -19,8 +19,11 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
    - **⌨️ Game keyboard** (default): in-game QWERTY docked at the bottom (a physical keyboard
      works too: letters, Backspace, Enter). The phone's own keyboard never opens.
    - **📱 Phone keyboard**: a real text field with autocorrect, autocapitalize, spellcheck and
-     autofill off; its Go key ends the turn. While it's open the game shrinks to the visible
-     area above it (compact battle layout), and focus is kept between turns so it stays open.
+     autofill off; its Go key ends the turn. Phone mode uses a **fixed top-half layout**: compact
+     enemy bar, moves, typed field (with ❤️ HP) all in the top ~45% of the screen, and the bottom
+     is left empty for the keyboard. Nothing resizes or moves when the keyboard opens or closes
+     (no viewport tricks), and focus stays in the field between turns. The Skip-ahead Quiz opens
+     as a short panel from the top in this mode.
      Use an English/latin keyboard layout (a Japanese IME would turn letters into kana). Hepburn and common alternates are
    accepted: `shi/si`, `chi/ti`, `tsu/tu`, `fu/hu`, `ji/zi/di`, `zu/du`, `n/nn`, `wo/o`.
    Nothing is highlighted while you type, so you can't probe for the answer.

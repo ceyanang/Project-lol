@@ -19,43 +19,6 @@ import Title from './screens/Title';
 
 type View = 'title' | 'library' | 'quiz' | 'run';
 
-/**
- * While a text field is focused (phone keyboard open), size the app to the *visible*
- * viewport so the keyboard never covers the game or shoves it off screen.
- * Only active while typing, so pinch-zoom and normal layout are untouched.
- */
-function useFitToVisibleViewport() {
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const root = document.documentElement;
-    const update = () => {
-      const typing = document.activeElement instanceof HTMLInputElement;
-      if (typing) {
-        root.style.setProperty('--app-h', `${vv.height}px`);
-        root.style.setProperty('--app-top', `${vv.offsetTop}px`);
-        root.classList.add('phone-kbd-open');
-        root.classList.toggle('phone-kbd-tight', vv.height < 380);
-      } else {
-        root.style.removeProperty('--app-h');
-        root.style.removeProperty('--app-top');
-        root.classList.remove('phone-kbd-open', 'phone-kbd-tight');
-      }
-    };
-    const later = () => window.setTimeout(update, 50);
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    document.addEventListener('focusin', update);
-    document.addEventListener('focusout', later);
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-      document.removeEventListener('focusin', update);
-      document.removeEventListener('focusout', later);
-    };
-  }, []);
-}
-
 export default function App() {
   const [profile, setProfileState] = useState<Profile>(() => loadProfile());
   // Handlers read/write the latest profile through this ref so delayed callbacks never clobber SRS updates.
@@ -69,7 +32,6 @@ export default function App() {
 
   useEffect(() => saveProfile(profile), [profile]);
   useEffect(() => setSfxEnabled(profile.settings.sfx), [profile.settings.sfx]);
-  useFitToVisibleViewport();
 
   // Universal button tick. Cards, answer tiles and map nodes have their own sounds.
   useEffect(() => {
