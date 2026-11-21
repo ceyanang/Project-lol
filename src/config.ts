@@ -3,7 +3,7 @@
  */
 export const CONFIG = {
   player: {
-    startHp: 50,
+    startHp: 70,
     /** Starting deck: move ids (copies = more likely to be dealt). */
     starterDeck: ['strike', 'strike', 'strike', 'guard', 'guard', 'guard', 'fire_talisman', 'water_jet', 'wind_slash'],
   },
@@ -20,6 +20,9 @@ export const CONFIG = {
     wordMoveChance: 0.25,
     maxWordLength: 3,
     wordMultiplier: 1.5,
+    /** Pause after your move before the enemy acts, and after the enemy before the next deal (ms). */
+    enemyDelayMs: 1300,
+    dealDelayMs: 900,
     /** Reading-check tiles in Study drills. */
     readingOptions: 4,
   },
@@ -35,6 +38,10 @@ export const CONFIG = {
     reviewFightBoost: 3,
   },
   scaling: {
+    /** Multiplies every enemy's base HP from data/enemies.json, per tier. */
+    tierHp: { normal: 2, elite: 1.6, boss: 1.35, review: 1.8 },
+    /** Multiplies every enemy attack and block value (longer fights → softer hits). */
+    enemyDamage: 0.75,
     hpPerFloor: 0.25,
     damagePerFloor: 0.15,
   },

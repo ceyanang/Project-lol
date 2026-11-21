@@ -1,7 +1,7 @@
 import { it } from 'vitest';
 import { CONFIG } from '../config';
 import { ENEMIES, MOVE_BY_ID, availableWords, unlockedKanaIds } from '../data';
-import { type BattleState, confirmTurn, createBattle, incomingDamage, pickTile, previewMove } from './battle';
+import { type BattleState, playTurn, createBattle, incomingDamage, pickTile, previewMove } from './battle';
 import { makeCard } from './deck';
 import { seeded } from './rng';
 
@@ -32,7 +32,7 @@ run('balance sim', () => {
           };
           const best = b.slots.slice().sort((x, y) => score(y) - score(x))[0];
           const tile = b.tiles.find((tt) => tt.slot === best.uid)!;
-          b = confirmTurn(pickTile(b, tile.id), ctx).battle;
+          b = playTurn(pickTile(b, tile.id), ctx).battle;
           t++;
         }
         turns += t;

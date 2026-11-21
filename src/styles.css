@@ -395,3 +395,6 @@ button {
   .kana-pick { min-height: 50px; font-size: 1.8rem; }
   .battle-top .icon-btn { min-height: 40px; }
 }
+.moves.is-waiting, .tiles.is-waiting { opacity: 0.45; transition: opacity 200ms; }
+.intent-bubble.is-acting { animation: intentPulse 0.6s ease-in-out infinite alternate; }
+@keyframes intentPulse { from { transform: scale(1); } to { transform: scale(1.15); box-shadow: 0 0 14px var(--red); } }

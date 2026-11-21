@@ -27,7 +27,10 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
    - the tile is a decoy → **fizzle**, you take **3 damage** (`decoyHpCost`), and the kana
      it imitates is marked missed in your SRS;
    - no tile picked → you skip your move.
-5. **Enemy acts** (its intent was shown all turn), then a new turn is dealt.
+5. **Beat, then the enemy acts.** After your move resolves there's a pause (1.3 s,
+   `enemyDelayMs`), then the enemy acts (its intent was shown all turn), then another
+   pause (0.9 s, `dealDelayMs`) before your next moves are dealt. Nothing is tappable
+   during the pauses, and a save made mid-pause resumes correctly.
 
 **One move per turn.** Attacks, blocks and spells all work the same way. There is no energy.
 
@@ -67,17 +70,18 @@ with a **whole word's romaji** (`neko`) instead of a single kana; its tile shows
 ### Other numbers
 | Thing | Value |
 |---|---|
-| Player start HP | 50 |
+| Player start HP | 70 |
 | Enemy armor | subtracted from every hit unless it pierces |
 | Player block | lasts until the enemy's attack this turn, then resets |
-| Enemy HP scaling | `hp × (1 + 0.25 × (floor − 1))` |
-| Enemy damage scaling | `value × (1 + 0.15 × (floor − 1))` |
+| Enemy HP | `hp × tierHp × (1 + 0.25 × (floor − 1))`, tierHp: normal ×2, elite ×1.6, boss ×1.35, review ×1.8 |
+| Enemy damage / block | `value × 0.75 × (1 + 0.15 × (floor − 1))` |
 
 ### Balance
 `npm run sim` (or `SIM=1 npx vitest run src/game/balance.test.ts`) plays 300 fights per enemy and
 floor with a perfect reader and a greedy policy, and prints turns, HP lost and death rate.
-Targets with the starter deck: normal fights lose < 15 HP, elites < 30 HP on their own floor,
-the floor-1 boss ~20 HP. Add `SIM_EXTRA=blaze,stone_ward,…` to simulate a deck with rewards.
+Targets with the starter deck: normal fights last 2.5–6 turns and cost < 20 HP; elites 5–8 turns
+and < 30 HP on their own floor; bosses 6–9 turns (floor-1 boss ~22 HP). With a few reward moves
+the final boss (Ryūjin) should kill a perfect reader < 10% of the time. Add `SIM_EXTRA=blaze,stone_ward,…` to simulate a deck with rewards.
 
 ---
 

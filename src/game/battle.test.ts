@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../config';
 import { ENEMY_BY_ID, KANA_BY_ID, MOVE_BY_ID, availableWords, unlockedKanaIds } from '../data';
-import { type BattleCtx, type BattleState, confirmTurn, createBattle, pickTile, previewMove } from './battle';
+import { type BattleCtx, type BattleState, advanceBeat, confirmTurn, createBattle, incomingDamage, pickTile, playTurn, previewMove } from './battle';
 import { makeCard, moveRewardOptions } from './deck';
 import { seeded } from './rng';
+
+const H = CONFIG.player.startHp;
 
 const ctxFor = (unlockedCount = 3, seed = 1): BattleCtx => {
   const unlocked = unlockedKanaIds(unlockedCount);
@@ -11,7 +13,7 @@ const ctxFor = (unlockedCount = 3, seed = 1): BattleCtx => {
 };
 
 function battle(deck: string[], enemy = 'kodama', ctx = ctxFor()): BattleState {
-  return createBattle({ enemy: ENEMY_BY_ID[enemy], floor: 1, deck: deck.map(makeCard), hp: 50, maxHp: 50, relics: [], ctx });
+  return createBattle({ enemy: ENEMY_BY_ID[enemy], floor: 1, deck: deck.map(makeCard), hp: CONFIG.player.startHp, maxHp: CONFIG.player.startHp, relics: [], ctx });
 }
 
 const tileFor = (b: BattleState, moveId: string) => {
@@ -43,7 +45,7 @@ describe('dealing moves', () => {
     const seen = new Set<string>();
     for (let i = 0; i < 6; i++) {
       b.slots.forEach((s) => seen.add(s.label.romaji));
-      b = { ...confirmTurn(b, ctx).battle, playerHp: 50 };
+      b = { ...playTurn(b, ctx).battle, playerHp: H };
     }
     expect(seen.size).toBeGreaterThan(CONFIG.combat.movesPerTurn);
   });
@@ -56,28 +58,50 @@ describe('confirming a turn', () => {
     const t = tileFor(b, 'strike');
     const picked = pickTile(b, t.id);
     expect(picked.enemy.hp).toBe(b.enemy.hp);
-    const { battle: after, answers } = confirmTurn(picked, ctx);
+    const { battle: after, answers } = playTurn(picked, ctx);
     expect(b.enemy.hp - after.enemy.hp).toBe(MOVE_BY_ID.strike.value);
     expect(answers).toEqual(t.kana.map((k) => ({ id: k, correct: true })));
     expect(after.turn).toBe(2);
     expect(after.lastResult?.ok).toBe(true);
-    expect(after.playerHp).toBe(50 - 5); // kodama attacks for 5
+    expect(after.playerHp).toBe(H - incomingDamage(b.enemy));
+  });
+
+  it('turn beats: your move, then (later) the enemy, then (later) the next deal', () => {
+    const ctx = ctxFor();
+    const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
+    const confirmed = confirmTurn(pickTile(b, tileFor(b, 'strike').id)).battle;
+    expect(confirmed.pending).toBe('enemy');
+    expect(confirmed.enemy.hp).toBeLessThan(b.enemy.hp); // your hit landed
+    expect(confirmed.playerHp).toBe(H); // the enemy hasn't acted yet
+    expect(pickTile(confirmed, confirmed.tiles[0].id)).toBe(confirmed); // no input mid-beat
+    const enemyActed = advanceBeat(confirmed, ctx);
+    expect(enemyActed.pending).toBe('deal');
+    expect(enemyActed.playerHp).toBe(H - incomingDamage(b.enemy));
+    expect(enemyActed.turn).toBe(1);
+    const dealt = advanceBeat(enemyActed, ctx);
+    expect(dealt.pending).toBeNull();
+    expect(dealt.turn).toBe(2);
+  });
+
+  it('enemy HP is scaled by tier', () => {
+    const b = battle(['strike']);
+    expect(b.enemy.maxHp).toBe(Math.round(ENEMY_BY_ID.kodama.hp * CONFIG.scaling.tierHp.normal));
   });
 
   it('enemy weakness doubles damage, resistance halves it', () => {
     const ctx = ctxFor();
     const b = battle(['fire_talisman', 'water_jet', 'guard', 'strike']); // kodama: weak fire, resists water
-    const fire = confirmTurn(pickTile(b, tileFor(b, 'fire_talisman').id), ctx).battle;
+    const fire = playTurn(pickTile(b, tileFor(b, 'fire_talisman').id), ctx).battle;
     expect(b.enemy.hp - fire.enemy.hp).toBe(Math.min(b.enemy.hp, MOVE_BY_ID.fire_talisman.value * 2));
-    const water = confirmTurn(pickTile(b, tileFor(b, 'water_jet').id), ctx).battle;
+    const water = playTurn(pickTile(b, tileFor(b, 'water_jet').id), ctx).battle;
     expect(b.enemy.hp - water.enemy.hp).toBe(Math.round(MOVE_BY_ID.water_jet.value * 0.5));
   });
 
   it('block is applied before the enemy attacks', () => {
     const ctx = ctxFor();
     const b = battle(['guard', 'strike', 'strike', 'strike']);
-    const after = confirmTurn(pickTile(b, tileFor(b, 'guard').id), ctx).battle;
-    expect(after.playerHp).toBe(50); // 8 block vs 5 damage
+    const after = playTurn(pickTile(b, tileFor(b, 'guard').id), ctx).battle;
+    expect(after.playerHp).toBe(H); // 8 block vs 5 damage
   });
 
   it('a decoy fizzles, costs HP and marks the imitated kana as missed', () => {
@@ -85,9 +109,9 @@ describe('confirming a turn', () => {
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
     const decoy = b.tiles.find((t) => !t.slot)!;
     const target = b.slots.find((s) => s.uid === decoy.decoyOf)!;
-    const { battle: after, answers } = confirmTurn(pickTile(b, decoy.id), ctx);
+    const { battle: after, answers } = playTurn(pickTile(b, decoy.id), ctx);
     expect(after.enemy.hp).toBe(b.enemy.hp);
-    expect(after.playerHp).toBe(50 - CONFIG.combat.decoyHpCost - 5);
+    expect(after.playerHp).toBe(H - CONFIG.combat.decoyHpCost - incomingDamage(b.enemy));
     expect(answers).toEqual(target.label.kana.map((k) => ({ id: k, correct: false })));
     expect(after.lastResult?.ok).toBe(false);
   });
@@ -95,7 +119,7 @@ describe('confirming a turn', () => {
   it('skipping (no pick) just passes the turn', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
-    const { battle: after, answers } = confirmTurn(b, ctx);
+    const { battle: after, answers } = playTurn(b, ctx);
     expect(answers).toEqual([]);
     expect(after.enemy.hp).toBe(b.enemy.hp);
   });
@@ -104,9 +128,9 @@ describe('confirming a turn', () => {
     const ctx = ctxFor();
     const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
     const low = { ...b, enemy: { ...b.enemy, hp: 3 } };
-    const after = confirmTurn(pickTile(low, tileFor(low, 'strike').id), ctx).battle;
+    const after = playTurn(pickTile(low, tileFor(low, 'strike').id), ctx).battle;
     expect(after.outcome).toBe('won');
-    expect(after.playerHp).toBe(50);
+    expect(after.playerHp).toBe(H);
   });
 });
 

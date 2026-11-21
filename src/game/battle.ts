@@ -89,6 +89,12 @@ export interface BattleState {
   movesMade: number;
   reviewKana: string[];
   outcome: 'ongoing' | 'won' | 'lost';
+  /**
+   * Turn beats, so things don't all happen at once:
+   * your move resolves → 'enemy' (pause) → enemy acts → 'deal' (pause) → next moves are dealt.
+   * While a beat is pending the player can't tap anything.
+   */
+  pending: null | 'enemy' | 'deal';
   lastResult: TurnResult | null;
   log: string[];
   fx: Fx[];
@@ -121,7 +127,7 @@ export function scaleFor(floor: number) {
 
 export function createEnemy(def: EnemyDef, floor: number): EnemyState {
   const sc = scaleFor(floor);
-  const hp = Math.round(def.hp * sc.hp);
+  const hp = Math.round(def.hp * CONFIG.scaling.tierHp[def.tier] * sc.hp);
   return {
     defId: def.id,
     name: def.name,
@@ -133,7 +139,7 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     block: 0,
     strength: 0,
     intentIndex: 0,
-    dmgScale: sc.dmg,
+    dmgScale: sc.dmg * CONFIG.scaling.enemyDamage,
     pattern: def.pattern,
     weak: def.weak,
     resist: def.resist,
@@ -197,6 +203,7 @@ export function createBattle(opts: {
     reviewKana: opts.reviewKana ?? [],
     outcome: 'ongoing',
     lastResult: null,
+    pending: null,
     log: [`A wild ${opts.enemy.name} appears!`],
     fx: [],
     fxSeq: 0,
@@ -357,7 +364,7 @@ function hitPlayer(b: BattleState, dmg: number): BattleState {
 
 /** Tap a kana tile (tap again to un-pick). Nothing happens until End Turn. */
 export function pickTile(b: BattleState, tileId: string | null): BattleState {
-  if (b.outcome !== 'ongoing') return b;
+  if (b.outcome !== 'ongoing' || b.pending) return b;
   return { ...b, picked: b.picked === tileId ? null : tileId };
 }
 
@@ -423,8 +430,8 @@ function enemyTurn(b: BattleState): BattleState {
 }
 
 /** End Turn: resolve the picked tile (if any), then the enemy acts, then a new turn is dealt. */
-export function confirmTurn(b: BattleState, ctx: BattleCtx): PlayResult {
-  if (b.outcome !== 'ongoing') return { battle: b, answers: [] };
+export function confirmTurn(b: BattleState): PlayResult {
+  if (b.outcome !== 'ongoing' || b.pending) return { battle: b, answers: [] };
   const tile = b.tiles.find((t) => t.id === b.picked) ?? null;
   const answers: SrsAnswer[] = [];
   let next: BattleState = b;
@@ -460,7 +467,24 @@ export function confirmTurn(b: BattleState, ctx: BattleCtx): PlayResult {
   }
 
   if (next.enemy.hp <= 0) return { battle: log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`), answers };
-  next = enemyTurn(next);
-  if (next.outcome !== 'ongoing') return { battle: next, answers };
-  return { battle: startPlayerTurn(next, ctx), answers };
+  // the enemy acts on the next beat (see advanceBeat)
+  return { battle: { ...next, pending: 'enemy', picked: null }, answers };
+}
+
+/** Run the next pending beat: the enemy's action, then dealing the next turn. */
+export function advanceBeat(b: BattleState, ctx: BattleCtx): BattleState {
+  if (b.outcome !== 'ongoing' || !b.pending) return b;
+  if (b.pending === 'enemy') {
+    const next = enemyTurn(b);
+    return next.outcome === 'ongoing' ? { ...next, pending: 'deal' } : { ...next, pending: null };
+  }
+  return { ...startPlayerTurn(b, ctx), pending: null };
+}
+
+/** Confirm and play out the whole turn immediately (tests and the balance sim). */
+export function playTurn(b: BattleState, ctx: BattleCtx): PlayResult {
+  const r = confirmTurn(b);
+  let battle = r.battle;
+  while (battle.pending && battle.outcome === 'ongoing') battle = advanceBeat(battle, ctx);
+  return { battle, answers: r.answers };
 }

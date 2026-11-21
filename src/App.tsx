@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { confirmTurn, pickTile } from './game/battle';
+import { advanceBeat, confirmTurn, pickTile } from './game/battle';
+import { CONFIG } from './config';
 import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
@@ -90,7 +91,7 @@ export default function App() {
   function onConfirm() {
     if (!run?.battle) return;
     const picked = run.battle.tiles.find((t) => t.id === run.battle!.picked);
-    const r = confirmTurn(run.battle, ctx);
+    const r = confirmTurn(run.battle);
     if (picked) {
       playSfx(r.battle.lastResult?.ok ? 'correct' : 'wrong');
       // speak only after confirming, so audio never gives the reading away early
@@ -117,6 +118,24 @@ export default function App() {
     }, 900);
     return () => window.clearTimeout(t);
   }, [battleOver, setProfile]);
+
+  // Turn beats: after your move, pause → enemy acts → pause → next moves are dealt.
+  // Keyed on the beat itself, so a save made mid-pause resumes correctly.
+  const beat = run?.phase === 'battle' && run.battle?.outcome === 'ongoing' ? run.battle.pending : null;
+  const beatKey = beat ? `${beat}-${run?.battle?.turn}` : null;
+  useEffect(() => {
+    if (!beat) return;
+    const t = window.setTimeout(
+      () => {
+        const r = runRef.current;
+        if (!r?.battle || r.phase !== 'battle' || r.battle.pending !== beat) return;
+        const p = profileRef.current;
+        setRun({ ...r, battle: advanceBeat(r.battle, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()))) });
+      },
+      beat === 'enemy' ? CONFIG.combat.enemyDelayMs : CONFIG.combat.dealDelayMs,
+    );
+    return () => window.clearTimeout(t);
+  }, [beatKey]);
 
   function claim(fn?: (r: RunState) => RunState) {
     if (!run) return;

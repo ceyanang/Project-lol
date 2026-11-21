@@ -34,6 +34,8 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
   const e = battle.enemy;
   const intent = currentIntent(e);
   const ongoing = battle.outcome === 'ongoing';
+  // during a beat (enemy acting / dealing) nothing is tappable
+  const busy = !ongoing || !!battle.pending;
 
   // floating numbers + sounds for new fx entries
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
       </header>
 
       <section className={`enemy tier-${e.tier}`}>
-        <div className="intent-bubble" aria-label="Enemy intent">
+        <div className={`intent-bubble ${battle.pending === 'enemy' ? 'is-acting' : ''}`} aria-label="Enemy intent">
           {intentText}
         </div>
         <div className={`enemy-emoji ${enemyHit ? 'shake' : ''}`} key={enemyHit ? `hit${battle.fxSeq}` : 'idle'}>
@@ -130,7 +132,7 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
         )}
       </p>
 
-      <section className="moves" aria-label="Your moves this turn">
+      <section className={`moves ${battle.pending ? 'is-waiting' : ''}`} aria-label="Your moves this turn">
         {battle.slots.map((s) => {
           const move = MOVE_BY_ID[s.card.moveId];
           return <MoveCard key={s.uid} move={move} romaji={s.label.romaji} preview={previewMove(move, s.label, battle)} />;
@@ -152,19 +154,19 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
         </div>
       </section>
 
-      <section className="tiles" aria-label="Kana tiles">
+      <section className={`tiles ${battle.pending ? 'is-waiting' : ''}`} aria-label="Kana tiles">
         {battle.tiles.map((t) => (
           <button
             key={t.id}
             type="button"
             className={`kana-pick jp ${t.text.length > 1 ? 'is-word' : ''} ${battle.picked === t.id ? 'is-picked' : ''}`}
             onClick={() => {
-              if (!ongoing) return;
+              if (busy) return;
               playSfx('select');
               onPick(t.id);
             }}
             aria-pressed={battle.picked === t.id}
-            disabled={!ongoing}
+            disabled={busy}
           >
             {t.text}
           </button>
@@ -175,8 +177,14 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
         <span className="pile" aria-label="Draw pile">
           🂠 {battle.drawPile.length}
         </span>
-        <button type="button" className={`btn grow ${battle.picked ? 'btn-primary' : 'btn-ghost'}`} disabled={!ongoing} onClick={onConfirm}>
-          {battle.picked ? 'End Turn · do it!' : 'End Turn (skip move)'}
+        <button type="button" className={`btn grow ${battle.picked ? 'btn-primary' : 'btn-ghost'}`} disabled={busy} onClick={onConfirm}>
+          {battle.pending === 'enemy'
+            ? `${e.emoji} Enemy's turn…`
+            : battle.pending === 'deal'
+              ? 'Dealing your moves…'
+              : battle.picked
+                ? 'End Turn · do it!'
+                : 'End Turn (skip move)'}
         </button>
         <span className="pile" aria-label="Discard pile">
           ♻ {battle.discard.length}
