@@ -27,11 +27,13 @@ interface Props {
   onEndTurn: () => void;
   onSpeak: (text: string) => void;
   onMenu?: () => void;
+  /** Kana ids currently flagged as missed by the SRS. */
+  missed?: ReadonlySet<string>;
 }
 
 const FX_MS = 1000;
 
-export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTurn, onSpeak, onMenu }: Props) {
+export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTurn, onSpeak, onMenu, missed }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [checking, setChecking] = useState<PlayPlan | null>(null);
   const [fx, setFx] = useState<Fx[]>([]);
@@ -198,6 +200,7 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
               cost={cost}
               value={cardValue(c, battle)}
               match={cardMatch(c, battle.prompts)}
+              missed={c.type !== 'word' && !!missed?.has(c.ref)}
               selected={idx >= 0}
               order={selected.length > 1 && idx >= 0 ? idx + 1 : undefined}
               disabled={!ongoing || (idx < 0 && cost > battle.energy && selected.length === 0)}

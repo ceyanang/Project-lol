@@ -13,13 +13,15 @@ interface Props {
   match?: 'weak' | 'guard' | null;
   disabled?: boolean;
   revealRomaji?: boolean;
+  /** Kana was recently misread (SRS missDebt > 0): shows a marker. */
+  missed?: boolean;
   size?: 'hand' | 'big' | 'mini';
   onTap?: () => void;
 }
 
 const ICON = { attack: '⚔️', block: '🛡️', word: '📜' } as const;
 
-export default function KanaCard({ card, value, cost, selected, order, match, disabled, revealRomaji, size = 'hand', onTap }: Props) {
+export default function KanaCard({ card, value, cost, selected, order, match, disabled, revealRomaji, missed, size = 'hand', onTap }: Props) {
   const word = card.type === 'word' ? VOCAB_BY_ID[card.ref] : undefined;
   const kana = word ? undefined : KANA_BY_ID[card.ref];
   const glyph = word ? word.reading : kana?.char ?? '?';
@@ -50,6 +52,7 @@ export default function KanaCard({ card, value, cost, selected, order, match, di
       </span>
       {match && <span className="card-match">{match === 'weak' ? '🎯' : '✨'}</span>}
       {card.echo && <span className="card-echo">echo</span>}
+      {missed && <span className="card-missed" title="Recently missed — shows up more often">!</span>}
     </button>
   );
 }
