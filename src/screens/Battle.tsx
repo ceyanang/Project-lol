@@ -129,7 +129,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Pro
             <span className="jp">{battle.lastResult.text}</span>
           </>
         ) : (
-          <span className="muted">Type a move's reading, then End Turn.</span>
+          <span className="muted">Type a move's reading, then ⏎ to end your turn.</span>
         )}
       </p>
 
@@ -155,10 +155,27 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Pro
         </div>
       </section>
 
-      <section className={`kbd-area ${battle.pending ? 'is-waiting' : ''}`} aria-label="Type the reading">
-        <div className="typed-box" aria-live="polite" aria-label="Typed reading">
-          {battle.typed || <span className="typed-placeholder">type a move's reading…</span>}
-          {!busy && <span className="caret" />}
+      {/* Docked like the quiz's keyboard sheet: ⏎ is End Turn (empty ⏎ skips your move). */}
+      <section className={`kbd-dock ${battle.pending ? 'is-waiting' : ''}`} aria-label="Type the reading">
+        <div className="dock-row">
+          <span className="pile" aria-label="Draw pile">
+            🂠 {battle.drawPile.length}
+          </span>
+          <div className="typed-box grow" aria-live="polite" aria-label="Typed reading">
+            {battle.pending === 'enemy' ? (
+              <span className="typed-placeholder">{e.emoji} Enemy's turn…</span>
+            ) : battle.pending === 'deal' ? (
+              <span className="typed-placeholder">Dealing your moves…</span>
+            ) : battle.typed ? (
+              battle.typed
+            ) : (
+              <span className="typed-placeholder">type a reading · ⏎ ends turn</span>
+            )}
+            {!busy && <span className="caret" />}
+          </div>
+          <span className="pile" aria-label="Discard pile">
+            ♻ {battle.discard.length}
+          </span>
         </div>
         <Keyboard
           disabled={busy}
@@ -168,24 +185,6 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu }: Pro
           enterLabel="⏎"
         />
       </section>
-
-      <footer className="battle-actions">
-        <span className="pile" aria-label="Draw pile">
-          🂠 {battle.drawPile.length}
-        </span>
-        <button type="button" className={`btn grow ${battle.typed ? 'btn-primary' : 'btn-ghost'}`} disabled={busy} onClick={onConfirm}>
-          {battle.pending === 'enemy'
-            ? `${e.emoji} Enemy's turn…`
-            : battle.pending === 'deal'
-              ? 'Dealing your moves…'
-              : battle.typed
-                ? 'End Turn · do it!'
-                : 'End Turn (skip move)'}
-        </button>
-        <span className="pile" aria-label="Discard pile">
-          ♻ {battle.discard.length}
-        </span>
-      </footer>
     </main>
   );
 }

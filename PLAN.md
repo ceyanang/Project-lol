@@ -20,7 +20,8 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
    never opens, so autocorrect can't interfere. Hepburn and common alternates are
    accepted: `shi/si`, `chi/ti`, `tsu/tu`, `fu/hu`, `ji/zi/di`, `zu/du`, `n/nn`, `wo/o`.
    Nothing is highlighted while you type, so you can't probe for the answer.
-3. **Confirm.** Press **End Turn** (or Enter). What you typed is revealed
+3. **Confirm.** Press **⏎** on the keyboard (it's End Turn; ⏎ with nothing typed skips your move). The keyboard
+   is docked at the bottom like the quiz's. What you typed is revealed
    (`き = ki → 🛡 Guard`):
    - it reads as one of the moves → that move happens (even if it's not the one you meant!);
    - it matches no move → **fizzle**, you take **3 damage** (`wrongHpCost`). If it was a near
