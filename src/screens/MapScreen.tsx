@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import HpBar from '../components/HpBar';
-import KanaCard from '../components/KanaCard';
+import MoveCard from '../components/MoveCard';
 import { CONFIG } from '../config';
-import { RELIC_BY_ID, SPELL_BY_ID } from '../data';
-import { cardCost } from '../game/deck';
-import { cardValue } from '../game/battle';
+import { MOVE_BY_ID, RELIC_BY_ID } from '../data';
+import { deckCounts } from '../game/deck';
 import { type MapNode, NODE_ICON, NODE_LABEL, reachableNodes } from '../game/map';
 import type { RunState } from '../game/run';
 
@@ -35,7 +34,7 @@ export default function MapScreen({ run, bossEmoji, onEnter, onMenu }: Props) {
             Floor {run.floor}/{CONFIG.run.floors}
           </span>
           <button type="button" className="pill pill-btn" onClick={() => setShowDeck(true)}>
-            🂠 Deck {run.deck.length}
+            🎴 Deck {run.deck.length}
           </button>
           <span className="grow" />
           <button type="button" className="icon-btn" onClick={onMenu} aria-label="Menu">
@@ -105,18 +104,11 @@ export default function MapScreen({ run, bossEmoji, onEnter, onMenu }: Props) {
       {showDeck && (
         <div className="sheet-backdrop" onClick={() => setShowDeck(false)}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            <h3 className="sheet-title">Your deck ({run.deck.length})</h3>
-            <div className="deck-grid">
-              {run.deck.map((c) => (
-                <KanaCard key={c.uid} card={c} size="mini" cost={cardCost(c)} value={cardValue(c, { prompts: { guard: null, weak: [], word: null }, relics: run.relics })} revealRomaji />
-              ))}
-            </div>
-            <h3 className="sheet-title">Spellbook ({run.spells.length})</h3>
-            <div className="spell-list">
-              {run.spells.map((id, i) => (
-                <span key={`${id}${i}`} className="spell-chip">
-                  {SPELL_BY_ID[id]?.emoji} <b>{SPELL_BY_ID[id]?.name}</b> <span className="muted small">{SPELL_BY_ID[id]?.description}</span>
-                </span>
+            <h3 className="sheet-title">Your deck ({run.deck.length} moves)</h3>
+            <p className="muted small">Each turn {CONFIG.combat.movesPerTurn} moves are dealt. More copies = dealt more often.</p>
+            <div className="deck-list">
+              {deckCounts(run.deck).map(({ moveId, count }) => (
+                <MoveCard key={moveId} move={MOVE_BY_ID[moveId]} count={count} />
               ))}
             </div>
             <button type="button" className="btn btn-wide" onClick={() => setShowDeck(false)}>

@@ -1,9 +1,16 @@
 import { CONFIG } from '../config';
-import { KANA_BY_ID, SPELL_BY_ID, VOCAB_BY_ID, isVoiced } from '../data';
-import type { Card, EnemyDef, EnemyTier, Intent, Vocab } from '../types';
-import { cardCost, cardRomaji, formableWords, makeCard, matchWord, weightedDraw, wordAssist } from './deck';
-import { type Rng, chance, pick, shuffle, weightedPick, weightedSample } from './rng';
-import type { Answer } from './srs';
+import { KANA_BY_ID, MOVE_BY_ID, isVoiced, wordMovesUnlocked } from '../data';
+import type { Card, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
+import { kanaOptions } from './distractors';
+import { type Rng, chance, shuffle, weightedPick } from './rng';
+import type { Answer as SrsAnswer } from './srs';
+
+/*
+ * Combat (see PLAN.md §1):
+ * each turn N moves are dealt from your deck, each labelled with the romaji of a different kana
+ * (or a whole word). Below them is a row of kana tiles: the right ones plus look-alike decoys.
+ * Tap the kana for the move you want, then End Turn confirms it. One move per turn.
+ */
 
 export interface EnemyState {
   defId: string;
@@ -18,51 +25,71 @@ export interface EnemyState {
   intentIndex: number;
   dmgScale: number;
   pattern: Intent[];
+  weak: MoveDef['element'];
+  resist?: MoveDef['element'];
 }
 
-export interface Prompts {
-  /** Romaji the enemy's attack can be guarded with. */
-  guard: string | null;
-  /** Romaji weak spots for attack cards. */
-  weak: string[];
-  /** Vocab id shown as an English word prompt. */
-  word: string | null;
+/** What a move is labelled with this turn: a kana or a whole word. */
+export interface Label {
+  kind: 'kana' | 'word';
+  /** Kana id or vocab id. */
+  ref: string;
+  /** The kana text shown on the tile. */
+  text: string;
+  romaji: string;
+  /** Kana ids involved (for SRS). */
+  kana: string[];
 }
 
-export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'combo' | 'enemyBlock' | 'buff' | 'reveal' | 'spell' | 'heal';
+export interface Slot {
+  uid: string;
+  card: Card;
+  label: Label;
+}
+
+export interface Tile {
+  id: string;
+  text: string;
+  romaji: string;
+  kana: string[];
+  /** Slot this tile casts, or null for a decoy. */
+  slot: string | null;
+  /** For decoys: the slot whose kana it imitates. */
+  decoyOf: string | null;
+}
+
+export interface TurnResult {
+  ok: boolean;
+  tileText: string;
+  tileRomaji: string;
+  text: string;
+}
+
+export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'enemyBlock' | 'buff' | 'move' | 'heal' | 'weak' | 'resist';
 export interface Fx {
   id: number;
   kind: FxKind;
   text: string;
 }
 
-/** A spell in this turn's spellbook, labelled with the kana you must type to cast it. */
-export interface SpellInHand {
-  uid: string;
-  spellId: string;
-  kana: string;
-}
-
 export interface BattleState {
   enemy: EnemyState;
-  spellPile: string[];
-  spellDiscard: string[];
-  spellHand: SpellInHand[];
-  /** Spells cast this turn (limit CONFIG.spells.castsPerTurn). */
-  spellsCast: number;
-  hand: Card[];
   drawPile: Card[];
   discard: Card[];
-  energy: number;
+  slots: Slot[];
+  tiles: Tile[];
+  /** Tile id the player tapped; resolved on End Turn. */
+  picked: string | null;
   playerHp: number;
   playerMaxHp: number;
   playerBlock: number;
   turn: number;
-  prompts: Prompts;
   relics: string[];
   freeMissUsed: boolean;
+  movesMade: number;
   reviewKana: string[];
   outcome: 'ongoing' | 'won' | 'lost';
+  lastResult: TurnResult | null;
   log: string[];
   fx: Fx[];
   fxSeq: number;
@@ -74,12 +101,18 @@ export interface BattleCtx {
   weightOf: (kanaId: string) => number;
   unlocked: readonly string[];
   words: readonly Vocab[];
+  unlockedCount: number;
   rng: Rng;
+}
+
+export interface PlayResult {
+  battle: BattleState;
+  answers: SrsAnswer[];
 }
 
 const has = (b: { relics: string[] }, id: string) => b.relics.includes(id);
 
-// ---------------------------------------------------------------- setup
+// ---------------------------------------------------------------- enemies
 
 export function scaleFor(floor: number) {
   const s = CONFIG.scaling;
@@ -102,6 +135,8 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     intentIndex: 0,
     dmgScale: sc.dmg,
     pattern: def.pattern,
+    weak: def.weak,
+    resist: def.resist,
   };
 }
 
@@ -118,12 +153,20 @@ export function isAttackIntent(i: Intent): boolean {
   return i.type === 'attack' || i.type === 'multi';
 }
 
-export function maxEnergy(relics: string[]): number {
-  return CONFIG.player.energyPerTurn + (relics.includes('kitsune_mask') ? CONFIG.relics.energyPlus : 0);
+/** Total damage the enemy will deal this turn if unblocked. */
+export function incomingDamage(e: EnemyState): number {
+  const i = currentIntent(e);
+  if (!isAttackIntent(i)) return 0;
+  return intentDamage(e, i) * (i.type === 'multi' ? (i.times ?? 2) : 1);
 }
 
-export function handSize(relics: string[]): number {
-  return CONFIG.player.handSize + (relics.includes('chochin') ? CONFIG.relics.extraDraw : 0);
+// ---------------------------------------------------------------- setup
+
+let uidSeq = 0;
+const uid = (p: string) => `${p}${(++uidSeq).toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
+
+export function movesPerTurn(relics: string[]): number {
+  return CONFIG.combat.movesPerTurn + (relics.includes('chochin') ? CONFIG.relics.extraMove : 0);
 }
 
 export function createBattle(opts: {
@@ -133,212 +176,154 @@ export function createBattle(opts: {
   hp: number;
   maxHp: number;
   relics: string[];
-  spells?: string[];
   reviewKana?: string[];
   ctx: BattleCtx;
 }): BattleState {
   const { ctx } = opts;
-  const reviewKana = (opts.reviewKana ?? []).slice(0, CONFIG.run.maxEchoCards);
-  const echoes = reviewKana.map((k, i) => makeCard(k, i % 2 ? 'block' : 'attack', true));
   const base: BattleState = {
     enemy: createEnemy(opts.enemy, opts.floor),
-    spellPile: shuffle(ctx.rng, opts.spells ?? []),
-    spellDiscard: [],
-    spellHand: [],
-    spellsCast: 0,
-    hand: [],
-    drawPile: shuffle(ctx.rng, [...opts.deck, ...echoes]),
+    drawPile: shuffle(ctx.rng, opts.deck),
     discard: [],
-    energy: 0,
+    slots: [],
+    tiles: [],
+    picked: null,
     playerHp: opts.hp,
     playerMaxHp: opts.maxHp,
     playerBlock: 0,
     turn: 0,
-    prompts: { guard: null, weak: [], word: null },
     relics: opts.relics,
     freeMissUsed: false,
-    reviewKana,
+    movesMade: 0,
+    reviewKana: opts.reviewKana ?? [],
     outcome: 'ongoing',
+    lastResult: null,
     log: [`A wild ${opts.enemy.name} appears!`],
     fx: [],
     fxSeq: 0,
     stats: { correct: 0, wrong: 0, words: 0 },
   };
   let b = startPlayerTurn(base, ctx);
-  if (has(b, 'torii')) b = { ...b, energy: b.energy + CONFIG.relics.firstTurnEnergy };
   if (has(b, 'suzu')) b = { ...b, playerBlock: b.playerBlock + CONFIG.relics.startBlock };
   return b;
 }
 
-// ---------------------------------------------------------------- turns
+// ---------------------------------------------------------------- dealing moves
 
-function drawCards(b: BattleState, n: number, ctx: BattleCtx): BattleState {
-  let drawPile = b.drawPile;
-  let discard = b.discard;
-  let hand = b.hand.slice();
-  if (drawPile.length < n) {
-    drawPile = [...drawPile, ...shuffle(ctx.rng, discard)];
-    discard = [];
+/** Labels with distinct romaji: SRS-weighted kana, sometimes a whole word. */
+export function makeLabels(n: number, b: Pick<BattleState, 'reviewKana'>, ctx: BattleCtx): Label[] {
+  const used = new Set<string>();
+  const labels: Label[] = [];
+  const review = new Set(b.reviewKana);
+  const wordsOk = wordMovesUnlocked(ctx.unlockedCount);
+  const kanaWeight = (k: string) => ctx.weightOf(k) * (review.has(k) ? CONFIG.srs.reviewFightBoost : 1);
+  for (let i = 0; i < n; i++) {
+    if (wordsOk && chance(ctx.rng, CONFIG.combat.wordMoveChance)) {
+      const pool = ctx.words.filter((w) => w.kana.length >= 2 && w.kana.length <= CONFIG.combat.maxWordLength && !used.has(w.romaji));
+      const w = weightedPick(ctx.rng, pool, (v) => v.kana.reduce((s, k) => s + kanaWeight(k), 0) / v.kana.length);
+      if (w) {
+        used.add(w.romaji);
+        labels.push({ kind: 'word', ref: w.id, text: w.reading, romaji: w.romaji, kana: w.kana });
+        continue;
+      }
+    }
+    const pool = ctx.unlocked.filter((k) => !used.has(KANA_BY_ID[k].romaji));
+    const k = weightedPick(ctx.rng, pool, kanaWeight);
+    if (!k) break;
+    used.add(KANA_BY_ID[k].romaji);
+    labels.push({ kind: 'kana', ref: k, text: KANA_BY_ID[k].char, romaji: KANA_BY_ID[k].romaji, kana: [k] });
   }
-  const { drawn, rest } = weightedDraw(drawPile, n, ctx.weightOf, ctx.rng);
-  hand = [...hand, ...drawn];
-  const assisted = wordAssist(hand, rest, ctx.words, ctx.rng);
-  return { ...b, hand: assisted.hand, drawPile: assisted.drawPile, discard };
+  return labels;
 }
 
-function kanaOfRomaji(romaji: string, pool: readonly string[]): string | undefined {
-  return pool.find((k) => KANA_BY_ID[k]?.romaji === romaji);
-}
-
-export function generatePrompts(b: BattleState, ctx: BattleCtx): Prompts {
-  const C = CONFIG.combat;
-  const { rng } = ctx;
-  const intent = currentIntent(b.enemy);
-  const kanaCards = b.hand.filter((c) => c.type !== 'word');
-  const decoyPool = b.reviewKana.length && chance(rng, 0.6) ? b.reviewKana : ctx.unlocked;
-  const romajiOfKana = (k: string) => KANA_BY_ID[k].romaji;
-
-  let guard: string | null = null;
-  if (isAttackIntent(intent)) {
-    const blocks = kanaCards.filter((c) => c.type === 'block').map((c) => c.ref);
-    const fromHand = blocks.length > 0 && chance(rng, C.guardFromHandChance);
-    const k = weightedPick(rng, fromHand ? blocks : decoyPool, ctx.weightOf);
-    guard = k ? romajiOfKana(k) : null;
+/** Answer tiles plus look-alike decoys that match no move. */
+export function makeTiles(slots: Slot[], ctx: BattleCtx): Tile[] {
+  const tiles: Tile[] = slots.map((s) => ({ id: uid('t'), text: s.label.text, romaji: s.label.romaji, kana: s.label.kana, slot: s.uid, decoyOf: null }));
+  const usedRomaji = new Set(tiles.map((t) => t.romaji));
+  const usedText = new Set(tiles.map((t) => t.text));
+  const kanaSlots = shuffle(ctx.rng, slots.filter((s) => s.label.kind === 'kana'));
+  for (let i = 0; i < CONFIG.combat.decoyTiles && kanaSlots.length; i++) {
+    const target = kanaSlots[i % kanaSlots.length];
+    const decoy = kanaOptions(target.label.ref, ctx.unlocked, ctx.rng, 8).find(
+      (k) => !usedRomaji.has(KANA_BY_ID[k].romaji) && !usedText.has(KANA_BY_ID[k].char),
+    );
+    if (!decoy) continue;
+    usedRomaji.add(KANA_BY_ID[decoy].romaji);
+    usedText.add(KANA_BY_ID[decoy].char);
+    tiles.push({ id: uid('t'), text: KANA_BY_ID[decoy].char, romaji: KANA_BY_ID[decoy].romaji, kana: [decoy], slot: null, decoyOf: target.uid });
   }
-
-  const weak: string[] = [];
-  const attacks = [...new Set(kanaCards.filter((c) => c.type === 'attack').map((c) => c.ref))];
-  for (let i = 0; i < C.weakSpotCount; i++) {
-    const remainingAttacks = attacks.filter((k) => !weak.includes(romajiOfKana(k)));
-    const useHand = remainingAttacks.length > 0 && (i === 0 || chance(rng, 0.5));
-    const pool = (useHand ? remainingAttacks : decoyPool).filter((k) => !weak.includes(romajiOfKana(k)));
-    const k = weightedPick(rng, pool, ctx.weightOf);
-    if (k) weak.push(romajiOfKana(k));
-  }
-
-  let word: string | null = null;
-  const wordCards = b.hand.filter((c) => c.type === 'word').map((c) => VOCAB_BY_ID[c.ref]);
-  const options = [...formableWords(b.hand, ctx.words), ...wordCards];
-  if (options.length && chance(rng, C.wordPromptChance)) word = pick(rng, options).id;
-
-  return { guard, weak, word };
+  return shuffle(ctx.rng, tiles);
 }
 
 export function startPlayerTurn(b: BattleState, ctx: BattleCtx): BattleState {
-  let next: BattleState = {
-    ...b,
-    turn: b.turn + 1,
-    playerBlock: 0,
-    energy: maxEnergy(b.relics),
-  };
-  next = drawCards(next, handSize(b.relics), ctx);
-  next = drawSpells(next, ctx);
-  return { ...next, prompts: generatePrompts(next, ctx) };
-}
-
-// ---------------------------------------------------------------- spells
-
-let spellUid = 0;
-
-/** Discard last turn's spellbook, draw new spells and label each with a fresh SRS-weighted kana. */
-export function drawSpells(b: BattleState, ctx: BattleCtx): BattleState {
-  let pile = b.spellPile ?? [];
-  let discard = [...(b.spellDiscard ?? []), ...(b.spellHand ?? []).map((s) => s.spellId)];
-  const n = Math.min(CONFIG.spells.drawPerTurn, pile.length + discard.length);
+  // last turn's moves go to the discard; reshuffle when the pile runs low
+  const n = movesPerTurn(b.relics);
+  let pile = b.drawPile;
+  let discard = [...b.discard, ...b.slots.map((s) => s.card)];
   if (pile.length < n) {
     pile = [...pile, ...shuffle(ctx.rng, discard)];
     discard = [];
   }
-  const drawn = pile.slice(0, n);
-  const review = new Set(b.reviewKana);
-  const kana = weightedSample(ctx.rng, ctx.unlocked, n, (k) => ctx.weightOf(k) * (review.has(k) ? 3 : 1));
-  const spellHand = drawn.map((spellId, i) => ({ uid: `s${++spellUid}`, spellId, kana: kana[i % Math.max(1, kana.length)] }));
-  return { ...b, spellPile: pile.slice(n), spellDiscard: discard, spellHand, spellsCast: 0 };
-}
-
-export function canCastSpell(b: BattleState): boolean {
-  return b.outcome === 'ongoing' && (b.spellsCast ?? 0) < CONFIG.spells.castsPerTurn && (b.spellHand ?? []).length > 0;
-}
-
-/** Block the mirror spell would give right now. */
-export function incomingDamage(e: EnemyState): number {
-  const i = currentIntent(e);
-  if (!isAttackIntent(i)) return 0;
-  return intentDamage(e, i) * (i.type === 'multi' ? (i.times ?? 2) : 1);
-}
-
-/** Is `pickedKana` a right answer for a spell asking for `targetKana`'s reading (same script, same romaji)? */
-export function isRightKana(targetKana: string, pickedKana: string): boolean {
-  const t = KANA_BY_ID[targetKana];
-  const p = KANA_BY_ID[pickedKana];
-  return !!t && !!p && t.script === p.script && t.romaji === p.romaji;
-}
-
-/**
- * Cast a spell: it shows a romaji reading and you pick the matching kana.
- * Wrong → fizzles and costs HP. Either way it uses the turn's cast.
- */
-export function castSpell(b: BattleState, uid: string, pickedKana: string, ctx: BattleCtx): PlayResult {
-  const s = b.spellHand.find((x) => x.uid === uid);
-  if (!s || !canCastSpell(b)) return { battle: b, answers: [] };
-  const def = SPELL_BY_ID[s.spellId];
-  const ok = isRightKana(s.kana, pickedKana);
-  let next: BattleState = {
+  const cards = pile.slice(0, n);
+  const labels = makeLabels(cards.length, b, ctx);
+  const slots: Slot[] = labels.map((label, i) => ({ uid: uid('s'), card: cards[i], label }));
+  return {
     ...b,
-    spellsCast: b.spellsCast + 1,
-    spellHand: b.spellHand.filter((x) => x.uid !== uid),
-    spellDiscard: [...b.spellDiscard, s.spellId],
-    stats: { ...b.stats, correct: b.stats.correct + (ok ? 1 : 0), wrong: b.stats.wrong + (ok ? 0 : 1) },
+    turn: b.turn + 1,
+    playerBlock: 0,
+    picked: null,
+    drawPile: pile.slice(n),
+    discard: [...discard, ...cards.slice(labels.length)],
+    slots,
+    tiles: makeTiles(slots, ctx),
   };
-  const answers = [{ id: s.kana, correct: ok }];
-  if (!ok) {
-    if (next.relics.includes('omamori') && !next.freeMissUsed) {
-      next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
-    } else {
-      next = { ...next, playerHp: Math.max(0, next.playerHp - CONFIG.spells.wrongHpCost) };
-      next = pushFx(next, 'miss', `Fizzle! -${CONFIG.spells.wrongHpCost}`);
-      if (next.playerHp <= 0) next = { ...next, outcome: 'lost' };
-    }
-    return { battle: log(next, `${def.name} fizzled.`), answers };
-  }
-  next = pushFx(log(next, `You cast ${def.name}!`), 'spell', `${def.emoji} ${def.name}!`);
-  switch (def.effect) {
-    case 'damage': {
-      let dealt = 0;
-      for (let i = 0; i < (def.hits ?? 1) && next.enemy.hp > 0; i++) {
-        const r = hitEnemy(next, def.value, !!def.pierce);
-        next = r.b;
-        dealt += r.dealt;
-      }
-      next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!');
-      break;
-    }
-    case 'block':
-      next = pushFx({ ...next, playerBlock: next.playerBlock + def.value }, 'block', `+${def.value} 🛡`);
-      break;
-    case 'mirror': {
-      const amt = incomingDamage(next.enemy);
-      next = pushFx({ ...next, playerBlock: next.playerBlock + amt }, 'block', `+${amt} 🛡`);
-      break;
-    }
-    case 'heal': {
-      const amt = Math.min(def.value, next.playerMaxHp - next.playerHp);
-      next = pushFx({ ...next, playerHp: next.playerHp + amt }, 'heal', `+${amt} ❤️`);
-      break;
-    }
-    case 'weaken':
-      next = pushFx({ ...next, enemy: { ...next.enemy, strength: next.enemy.strength - def.value } }, 'enemyBlock', `-${def.value} 💪`);
-      break;
-    case 'draw':
-      next = drawCards(next, def.value, ctx);
-      break;
-    case 'energy':
-      next = { ...next, energy: next.energy + def.value };
-      break;
-  }
-  if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`);
-  return { battle: next, answers };
 }
+
+// ---------------------------------------------------------------- move values
+
+export interface MovePreview {
+  damagePerHit: number;
+  hits: number;
+  block: number;
+  heal: number;
+  weaken: number;
+  pierce: boolean;
+  matchup: 'weak' | 'resist' | null;
+}
+
+function powerMultiplier(b: Pick<BattleState, 'relics' | 'movesMade'>, label: Label | null): number {
+  let m = 1;
+  if (label?.kind === 'word') m *= has(b, 'suzuri') ? CONFIG.relics.wordMultiplier : CONFIG.combat.wordMultiplier;
+  if (has(b, 'torii') && b.movesMade === 0) m *= CONFIG.relics.firstMoveMultiplier;
+  return m;
+}
+
+/** What a move would do right now with this label. Static info, safe to show before picking. */
+export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleState, 'relics' | 'movesMade' | 'enemy'>): MovePreview {
+  const power = powerMultiplier(b, label);
+  const voiced = !!label && has(b, 'dakuten_blade') && label.kana.some(isVoiced);
+  const isAttack = move.kind === 'attack' || move.kind === 'drain';
+  const matchup = isAttack && move.element ? (move.element === b.enemy.weak ? 'weak' : move.element === b.enemy.resist ? 'resist' : null) : null;
+  let elem = 1;
+  if (matchup === 'weak') elem = has(b, 'katana') ? CONFIG.relics.weaknessMultiplier : CONFIG.combat.weaknessMultiplier;
+  if (matchup === 'resist') elem = CONFIG.combat.resistMultiplier;
+  const base = move.value + (isAttack && has(b, 'kitsune_mask') ? CONFIG.relics.attackBonus : 0) + (isAttack && voiced ? CONFIG.relics.voicedBonus : 0);
+  return {
+    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * power)) : 0,
+    hits: isAttack ? (move.hits ?? 1) : 0,
+    block:
+      move.kind === 'block'
+        ? Math.round((move.value + (has(b, 'fude') ? CONFIG.relics.blockBonus : 0)) * power)
+        : move.kind === 'mirror'
+          ? incomingDamage(b.enemy)
+          : 0,
+    heal: move.kind === 'heal' ? Math.round((move.value + (has(b, 'maru_ring') ? CONFIG.relics.healBonus : 0)) * power) : 0,
+    weaken: move.kind === 'weaken' ? Math.round(move.value * power) : 0,
+    pierce: !!move.pierce || voiced,
+    matchup,
+  };
+}
+
+// ---------------------------------------------------------------- resolving a turn
 
 function pushFx(b: BattleState, kind: FxKind, text: string): BattleState {
   const id = b.fxSeq + 1;
@@ -347,173 +332,6 @@ function pushFx(b: BattleState, kind: FxKind, text: string): BattleState {
 
 function log(b: BattleState, line: string): BattleState {
   return { ...b, log: [...b.log, line].slice(-30) };
-}
-
-/** Player hit by `dmg`, absorbed by block first. */
-function hitPlayer(b: BattleState, dmg: number): BattleState {
-  const absorbed = Math.min(b.playerBlock, dmg);
-  const through = dmg - absorbed;
-  let next = { ...b, playerBlock: b.playerBlock - absorbed, playerHp: Math.max(0, b.playerHp - through) };
-  next = pushFx(next, through > 0 ? 'playerHit' : 'block', through > 0 ? `-${through}` : 'Blocked!');
-  if (next.playerHp <= 0) next = { ...next, outcome: 'lost' };
-  return next;
-}
-
-export function endTurn(b: BattleState, ctx: BattleCtx): BattleState {
-  if (b.outcome !== 'ongoing') return b;
-  let next: BattleState = { ...b, discard: [...b.discard, ...b.hand], hand: [] };
-  const e = { ...next.enemy, block: 0 };
-  next = { ...next, enemy: e };
-  const intent = currentIntent(e);
-  switch (intent.type) {
-    case 'attack': {
-      const dmg = intentDamage(e, intent);
-      next = log(next, `${e.name} attacks for ${dmg}.`);
-      next = hitPlayer(next, dmg);
-      break;
-    }
-    case 'multi': {
-      const dmg = intentDamage(e, intent);
-      const times = intent.times ?? 2;
-      next = log(next, `${e.name} strikes ${times}× for ${dmg}.`);
-      for (let i = 0; i < times && next.outcome === 'ongoing'; i++) next = hitPlayer(next, dmg);
-      break;
-    }
-    case 'defend': {
-      const amt = Math.round(intent.value * e.dmgScale);
-      next = { ...next, enemy: { ...next.enemy, block: amt } };
-      next = pushFx(log(next, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
-      break;
-    }
-    case 'buff': {
-      next = { ...next, enemy: { ...next.enemy, strength: next.enemy.strength + intent.value } };
-      next = pushFx(log(next, `${e.name} powers up (+${intent.value} strength).`), 'buff', `+${intent.value} 💪`);
-      break;
-    }
-  }
-  next = { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
-  if (next.outcome !== 'ongoing') return next;
-  return startPlayerTurn(next, ctx);
-}
-
-// ---------------------------------------------------------------- playing cards
-
-export interface PlayStep {
-  /** Kana id (or vocab id when `kind` is 'meaning'). */
-  ref: string;
-  kind: 'romaji' | 'meaning';
-}
-
-export interface PlayPlan {
-  cards: Card[];
-  word: Vocab | null;
-  cost: number;
-  valid: boolean;
-  reason?: string;
-  damage: number;
-  block: number;
-  multiplier: number;
-  steps: PlayStep[];
-  label: string;
-}
-
-function relicCardBonus(card: Card, relics: string[]): number {
-  let bonus = 0;
-  if (card.type === 'word') return 0;
-  const k = KANA_BY_ID[card.ref];
-  if (relics.includes('maru_ring') && k.group === 'handakuten') bonus += CONFIG.relics.handakutenBonus;
-  if (card.type === 'attack' && relics.includes('dakuten_blade') && isVoiced(card.ref)) bonus += CONFIG.relics.dakutenPierceBonus;
-  return bonus;
-}
-
-export function weakMultiplier(relics: string[]): number {
-  return relics.includes('katana') ? CONFIG.relics.weakSpotMultiplier : CONFIG.combat.weakSpotMultiplier;
-}
-export function guardMultiplier(relics: string[]): number {
-  return relics.includes('fude') ? CONFIG.relics.perfectGuardMultiplier : CONFIG.combat.perfectGuardMultiplier;
-}
-
-/** Which prompt (if any) a card matches right now. */
-export function cardMatch(card: Card, prompts: Prompts): 'weak' | 'guard' | null {
-  if (card.type === 'word') return prompts.word === card.ref ? 'weak' : null;
-  const r = cardRomaji(card);
-  if (card.type === 'attack' && prompts.weak.includes(r)) return 'weak';
-  if (card.type === 'block' && prompts.guard === r) return 'guard';
-  return null;
-}
-
-/** Value a single card would deal/block right now (before combo multiplier). */
-export function cardValue(card: Card, b: Pick<BattleState, 'prompts' | 'relics'>): number {
-  const C = CONFIG.cards;
-  if (card.type === 'word') {
-    const w = VOCAB_BY_ID[card.ref];
-    const base = C.wordScrollDamagePerKana * w.kana.length;
-    return Math.round(base * (b.prompts.word === card.ref ? CONFIG.combat.wordPromptBonus : 1));
-  }
-  const base = (card.type === 'attack' ? C.attackDamage : C.blockAmount) + relicCardBonus(card, b.relics);
-  const m = cardMatch(card, b.prompts);
-  if (m === 'weak') return Math.round(base * weakMultiplier(b.relics));
-  if (m === 'guard') return Math.round(base * guardMultiplier(b.relics));
-  return base;
-}
-
-export function comboMultiplier(word: Vocab, b: Pick<BattleState, 'prompts' | 'relics'>): number {
-  let m = 1 + CONFIG.combat.comboPerExtraKana * (word.kana.length - 1);
-  if (b.relics.includes('suzuri')) m += CONFIG.relics.comboBoost;
-  if (b.prompts.word === word.id) m *= CONFIG.combat.wordPromptBonus;
-  return m;
-}
-
-export function planPlay(b: BattleState, selectedUids: readonly string[], ctx: Pick<BattleCtx, 'words'>): PlayPlan {
-  const picked = selectedUids.map((u) => b.hand.find((c) => c.uid === u)).filter((c): c is Card => !!c);
-  const empty: PlayPlan = { cards: [], word: null, cost: 0, valid: false, damage: 0, block: 0, multiplier: 1, steps: [], label: '' };
-  if (!picked.length) return { ...empty, reason: 'Tap a card to select it' };
-
-  if (picked.length === 1) {
-    const card = picked[0];
-    const cost = cardCost(card);
-    const value = cardValue(card, b);
-    const match = cardMatch(card, b.prompts);
-    const plan: PlayPlan = {
-      ...empty,
-      cards: [card],
-      cost,
-      valid: true,
-      damage: card.type === 'block' ? 0 : value,
-      block: card.type === 'block' ? value : 0,
-      steps: [{ ref: card.ref, kind: card.type === 'word' ? 'meaning' : 'romaji' }],
-      label: match === 'weak' ? '🎯 Weak spot!' : match === 'guard' ? '✨ Perfect Guard!' : '',
-    };
-    if (CONFIG.combat.requireMatch && card.type !== 'word' && !match) return { ...plan, valid: false, reason: 'Match a prompt or chain a word' };
-    if (cost > b.energy) return { ...plan, valid: false, reason: 'Not enough energy' };
-    return plan;
-  }
-
-  const matched = matchWord(picked, ctx.words);
-  if (!matched) return { ...empty, cards: picked, reason: picked.some((c) => c.type === 'word') ? 'Scrolls can’t be chained' : 'Not a word — keep tapping or deselect' };
-  const { word, ordered } = matched;
-  const multiplier = comboMultiplier(word, b);
-  const cost = Math.max(1, word.kana.length - 1) * CONFIG.cards.kanaCost;
-  let damage = 0;
-  let block = 0;
-  for (const c of ordered) {
-    const v = cardValue(c, b) * multiplier;
-    if (c.type === 'attack') damage += v;
-    else block += v;
-  }
-  const plan: PlayPlan = {
-    cards: ordered,
-    word,
-    cost,
-    valid: cost <= b.energy,
-    reason: cost <= b.energy ? undefined : 'Not enough energy',
-    damage: Math.round(damage),
-    block: Math.round(block),
-    multiplier,
-    steps: ordered.map((c) => ({ ref: c.ref, kind: 'romaji' as const })),
-    label: `${word.reading} = “${word.meaning}” ×${multiplier.toFixed(multiplier % 1 ? 2 : 0).replace(/0$/, '')}`,
-  };
-  return plan;
 }
 
 /** Deal damage to the enemy: block first, then armor (unless piercing), then HP. */
@@ -528,114 +346,121 @@ function hitEnemy(b: BattleState, raw: number, pierce: boolean): { b: BattleStat
   return { b: { ...b, enemy: e }, dealt: dmg };
 }
 
-export interface PlayResult {
-  battle: BattleState;
-  answers: Answer[];
+function hitPlayer(b: BattleState, dmg: number): BattleState {
+  const absorbed = Math.min(b.playerBlock, dmg);
+  const through = dmg - absorbed;
+  let next = { ...b, playerBlock: b.playerBlock - absorbed, playerHp: Math.max(0, b.playerHp - through) };
+  next = pushFx(next, through > 0 ? 'playerHit' : 'block', through > 0 ? `-${through}` : 'Blocked!');
+  if (next.playerHp <= 0) next = { ...next, outcome: 'lost' };
+  return next;
 }
 
-/**
- * Resolve a play after the reading check. `results[i]` is whether step i was answered correctly.
- */
-export function resolvePlay(b: BattleState, plan: PlayPlan, results: readonly boolean[]): PlayResult {
-  if (!plan.valid || b.outcome !== 'ongoing') return { battle: b, answers: [] };
-  const C = CONFIG.combat;
-  const uids = new Set(plan.cards.map((c) => c.uid));
-  let next: BattleState = {
-    ...b,
-    energy: b.energy - plan.cost,
-    hand: b.hand.filter((c) => !uids.has(c.uid)),
-    discard: [...b.discard, ...plan.cards.filter((c) => !c.echo)],
-  };
-  const answers: Answer[] = [];
-  const allCorrect = results.length === plan.steps.length && results.every(Boolean);
-  let totalDamage = 0;
-  let totalBlock = 0;
-  let misses = 0;
+/** Tap a kana tile (tap again to un-pick). Nothing happens until End Turn. */
+export function pickTile(b: BattleState, tileId: string | null): BattleState {
+  if (b.outcome !== 'ongoing') return b;
+  return { ...b, picked: b.picked === tileId ? null : tileId };
+}
 
-  let weakHits = 0;
-  let guards = 0;
-  plan.cards.forEach((card, i) => {
-    const ok = !!results[i];
-    const m = ok ? cardMatch(card, b.prompts) : null;
-    if (m === 'weak' && card.type !== 'word') weakHits++;
-    if (m === 'guard') guards++;
-    if (card.type === 'word') {
-      VOCAB_BY_ID[card.ref].kana.forEach((k) => answers.push({ id: k, correct: ok }));
-    } else {
-      answers.push({ id: card.ref, correct: ok });
-    }
-    if (!ok) {
-      misses++;
-      return;
-    }
-    const mult = plan.word && allCorrect ? plan.multiplier : 1;
-    const value = cardValue(card, next) * mult;
-    if (card.type === 'block') totalBlock += value;
-    else {
-      const pierce = card.type === 'attack' && next.relics.includes('dakuten_blade') && isVoiced(card.ref);
-      const r = hitEnemy(next, value, pierce);
+function performMove(b: BattleState, slot: Slot): BattleState {
+  const move = MOVE_BY_ID[slot.card.moveId];
+  const p = previewMove(move, slot.label, b);
+  let next = pushFx(b, 'move', `${move.emoji} ${move.name}!`);
+  if (p.hits > 0) {
+    let dealt = 0;
+    for (let i = 0; i < p.hits && next.enemy.hp > 0; i++) {
+      const r = hitEnemy(next, p.damagePerHit, p.pierce);
       next = r.b;
-      totalDamage += r.dealt;
+      dealt += r.dealt;
     }
-  });
-
-  // consume matched prompts
-  const playedRomaji = plan.cards.filter((_, i) => results[i]).map((c) => ({ c, r: cardRomaji(c) }));
-  const prompts = { ...next.prompts, weak: next.prompts.weak.slice() };
-  for (const { c, r } of playedRomaji) {
-    if (c.type === 'attack' && prompts.weak.includes(r)) prompts.weak.splice(prompts.weak.indexOf(r), 1);
-    if (c.type === 'block' && prompts.guard === r) prompts.guard = null;
-    if (c.type === 'word' && prompts.word === c.ref) prompts.word = null;
+    next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!');
+    if (p.matchup === 'weak') next = pushFx(next, 'weak', 'Weakness!');
+    if (p.matchup === 'resist') next = pushFx(next, 'resist', 'Resisted…');
+    if (move.kind === 'drain' && dealt > 0) {
+      const heal = Math.min(dealt, next.playerMaxHp - next.playerHp);
+      next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
+    }
   }
-  if (plan.word && allCorrect && prompts.word === plan.word.id) prompts.word = null;
-  next = { ...next, prompts };
-
-  if (totalBlock > 0) {
-    next = { ...next, playerBlock: next.playerBlock + Math.round(totalBlock) };
-    next = pushFx(next, 'block', `+${Math.round(totalBlock)} 🛡`);
+  if (p.block > 0) next = pushFx({ ...next, playerBlock: next.playerBlock + p.block }, 'block', `+${p.block} 🛡`);
+  if (p.heal > 0) {
+    const heal = Math.min(p.heal, next.playerMaxHp - next.playerHp);
+    next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
   }
-  if (totalDamage > 0 || plan.damage > 0) next = pushFx(next, 'enemyHit', totalDamage > 0 ? `-${totalDamage}` : 'Armor!');
-  if (weakHits) next = pushFx(next, 'combo', weakHits > 1 ? `🎯 Weak spots ×${weakHits}!` : '🎯 Weak spot!');
-  if (guards) next = pushFx(next, 'reveal', '✨ Perfect Guard!');
-  if (plan.word && allCorrect) {
-    next = pushFx(next, 'combo', `${plan.word.reading}! ×${plan.multiplier.toFixed(1).replace(/\.0$/, '')}`);
-    next = log(next, `Combo ${plan.word.reading} (${plan.word.meaning})!`);
-  }
+  if (p.weaken > 0) next = pushFx({ ...next, enemy: { ...next.enemy, strength: next.enemy.strength - p.weaken } }, 'enemyBlock', `-${p.weaken} 💪`);
+  return log(next, `You used ${move.name}.`);
+}
 
-  for (let i = 0; i < misses; i++) {
-    if (next.relics.includes('omamori') && !next.freeMissUsed) {
+function enemyTurn(b: BattleState): BattleState {
+  const e = { ...b.enemy, block: 0 };
+  let next: BattleState = { ...b, enemy: e };
+  const intent = currentIntent(e);
+  switch (intent.type) {
+    case 'attack': {
+      const dmg = intentDamage(e, intent);
+      next = hitPlayer(log(next, `${e.name} attacks for ${dmg}.`), dmg);
+      break;
+    }
+    case 'multi': {
+      const dmg = intentDamage(e, intent);
+      const times = intent.times ?? 2;
+      next = log(next, `${e.name} strikes ${times}× for ${dmg}.`);
+      for (let i = 0; i < times && next.outcome === 'ongoing'; i++) next = hitPlayer(next, dmg);
+      break;
+    }
+    case 'defend': {
+      const amt = Math.round(intent.value * e.dmgScale);
+      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
+      break;
+    }
+    case 'buff':
+      next = pushFx(
+        log({ ...next, enemy: { ...next.enemy, strength: next.enemy.strength + intent.value } }, `${e.name} powers up.`),
+        'buff',
+        `+${intent.value} 💪`,
+      );
+      break;
+  }
+  return { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
+}
+
+/** End Turn: resolve the picked tile (if any), then the enemy acts, then a new turn is dealt. */
+export function confirmTurn(b: BattleState, ctx: BattleCtx): PlayResult {
+  if (b.outcome !== 'ongoing') return { battle: b, answers: [] };
+  const tile = b.tiles.find((t) => t.id === b.picked) ?? null;
+  const answers: SrsAnswer[] = [];
+  let next: BattleState = b;
+
+  if (!tile) {
+    next = { ...next, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
+  } else if (tile.slot) {
+    const slot = b.slots.find((s) => s.uid === tile.slot)!;
+    const move = MOVE_BY_ID[slot.card.moveId];
+    tile.kana.forEach((k) => answers.push({ id: k, correct: true }));
+    next = performMove(next, slot);
+    next = {
+      ...next,
+      movesMade: next.movesMade + 1,
+      stats: { ...next.stats, correct: next.stats.correct + 1, words: next.stats.words + (slot.label.kind === 'word' ? 1 : 0) },
+      lastResult: { ok: true, tileText: tile.text, tileRomaji: tile.romaji, text: `${tile.text} = ${tile.romaji} → ${move.emoji} ${move.name}` },
+    };
+  } else {
+    const target = b.slots.find((s) => s.uid === tile.decoyOf);
+    if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
+    next = { ...next, movesMade: next.movesMade + 1, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
+    if (has(next, 'omamori') && !next.freeMissUsed) {
       next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
     } else {
-      next = { ...next, playerHp: Math.max(0, next.playerHp - C.wrongReadingHpCost) };
-      next = pushFx(next, 'miss', `Misread! -${C.wrongReadingHpCost}`);
+      next = pushFx({ ...next, playerHp: Math.max(0, next.playerHp - CONFIG.combat.decoyHpCost) }, 'miss', `Fizzle! -${CONFIG.combat.decoyHpCost}`);
     }
+    const hint = target ? ` (“${target.label.romaji}” was ${target.label.text})` : '';
+    next = {
+      ...next,
+      lastResult: { ok: false, tileText: tile.text, tileRomaji: tile.romaji, text: `${tile.text} = ${tile.romaji}: no move has that reading${hint}` },
+    };
+    if (next.playerHp <= 0) return { battle: { ...next, outcome: 'lost' }, answers };
   }
 
-  next = {
-    ...next,
-    stats: {
-      correct: next.stats.correct + results.filter(Boolean).length,
-      wrong: next.stats.wrong + misses,
-      words: next.stats.words + (plan.word && allCorrect ? 1 : 0),
-    },
-  };
-  if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`);
-  else if (next.playerHp <= 0) next = { ...next, outcome: 'lost' };
-  return { battle: next, answers };
-}
-
-/** The battle as the player is allowed to see it when match hints are off: no prompt matching. */
-export function blindView(b: BattleState): BattleState {
-  if (CONFIG.combat.showMatchHints) return b;
-  return { ...b, prompts: { guard: null, weak: [], word: null } };
-}
-
-/** Readings currently shown as prompts (used as decoys in the reading check). */
-export function promptRomaji(p: Prompts): string[] {
-  return [...(p.guard ? [p.guard] : []), ...p.weak];
-}
-
-/** Kana id whose romaji is shown in a prompt — handy for speech. */
-export function promptKana(romaji: string, ctx: Pick<BattleCtx, 'unlocked'>): string | undefined {
-  return kanaOfRomaji(romaji, ctx.unlocked);
+  if (next.enemy.hp <= 0) return { battle: log({ ...next, outcome: 'won' }, `${next.enemy.name} is slain!`), answers };
+  next = enemyTurn(next);
+  if (next.outcome !== 'ongoing') return { battle: next, answers };
+  return { battle: startPlayerTurn(next, ctx), answers };
 }

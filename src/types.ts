@@ -43,21 +43,27 @@ export interface EnemyDef {
   armor: number;
   flavor: string;
   pattern: Intent[];
+  /** Fixed for the whole fight: moves of this element deal ×2. */
+  weak: Element;
+  /** Moves of this element deal ×0.5. */
+  resist?: Element;
 }
 
+export type Element = 'physical' | 'fire' | 'water' | 'wind' | 'thunder';
+
 export type RelicEffect =
-  | 'dakutenPierce'
+  | 'voicedBonus'
   | 'maxHp'
   | 'firstMissFree'
-  | 'comboBoost'
-  | 'extraDraw'
+  | 'wordBoost'
+  | 'extraMove'
   | 'healAfterFight'
   | 'startBlock'
-  | 'firstTurnEnergy'
-  | 'perfectGuardBoost'
-  | 'weakSpotBoost'
-  | 'handakutenBonus'
-  | 'energyPlus';
+  | 'firstMoveDouble'
+  | 'blockBonus'
+  | 'weaknessBoost'
+  | 'healBonus'
+  | 'attackBonus';
 
 export interface RelicDef {
   id: string;
@@ -67,29 +73,33 @@ export interface RelicDef {
   description: string;
 }
 
-export type CardType = 'attack' | 'block' | 'word';
+export type MoveKind = 'attack' | 'block' | 'heal' | 'weaken' | 'mirror' | 'drain';
 
-export interface Card {
-  uid: string;
-  /** Kana id for attack/block cards, vocab id for word scrolls. */
-  ref: string;
-  type: CardType;
-  /** Temporary review card, removed after the fight. */
-  echo?: boolean;
-}
-
-export type SpellEffect = 'damage' | 'block' | 'heal' | 'weaken' | 'draw' | 'energy' | 'mirror';
-
-export interface SpellDef {
+/** A move card. Moves are not tied to any kana: each turn they get a fresh romaji label. */
+export interface MoveDef {
   id: string;
   name: string;
   emoji: string;
-  effect: SpellEffect;
+  kind: MoveKind;
+  element?: Element;
   value: number;
   hits?: number;
   pierce?: boolean;
-  starter?: boolean;
+  rarity: 'starter' | 'common' | 'rare';
   description: string;
+}
+
+/** A move card in the player's deck. Copies make a move more likely to be dealt. */
+export interface Card {
+  uid: string;
+  moveId: string;
+}
+
+/** One question in a reading check (kana → romaji, or word → meaning). */
+export interface ReadingStep {
+  /** Kana id, or vocab id when `kind` is 'meaning'. */
+  ref: string;
+  kind: 'romaji' | 'meaning';
 }
 
 export interface UnlockGroup {

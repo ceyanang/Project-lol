@@ -1,7 +1,8 @@
 import type { SrsStats } from './srs';
 
 export const PROFILE_KEY = 'kanaslayer.profile.v1';
-export const RUN_KEY = 'kanaslayer.run.v1';
+/** v2: move-deck combat. Old v1 runs are dropped; the profile (unlocks + SRS) carries over. */
+export const RUN_KEY = 'kanaslayer.run.v2';
 
 export interface Profile {
   version: 1;

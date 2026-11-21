@@ -1,122 +1,58 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import HpBar from '../components/HpBar';
-import KanaCard from '../components/KanaCard';
-import ReadingCheck from '../components/ReadingCheck';
-import SpellCast from '../components/SpellCast';
-import { RELIC_BY_ID, SPELL_BY_ID, VOCAB_BY_ID, KANA_BY_ID } from '../data';
-import {
-  type BattleState,
-  type Fx,
-  type PlayPlan,
-  type PlayStep,
-  blindView,
-  canCastSpell,
-  type SpellInHand,
-  cardMatch,
-  cardValue,
-  currentIntent,
-  intentDamage,
-  isAttackIntent,
-  planPlay,
-  promptRomaji,
-} from '../game/battle';
-import { CONFIG } from '../config';
-import { cardCost } from '../game/deck';
+import MoveCard from '../components/MoveCard';
+import { ELEMENT_META, MOVE_BY_ID, RELIC_BY_ID } from '../data';
+import { type BattleState, type Fx, currentIntent, intentDamage, previewMove } from '../game/battle';
 import { type Sfx, playSfx } from '../game/sfx';
-import type { Vocab } from '../types';
 
 interface Props {
   battle: BattleState;
-  words: readonly Vocab[];
-  unlocked: readonly string[];
   floor: number;
-  onPlay: (plan: PlayPlan, results: boolean[]) => void;
-  onEndTurn: () => void;
-  onCastSpell: (uid: string, pickedKana: string) => void;
-  onSpeak: (text: string) => void;
+  onPick: (tileId: string) => void;
+  onConfirm: () => void;
   onMenu?: () => void;
-  /** Kana ids currently flagged as missed by the SRS. */
-  missed?: ReadonlySet<string>;
 }
 
-const FX_MS = 1000;
+const FX_MS = 1100;
 
 const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
+  move: 'spell',
   enemyHit: 'hit',
   playerHit: 'hurt',
   block: 'block',
   enemyBlock: 'block',
   buff: 'buff',
-  combo: 'combo',
-  reveal: 'combo',
-  spell: 'spell',
   heal: 'heal',
+  weak: 'combo',
 };
+const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist'];
+const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
-export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTurn, onCastSpell, onSpeak, onMenu, missed }: Props) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [checking, setChecking] = useState<PlayPlan | null>(null);
-  const [casting, setCasting] = useState<SpellInHand | null>(null);
+export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Props) {
   const [fx, setFx] = useState<Fx[]>([]);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
   const intent = currentIntent(e);
+  const ongoing = battle.outcome === 'ongoing';
 
-  // spawn floating numbers for new fx entries
+  // floating numbers + sounds for new fx entries
   useEffect(() => {
     const fresh = battle.fx.filter((f) => f.id > lastFx.current);
     lastFx.current = battle.fxSeq;
     if (!fresh.length) return;
-    // one sound per kind, slightly staggered so a turn reads as a sequence
-    [...new Set(fresh.map((f) => FX_SOUND[f.kind]).filter((s): s is Sfx => !!s))].forEach((s, i) =>
-      window.setTimeout(() => playSfx(s), i * 110),
-    );
+    [...new Set(fresh.map((f) => FX_SOUND[f.kind]).filter((s): s is Sfx => !!s))].forEach((s, i) => window.setTimeout(() => playSfx(s), i * 120));
     setFx((cur) => [...cur, ...fresh]);
     const t = window.setTimeout(() => setFx((cur) => cur.filter((f) => !fresh.includes(f))), FX_MS);
     return () => window.clearTimeout(t);
   }, [battle.fxSeq, battle.fx]);
 
   useEffect(() => {
-    if (battle.outcome === 'won') window.setTimeout(() => playSfx('victory'), 250);
-    if (battle.outcome === 'lost') window.setTimeout(() => playSfx('defeat'), 250);
+    if (battle.outcome === 'won') window.setTimeout(() => playSfx('victory'), 300);
+    if (battle.outcome === 'lost') window.setTimeout(() => playSfx('defeat'), 300);
   }, [battle.outcome]);
 
-  // drop selections that left the hand (new turn)
-  useEffect(() => {
-    setSelected((s) => s.filter((u) => battle.hand.some((c) => c.uid === u)));
-  }, [battle.hand]);
-
-  // The real plan is what gets resolved; the preview uses the blind view so it can't leak prompt matches.
-  const plan = useMemo(() => planPlay(battle, selected, { words }), [battle, selected, words]);
-  const seen = useMemo(() => blindView(battle), [battle]);
-  const preview = useMemo(() => planPlay(seen, selected, { words }), [seen, selected, words]);
-  const hints = CONFIG.combat.showMatchHints;
   const enemyHit = fx.some((f) => f.kind === 'enemyHit');
   const playerHit = fx.some((f) => f.kind === 'playerHit' || f.kind === 'miss');
-
-  function toggle(uid: string) {
-    playSfx('select');
-    setSelected((s) => (s.includes(uid) ? s.filter((u) => u !== uid) : [...s, uid]));
-  }
-
-  function startCheck() {
-    if (!plan.valid) return;
-    setChecking(plan);
-  }
-
-  function onAnswer(step: PlayStep, correct: boolean) {
-    if (step.kind === 'romaji') onSpeak(KANA_BY_ID[step.ref].char);
-    else if (correct) onSpeak(VOCAB_BY_ID[step.ref].reading);
-  }
-
-  function finishCheck(results: boolean[]) {
-    const p = checking!;
-    setChecking(null);
-    setSelected([]);
-    if (p.word && results.every(Boolean)) window.setTimeout(() => onSpeak(p.word!.reading), 250);
-    onPlay(p, results);
-  }
-
   const intentText =
     intent.type === 'attack'
       ? `⚔️ ${intentDamage(e, intent)}`
@@ -125,8 +61,8 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         : intent.type === 'defend'
           ? `🛡 ${Math.round(intent.value * e.dmgScale)}`
           : `💪 +${intent.value}`;
-  const wordPrompt = battle.prompts.word ? VOCAB_BY_ID[battle.prompts.word] : null;
-  const ongoing = battle.outcome === 'ongoing';
+  const weak = e.weak ? ELEMENT_META[e.weak] : null;
+  const resist = e.resist ? ELEMENT_META[e.resist] : null;
 
   return (
     <main className="screen battle">
@@ -157,12 +93,24 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         <div className="enemy-name">
           {e.name}
           {e.armor > 0 && <span className="armor" title="Armor: reduces every hit">⛨ {e.armor}</span>}
-          {e.strength > 0 && <span className="armor">💪 {e.strength}</span>}
+          {e.strength !== 0 && <span className="armor">💪 {e.strength}</span>}
         </div>
         <HpBar hp={e.hp} max={e.maxHp} block={e.block} label="Enemy HP" />
+        <div className="matchups">
+          {weak && (
+            <span className="matchup matchup-weak">
+              Weak {weak.emoji} {weak.label}
+            </span>
+          )}
+          {resist && (
+            <span className="matchup matchup-resist">
+              Resists {resist.emoji} {resist.label}
+            </span>
+          )}
+        </div>
         <div className="fx-layer">
           {fx
-            .filter((f) => f.kind === 'enemyHit' || f.kind === 'enemyBlock' || f.kind === 'buff' || f.kind === 'combo' || f.kind === 'reveal' || f.kind === 'spell')
+            .filter((f) => ENEMY_FX.includes(f.kind))
             .map((f) => (
               <span key={f.id} className={`fx fx-${f.kind}`}>
                 {f.text}
@@ -171,87 +119,31 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         </div>
       </section>
 
-      <section className="prompts" aria-label="Enemy prompts">
-        {battle.prompts.guard && isAttackIntent(intent) && (
-          <span className="prompt prompt-guard" title="Play a Block card with this reading for a Perfect Guard">
-            🛡 Guard <b>{battle.prompts.guard}</b>
-          </span>
-        )}
-        {battle.prompts.weak.map((w) => (
-          <span key={w} className="prompt prompt-weak" title="Play an Attack card with this reading for double damage">
-            🎯 <b>{w}</b>
-          </span>
-        ))}
-        {wordPrompt && (
-          <span className="prompt prompt-word" title="Chain cards into this word">
-            💬 “{wordPrompt.meaning}”
-          </span>
-        )}
-        {!battle.prompts.guard && !battle.prompts.weak.length && !wordPrompt && <span className="muted small">No prompts left — play freely!</span>}
-      </section>
-
-      <section className="play-preview" aria-live="polite">
-        {selected.length === 0 ? (
-          <span className="muted small">Tap a card · tap several to spell a word</span>
-        ) : plan.valid ? (
-          <span>
-            {preview.label && <b className="preview-label jp">{preview.label} </b>}
-            {preview.damage > 0 && <span className="c-attack">⚔️ {preview.damage}{hints ? '' : '+'} </span>}
-            {preview.block > 0 && <span className="c-block">🛡 {preview.block}{hints ? '' : '+'} </span>}
-            <span className="muted">({plan.cost}⚡)</span>
-          </span>
+      <p className={`turn-result ${battle.lastResult ? (battle.lastResult.ok ? 'is-ok' : 'is-bad') : ''}`} aria-live="polite">
+        {battle.lastResult ? (
+          <>
+            {battle.lastResult.ok ? '✅ ' : battle.lastResult.tileText ? '❌ ' : '… '}
+            <span className="jp">{battle.lastResult.text}</span>
+          </>
         ) : (
-          <span className="muted small">{plan.reason}</span>
+          <span className="muted">Find the kana for the move you want, then End Turn.</span>
         )}
-      </section>
+      </p>
 
-      <section className="spellbook" aria-label="Spellbook">
-        <div className="spellbook-head">
-          <span>🪄 Spellbook</span>
-          <span className="muted small">{canCastSpell(battle) ? '1 spell per turn · pick its kana' : (battle.spellHand?.length ?? 0) ? 'Spell used — next turn!' : 'No spells this turn'}</span>
-        </div>
-        <div className="spell-row">
-          {(battle.spellHand ?? []).map((s) => {
-            const def = SPELL_BY_ID[s.spellId];
-            return (
-              <button
-                key={s.uid}
-                type="button"
-                className="spell-card"
-                disabled={!canCastSpell(battle)}
-                onClick={() => {
-                  playSfx('select');
-                  setCasting(s);
-                }}
-                aria-label={`${def.name}: ${def.description} Cast by picking the kana for ${KANA_BY_ID[s.kana].romaji}`}
-              >
-                <span className="spell-kana spell-kana-romaji">
-                  {KANA_BY_ID[s.kana].romaji}
-                  <small className="jp">{KANA_BY_ID[s.kana].script === 'hiragana' ? 'ひら' : 'カタ'}</small>
-                </span>
-                <span className="spell-info">
-                  <b>
-                    {def.emoji} {def.name}
-                  </b>
-                  <span className="small">{def.description}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <section className="moves" aria-label="Your moves this turn">
+        {battle.slots.map((s) => {
+          const move = MOVE_BY_ID[s.card.moveId];
+          return <MoveCard key={s.uid} move={move} romaji={s.label.romaji} preview={previewMove(move, s.label, battle)} />;
+        })}
       </section>
 
       <section className={`player-bar ${playerHit ? 'shake' : ''}`}>
         <div className="player-hp">
-          <span className="who">🧑‍🎤 You</span>
           <HpBar hp={battle.playerHp} max={battle.playerMaxHp} block={battle.playerBlock} color="var(--green)" label="Your HP" />
-        </div>
-        <div className="energy" aria-label={`Energy ${battle.energy}`}>
-          ⚡<b>{battle.energy}</b>
         </div>
         <div className="fx-layer">
           {fx
-            .filter((f) => f.kind === 'playerHit' || f.kind === 'block' || f.kind === 'miss' || f.kind === 'heal')
+            .filter((f) => PLAYER_FX.includes(f.kind))
             .map((f) => (
               <span key={f.id} className={`fx fx-${f.kind}`}>
                 {f.text}
@@ -260,68 +152,36 @@ export default function Battle({ battle, words, unlocked, floor, onPlay, onEndTu
         </div>
       </section>
 
-      <section className="hand" style={{ ['--n' as string]: battle.hand.length }}>
-        {battle.hand.map((c) => {
-          const idx = selected.indexOf(c.uid);
-          const cost = cardCost(c);
-          return (
-            <KanaCard
-              key={c.uid}
-              card={c}
-              cost={cost}
-              value={cardValue(c, seen)}
-              match={hints ? cardMatch(c, battle.prompts) : null}
-              missed={c.type !== 'word' && !!missed?.has(c.ref)}
-              selected={idx >= 0}
-              order={selected.length > 1 && idx >= 0 ? idx + 1 : undefined}
-              disabled={!ongoing || (idx < 0 && cost > battle.energy && selected.length === 0)}
-              onTap={() => ongoing && toggle(c.uid)}
-            />
-          );
-        })}
-        {battle.hand.length === 0 && <span className="muted small">Hand empty — end your turn.</span>}
+      <section className="tiles" aria-label="Kana tiles">
+        {battle.tiles.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`kana-pick jp ${t.text.length > 1 ? 'is-word' : ''} ${battle.picked === t.id ? 'is-picked' : ''}`}
+            onClick={() => {
+              if (!ongoing) return;
+              playSfx('select');
+              onPick(t.id);
+            }}
+            aria-pressed={battle.picked === t.id}
+            disabled={!ongoing}
+          >
+            {t.text}
+          </button>
+        ))}
       </section>
 
       <footer className="battle-actions">
         <span className="pile" aria-label="Draw pile">
           🂠 {battle.drawPile.length}
         </span>
-        <button type="button" className="btn btn-primary grow" disabled={!plan.valid || !ongoing} onClick={startCheck}>
-          {plan.word ? `Cast ${plan.word.reading}` : 'Play'}
-        </button>
-        <button type="button" className="btn btn-blue" disabled={!ongoing} onClick={onEndTurn}>
-          End Turn
+        <button type="button" className={`btn grow ${battle.picked ? 'btn-primary' : 'btn-ghost'}`} disabled={!ongoing} onClick={onConfirm}>
+          {battle.picked ? 'End Turn · do it!' : 'End Turn (skip move)'}
         </button>
         <span className="pile" aria-label="Discard pile">
           ♻ {battle.discard.length}
         </span>
       </footer>
-
-      {casting && (
-        <SpellCast
-          spell={casting}
-          unlocked={unlocked}
-          onCancel={() => setCasting(null)}
-          onCast={(picked) => {
-            const s = casting;
-            setCasting(null);
-            onSpeak(KANA_BY_ID[s.kana].char);
-            onCastSpell(s.uid, picked);
-          }}
-        />
-      )}
-
-      {checking && (
-        <ReadingCheck
-          steps={checking.steps}
-          unlocked={unlocked}
-          title={checking.word ? `Spell ${checking.word.reading}` : undefined}
-          decoys={CONFIG.combat.promptDecoysInCheck ? promptRomaji(battle.prompts) : []}
-          onAnswer={onAnswer}
-          onDone={finishCheck}
-          onCancel={() => setChecking(null)}
-        />
-      )}
     </main>
   );
 }

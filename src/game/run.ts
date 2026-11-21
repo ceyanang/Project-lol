@@ -1,10 +1,10 @@
 import { CONFIG } from '../config';
-import { ENEMIES, RELICS, SPELLS, UNLOCK_GROUPS, VOCAB, availableWords, unlockedKanaIds, wordScrollsUnlocked } from '../data';
+import { ENEMIES, RELICS, UNLOCK_GROUPS, availableWords, unlockedKanaIds } from '../data';
 import type { Card, EnemyDef, EnemyTier } from '../types';
 import { type BattleCtx, type BattleState, createBattle } from './battle';
-import { buildStartingDeck, makeCard } from './deck';
+import { moveRewardOptions, starterDeck } from './deck';
 import { type MapNode, generateMap, nodeById } from './map';
-import { type Rng, chance, pick, shuffle, weightedSample } from './rng';
+import { type Rng, pick, shuffle } from './rng';
 import { type SrsStats, dueKana } from './srs';
 import type { Profile } from './storage';
 
@@ -12,19 +12,16 @@ export type RunPhase = 'map' | 'battle' | 'reward' | 'rest' | 'over';
 
 export type RewardStep =
   | { kind: 'unlock'; groupId: string }
-  | { kind: 'cards'; options: Card[] }
-  | { kind: 'relics'; options: string[] }
-  | { kind: 'spells'; options: string[] };
+  | { kind: 'moves'; options: Card[] }
+  | { kind: 'relics'; options: string[] };
 
 export interface RunState {
-  version: 1;
+  version: 2;
   floor: number;
   hp: number;
   maxHp: number;
   deck: Card[];
   relics: string[];
-  /** Spell ids in the spell deck. */
-  spells: string[];
   map: MapNode[];
   position: string | null;
   visited: string[];
@@ -40,7 +37,7 @@ export interface RunState {
 
 export function runCtx(profile: Profile, rng: Rng, weightOf: (id: string) => number): BattleCtx {
   const unlocked = unlockedKanaIds(profile.unlockedCount);
-  return { unlocked, words: availableWords(new Set(unlocked)), weightOf, rng };
+  return { unlocked, words: availableWords(new Set(unlocked)), unlockedCount: profile.unlockedCount, weightOf, rng };
 }
 
 function hasDue(srs: SrsStats, unlocked: readonly string[], now: number) {
@@ -48,16 +45,14 @@ function hasDue(srs: SrsStats, unlocked: readonly string[], now: number) {
 }
 
 export function newRun(profile: Profile, ctx: BattleCtx, now: number): RunState {
-  const newestGroup = UNLOCK_GROUPS[profile.unlockedCount - 1]?.kana ?? [];
-  const deck = buildStartingDeck(ctx.unlocked, newestGroup, ctx.words, ctx.weightOf, profile.runs === 0, ctx.rng);
+  const deck = starterDeck(ctx.rng);
   return {
-    version: 1,
+    version: 2,
     floor: 1,
     hp: CONFIG.player.startHp,
     maxHp: CONFIG.player.startHp,
     deck,
     relics: [],
-    spells: STARTER_SPELLS.slice(),
     map: generateMap(1, hasDue(profile.srs, ctx.unlocked, now), ctx.rng),
     position: null,
     visited: [],
@@ -97,7 +92,6 @@ export function enterNode(run: RunState, nodeId: string, srs: SrsStats, ctx: Bat
     hp: run.hp,
     maxHp: run.maxHp,
     relics: run.relics,
-    spells: run.spells,
     reviewKana,
     ctx,
   });
@@ -139,14 +133,16 @@ export function finishBattle(run: RunState, profile: Profile, ctx: BattleCtx): {
   let nextProfile: Profile = { ...profile, bestFloor };
 
   const rewards: RewardStep[] = [];
-  if (node?.type !== 'boss') rewards.push({ kind: 'cards', options: cardRewardOptions(nextProfile, ctx) });
-  if (node?.type === 'elite') rewards.push({ kind: 'spells', options: spellOptions(next, CONFIG.spells.eliteSpellOptions, ctx.rng) });
+  if (node?.type !== 'boss') {
+    const odds = node?.type === 'elite' ? CONFIG.run.eliteRarityOdds : CONFIG.run.rarityOdds;
+    rewards.push({ kind: 'moves', options: moveRewardOptions(CONFIG.run.moveRewardOptions, odds, ctx.rng) });
+  }
   if (node?.type === 'elite') rewards.push({ kind: 'relics', options: relicOptions(next, CONFIG.run.eliteRelicOptions, ctx.rng) });
   if (node?.type === 'boss') {
     if (nextProfile.unlockedCount < UNLOCK_GROUPS.length) {
       const group = UNLOCK_GROUPS[nextProfile.unlockedCount];
       nextProfile = { ...nextProfile, unlockedCount: nextProfile.unlockedCount + 1 };
-      next = { ...next, deck: [...next.deck, ...cardsForGroup(group.id, ctx.rng)], stats: { ...next.stats, unlocked: [...next.stats.unlocked, group.id] } };
+      next = { ...next, stats: { ...next.stats, unlocked: [...next.stats.unlocked, group.id] } };
       rewards.push({ kind: 'unlock', groupId: group.id });
     }
     rewards.push({ kind: 'relics', options: relicOptions(next, CONFIG.run.bossRelicOptions, ctx.rng) });
@@ -166,21 +162,6 @@ function finishRewardsIfEmpty(run: RunState, profile: Profile, ctx: BattleCtx): 
   return { run: { ...run, phase: 'map' }, profile };
 }
 
-/**
- * Card reward: kana weighted by SRS (missed kana ×3) with the newest row boosted,
- * plus sometimes a Word Scroll once those are unlocked.
- */
-export function cardRewardOptions(profile: Profile, ctx: BattleCtx): Card[] {
-  const n = CONFIG.run.cardRewardOptions;
-  const newest = new Set(UNLOCK_GROUPS[profile.unlockedCount - 1]?.kana ?? []);
-  const kana = weightedSample(ctx.rng, ctx.unlocked, n, (k) => ctx.weightOf(k) * (newest.has(k) ? 2 : 1));
-  const cards = kana.map((k) => makeCard(k, chance(ctx.rng, 0.5) ? 'attack' : 'block'));
-  if (wordScrollsUnlocked(profile.unlockedCount) && ctx.words.length && chance(ctx.rng, 0.5)) {
-    cards[cards.length - 1] = makeCard(pick(ctx.rng, ctx.words).id, 'word');
-  }
-  return cards;
-}
-
 export function relicOptions(run: RunState, n: number, rng: Rng): string[] {
   return shuffle(rng, RELICS.filter((r) => !run.relics.includes(r.id)).map((r) => r.id)).slice(0, n);
 }
@@ -189,36 +170,11 @@ export function takeCard(run: RunState, card: Card): RunState {
   return { ...run, deck: [...run.deck, card] };
 }
 
-export const STARTER_SPELLS = SPELLS.filter((s) => s.starter).map((s) => s.id);
-
-/** Spells you don't own yet first; duplicates only once you own them all. */
-export function spellOptions(run: RunState, n: number, rng: Rng): string[] {
-  const fresh = SPELLS.filter((s) => !run.spells.includes(s.id)).map((s) => s.id);
-  const pool = fresh.length >= n ? fresh : SPELLS.map((s) => s.id);
-  return shuffle(rng, pool).slice(0, n);
-}
-
-export function takeSpell(run: RunState, spellId: string): RunState {
-  return { ...run, spells: [...run.spells, spellId] };
-}
-
 export function takeRelic(run: RunState, relicId: string): RunState {
   if (run.relics.includes(relicId)) return run;
   let next = { ...run, relics: [...run.relics, relicId] };
   if (relicId === 'daruma') next = { ...next, maxHp: next.maxHp + CONFIG.relics.maxHpBonus, hp: next.hp + CONFIG.relics.maxHpBonus };
   return next;
-}
-
-/** New cards added to the deck when a group unlocks. */
-export function cardsForGroup(groupId: string, rng: Rng): Card[] {
-  const g = UNLOCK_GROUPS.find((x) => x.id === groupId);
-  if (!g) return [];
-  if (g.words) {
-    return shuffle(rng, VOCAB.filter((v) => v.kana.length <= 3))
-      .slice(0, 2)
-      .map((v) => makeCard(v.id, 'word'));
-  }
-  return g.kana.map((k, i) => makeCard(k, i % 2 ? 'block' : 'attack'));
 }
 
 /** After a boss (and its rewards): next floor, or victory after the last floor. */
@@ -261,13 +217,8 @@ export function studyReward(run: RunState, correct: number): RunState {
 export function parseRun(raw: unknown): RunState | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Partial<RunState>;
-  if (r.version !== 1 || !Array.isArray(r.deck) || !Array.isArray(r.map) || typeof r.hp !== 'number' || typeof r.floor !== 'number') return null;
+  if (r.version !== 2 || !Array.isArray(r.deck) || !Array.isArray(r.map) || typeof r.hp !== 'number' || typeof r.floor !== 'number') return null;
   if (!r.phase || !['map', 'battle', 'reward', 'rest', 'over'].includes(r.phase)) return null;
-  if (r.phase === 'battle' && !r.battle) return null;
-  const run = { rewards: [], relics: [], visited: [], afterRewards: 'map', spells: STARTER_SPELLS.slice(), ...r } as RunState;
-  // saves from before spells existed: give the battle an empty spellbook
-  if (run.battle && !Array.isArray(run.battle.spellHand)) {
-    run.battle = { ...run.battle, spellPile: run.spells.slice(), spellDiscard: [], spellHand: [], spellsCast: 0 };
-  }
-  return run;
+  if (r.phase === 'battle' && (!r.battle || !Array.isArray(r.battle.tiles))) return null;
+  return { rewards: [], relics: [], visited: [], afterRewards: 'map', ...r } as RunState;
 }

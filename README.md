@@ -1,7 +1,7 @@
 # Kana-Slayer ⚔️か
 
 A mobile-first, offline PWA deckbuilder roguelike that teaches **hiragana and katakana**.
-Every card is a kana; playing it means reading it. Kana you miss come back 3× as often.
+Your deck is moves; each turn they're labelled with romaji and you cast one by tapping the matching kana. Kana you miss come back 3× as often.
 
 - Design spec: [`PLAN.md`](PLAN.md) · Coding & mobile rules: [`RULES.md`](RULES.md)
 - Game data: [`data/`](data) (kana, vocab, enemies, relics) · Tunables: [`src/config.ts`](src/config.ts)
@@ -12,6 +12,7 @@ Every card is a kana; playing it means reading it. Kana you miss come back 3× a
 npm install
 npm run dev        # http://localhost:5173, also on your LAN (--host) for phone testing
 npm test           # vitest: SRS, combat, map, storage
+npm run sim        # balance sim: turns, HP lost, death rate per enemy → balance-report.txt
 npm run build      # type-check + production build with service worker
 npm run preview    # serve the production build (needed to test offline/PWA)
 ```

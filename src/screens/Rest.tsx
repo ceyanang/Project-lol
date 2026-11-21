@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import ReadingCheck from '../components/ReadingCheck';
 import { CONFIG } from '../config';
 import { KANA_BY_ID } from '../data';
-import type { PlayStep } from '../game/battle';
+import type { ReadingStep as PlayStep } from '../types';
 import { defaultRng, weightedSample } from '../game/rng';
 import type { RunState } from '../game/run';
 

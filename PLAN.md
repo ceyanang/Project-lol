@@ -1,124 +1,99 @@
 # Kana-Slayer — Design Spec
 
 A mobile-first, offline-capable, turn-based deckbuilder roguelike that teaches
-hiragana and katakana. Every card is a kana. Playing a card means **reading** it.
-Kana you miss come back more often (spaced repetition baked into the draw math).
+hiragana and katakana. Your deck is **moves** (attacks, blocks, spells). Each turn
+the moves you're dealt are labelled with **romaji**, and you cast one by tapping
+the matching **kana**. Kana you miss come back more often (spaced repetition).
 
 > **Every number in this file lives in `src/config.ts`.** Change it there and
-> update the table here. Game content (kana, words, enemies, relics) lives in `data/*.json`.
+> update the table here. Game content (kana, words, moves, enemies, relics) lives in `data/*.json`.
 
 ---
 
 ## 1. Core combat loop
 
-1. Start of turn: refill energy, clear your block, draw a hand (SRS-weighted, see §3).
-2. The enemy telegraphs its **intent** (attack / multi-hit / defend / buff) plus three kinds of prompt:
-   | Prompt | Shown as | Answer | Bonus |
-   |---|---|---|---|
-   | 🛡 **Guard** | romaji, e.g. `ka` | play a **Block** card showing か | **Perfect Guard**: block ×2 |
-   | 🎯 **Weak spot** (×2) | romaji, e.g. `ne`, `su` | play an **Attack** card showing that kana | **Weak-spot hit**: damage ×2 |
-   | 💬 **Word** (sometimes) | English, e.g. `"cat"` | chain cards into that word (ね+こ) | extra ×1.5 on the combo |
-3. Tap one card, or tap 2+ cards to **chain** them. If the chained kana can be ordered into a vocab word (any order you tap them), it becomes a **word combo**.
-4. Press **Play** → the **reading check**: for each kana in the play, tap the correct romaji tile out of 4.
-   - ✅ correct → card resolves, kana marked correct.
-   - ❌ wrong → lose **2 HP**, that card fizzles, kana marked missed. In a chain, one miss breaks the combo multiplier (the other correct cards still resolve at base value).
-5. **End Turn** → hand is discarded, enemy acts, repeat.
+1. **Deal.** At the start of your turn, **4 moves** are dealt from your deck
+   (`movesPerTurn`). A move is not tied to any kana: each one gets a fresh label every
+   turn, the **romaji of a different kana** (e.g. `ka`, `mi`, `su`, `te`).
+2. **Tiles.** Below the moves sits a grid of **kana tiles**: the 4 right answers plus
+   **2 decoys** (`decoyTiles`): look-alikes (シ/ツ, ね/れ/わ…) or same-row / same-vowel
+   kana, drawn from kana you've unlocked. A decoy never shares a reading with any move,
+   so exactly one tile fits each label.
+3. **Pick.** Tap the kana for the move you want. Tapping does **nothing visible**
+   except highlight the tile: the game never shows which move a tile belongs to
+   before you confirm (no audio either), so you can't probe for the answer.
+4. **Confirm.** Press **End Turn**. The pick is revealed (`き = ki → 🛡 Guard`):
+   - the tile belongs to a move → that move happens (even if it's not the one you meant!);
+   - the tile is a decoy → **fizzle**, you take **3 damage** (`decoyHpCost`), and the kana
+     it imitates is marked missed in your SRS;
+   - no tile picked → you skip your move.
+5. **Enemy acts** (its intent was shown all turn), then a new turn is dealt.
 
-### 🪄 Spells (spellbook)
-A second, separate deck of **spells** (`data/spells.json`) that aren't tied to any kana.
-- Each turn **2 spells** are drawn into the spellbook row. Each one shows a **romaji
-  reading** (from a random SRS-weighted kana, distinct, re-rolled every turn; due kana ×3
-  in review fights) plus a small ひらがな/カタカナ tag.
-- To cast, tap the spell and **pick the matching kana from 6 tiles** (romaji → kana, the
-  reverse of the card check). Tiles are all from the same script and include look-alikes
-  (シ/ツ, ソ/ン, ね/れ/わ…) and same-row / same-vowel kana; only one tile has that reading.
-- **One spell per turn**, no energy cost. Picking the wrong kana fizzles the spell and costs
-  2 HP (Omamori protects). Right/wrong counts toward SRS like any reading.
-- Start every run with Fire Talisman (10 dmg), Stone Ward (10 block) and Wind Slash (4×3).
-  Elite fights offer **1 of 2 new spells** (before the relic pick).
+**One move per turn.** Attacks, blocks and spells all work the same way. There is no energy.
 
-| Spell | Effect |
-|---|---|
-| 🔥 Fire Talisman | 10 damage |
-| 🪨 Stone Ward | 10 block |
-| 🌪️ Wind Slash | 4 damage ×3 |
-| ⚡ Lightning Seal | 8 damage, ignores armor |
-| 💧 Spring Water | heal 7 |
-| 🪢 Binding Charm | enemy −3 strength |
-| 🖋️ Ink Burst | draw 2 kana cards |
-| 🧘 Zen Focus | +2 energy this turn |
-| 🪞 Yata Mirror | block = enemy's incoming attack |
-| 🥁 Thunder Drum | 16 damage |
+### Moves (`data/moves.json`)
+Copies of a move in your deck make it more likely to be dealt.
 
-### Prompt generation (keeps hands playable)
-- The guard prompt is taken from a Block card in your hand with probability `guardFromHandChance` (0.8), otherwise it is a decoy from your unlocked kana — so you have to actually read, not just pattern-match.
-- Weak spots: up to 2; at least one comes from an Attack card in hand when possible.
-- Prompts are chosen with SRS weights, so kana you miss are asked about more.
+| Move | Rarity | Effect |
+|---|---|---|
+| ⚔️ Strike | starter ×3 | 9 physical |
+| 🛡️ Guard | starter ×3 | +9 block |
+| 🔥 Fire Talisman | starter | 11 fire |
+| 💧 Water Jet | starter | 11 water |
+| 🌪️ Wind Slash | starter | 5 wind ×3 |
+| ⚡ Lightning Seal | common | 11 thunder, ignores armor |
+| 🌟 Shuriken | common | 3 physical ×4 |
+| 🪨 Stone Ward | common | +15 block |
+| 🍵 Spring Water | common | heal 10 |
+| 🪢 Binding Charm | common | enemy −3 strength |
+| 🪞 Yata Mirror | common | block equal to the incoming attack |
+| ☄️ Blaze · 🌊 Tidal Wave · 🥁 Thunder Drum | rare | 18 fire / water / thunder |
+| 🪭 Iron Fan | rare | 7 wind ×3 |
+| 🖋️ Vampire Ink | rare | 10 physical, heal what you deal |
 
-### No giveaways (`showMatchHints: false`)
-Cards never reveal which prompt they match before you play them: no glow, no badge,
-and the card and preview show base values (`⚔️ 6+`). You find the match by reading.
-The bonus is revealed after the play ("🎯 Weak spot!", "✨ Perfect Guard!").
-The reading check also uses the current prompt readings as distractors
-(`promptDecoysInCheck: true`), so playing い "because the prompt says o" and tapping `o` fails.
-Set `showMatchHints: true` for an easier mode with glowing matches.
+### Enemy weaknesses (fixed for the whole fight)
+Every enemy has one **weakness** and usually one **resistance**, shown under its HP bar
+the whole fight. They never rotate.
+- Hitting the weakness: **×2** damage (Katana relic: ×2.5).
+- Hitting the resistance: **×½**.
+- Move cards show the real numbers against the current enemy, with a WEAK / resist badge.
+  That's static information, not a hint about which kana to tap.
 
-### Matching rule
-The original pitch says a card *must* match a prompt (or be in a word) to be played.
-In testing that produced dead hands, so the default is **`requireMatch: false`**:
-unmatched cards still play at base value; matching doubles them. Set `requireMatch: true`
-in `src/config.ts` for the strict variant (unmatched single cards are greyed out).
+### Word moves
+After the Word moves unlock (the last unlock), each move has a 25% chance to be labelled
+with a **whole word's romaji** (`neko`) instead of a single kana; its tile shows the word
+(ねこ). Word moves get **×1.5 power** (Suzuri: ×2).
 
-### Numbers
+### Other numbers
 | Thing | Value |
 |---|---|
 | Player start HP | 50 |
-| Energy per turn | 3 |
-| Hand size | 5 |
-| Kana card cost | 1 energy |
-| Attack card | 6 damage |
-| Block card | 5 block |
-| Weak-spot / Perfect Guard | ×2 |
-| Word combo multiplier | `1 + 0.5 × (length − 1)` → 2 kana ×1.5, 3 kana ×2, 4 kana ×2.5 |
-| Word combo cost | `max(1, length − 1)` energy (a chain is cheaper than its cards) |
-| English word prompt bonus | ×1.5 on top of the combo |
-| Wrong reading | −2 HP, card fizzles |
-| Word Scroll (late unlock) | cost 2, `5 × length` damage, check = pick the English meaning |
-| Enemy armor | subtracted from every hit (dakuten relic pierces it) |
-| Player block | resets each turn |
+| Enemy armor | subtracted from every hit unless it pierces |
+| Player block | lasts until the enemy's attack this turn, then resets |
+| Enemy HP scaling | `hp × (1 + 0.25 × (floor − 1))` |
+| Enemy damage scaling | `value × (1 + 0.15 × (floor − 1))` |
 
-### Enemy HP / damage scaling
-```
-enemyHp     = base.hp    × (1 + 0.30 × (floor − 1))
-enemyDamage = base.value × (1 + 0.20 × (floor − 1))   (rounded)
-```
-Bosses don't scale on their "home" floor beyond this formula — e.g. Oni Lord (70 HP) on floor 1.
+### Balance
+`npm run sim` (or `SIM=1 npx vitest run src/game/balance.test.ts`) plays 300 fights per enemy and
+floor with a perfect reader and a greedy policy, and prints turns, HP lost and death rate.
+Targets with the starter deck: normal fights lose < 15 HP, elites < 30 HP on their own floor,
+the floor-1 boss ~20 HP. Add `SIM_EXTRA=blaze,stone_ward,…` to simulate a deck with rewards.
 
 ---
 
 ## 2. SRS (the learning engine)
 
-Per kana we store (in `localStorage`, profile key `kanaslayer.profile.v1`):
+Per kana (profile key `kanaslayer.profile.v1`): `seen`, `correct`, `lastSeen`, `streak`,
+`missDebt`, `bucket` (new → learning → known → mastered), `reviewStage`, `nextReview`.
 
-| Field | Meaning |
-|---|---|
-| `seen` | times it was asked in a reading check |
-| `correct` | times answered correctly |
-| `lastSeen` | timestamp (ms) |
-| `streak` | consecutive correct answers |
-| `missDebt` | "missed" boost counter: set to 3 on a miss, −1 on each correct |
-| `bucket` | `new` → `learning` → `known` → `mastered` |
-| `reviewStage` | index into the review interval list |
-| `nextReview` | timestamp a mastered kana is due for review |
+- **Correct**: you confirm a tile that belongs to a move → its kana are marked correct.
+- **Miss**: you confirm a decoy → the kana that decoy imitates is marked missed.
+- Study drills at rest sites (kana → romaji, 4 options) also count.
 
-### Buckets
-- `new`: never seen.
-- `learning`: seen, streak < 3.
-- `known`: streak ≥ 3.
-- `mastered`: streak ≥ 6.
-- A miss resets streak to 0 and drops `known`/`mastered` back to `learning`.
+Buckets: `learning` once seen; `known` at a streak of 3; `mastered` at a streak of 6.
+A miss resets the streak and drops known/mastered back to learning.
 
-### Draw weight (used for hand draws, prompts, rewards, distractors)
+### Label weight (which kana label your moves)
 ```
 weight = bucketWeight[bucket] × (missDebt > 0 ? 3 : 1) × (isDue ? 2 : 1)
 ```
@@ -127,97 +102,67 @@ weight = bucketWeight[bucket] × (missDebt > 0 ? 3 : 1) × (isDue ? 2 : 1)
 | new | 1.5 |
 | learning | 2.0 |
 | known | 1.0 |
-| mastered | 0.35 (never 0 — mastered kana never disappear) |
-| **missed multiplier** | **×3** |
+| mastered | 0.35 (never 0, so mastered kana never disappear) |
+| **missed multiplier** | **×3** (decays: −1 missDebt per correct answer) |
 | due-for-review multiplier | ×2 |
 
-Hands are drawn **without replacement from the draw pile, weighted** (not a uniform shuffle), so a missed か in your deck shows up ~3× as often as a comparable kana.
-
 ### Review schedule
-When a kana reaches `mastered`, it is scheduled for review **1 day** later. Each correct
-answer once it is due advances the schedule: **1 → 3 → 7 → 14 days** (stays at 14).
-A miss demotes it to `learning` and clears the schedule.
-
-Due kana:
-- make the map spawn a 📜 **Review** node (Memory Wraith fight) on the current floor,
-- are shuffled into your draw pile as temporary "echo" cards during that fight,
-- are preferred for prompts in that fight.
+Mastered → review due after **1 → 3 → 7 → 14 days** (each correct answer once due advances it).
+Due kana spawn a 📜 **Review** node (Memory Wraith); in that fight due kana are ×3 more likely
+to label your moves.
 
 ---
 
-## 3. Deck & words
+## 3. Run structure
 
-- First run deck: あ い う え お, each once as Attack and once as Block (10 cards).
-- Later runs: 12 cards from your unlocked kana — all kana of the newest unlocked row,
-  the rest SRS-weighted, plus the kana for 2 random vocab words so combos are possible.
-- **Word assist**: when a hand is drawn, with 50% chance the game swaps a card or two
-  from the draw pile so a vocab word is formable. Keeps combos showing up.
-- Vocab words count as usable once every kana in them is unlocked (`data/vocab.json`).
-
----
-
-## 4. Run structure
-
-- A run = **3 floors**. Beat the floor-3 boss → victory.
-- Each floor is a branching map: **4 rows of choices + a boss row**, 2–3 nodes per row.
-  | Node | Odds (rows 2–4) | |
-  |---|---|---|
-  | ⚔️ Fight | 55% | normal enemy |
-  | 💀 Elite | 15% | tougher enemy, card + relic reward |
-  | 🔥 Rest | 15% | heal 30% **or** Study drill (5 kana; each correct = +1 max HP, heal 3) |
-  | 📜 Review | 15% (only if kana are due) | Memory Wraith review fight |
-  Row 1 is always fights. The row before the boss always has at least one rest.
+- A run = **3 floors**; beat the floor-3 boss → victory.
+- Each floor: 4 rows of choices + a boss (fights 55%, elites 15%, rest 15%, review 15% if due).
+  Row 1 is all fights; the row before the boss always has a rest.
+- Starting deck: Strike ×3, Guard ×3, Fire Talisman, Water Jet, Wind Slash.
 - Rewards:
-  - Fight → pick 1 of 3 kana cards (or skip). Offers are SRS-weighted and favour your newest row.
-  - Elite → card pick + pick 1 of 2 spells + pick 1 of 2 relics.
-  - Boss → **unlock the next kana group** (its kana are added to your deck right away; the Word Scroll unlock adds 2 scrolls) + pick 1 of 3 relics + heal 50% of missing HP.
-- **Permadeath**: dying ends the run (map, deck, relics, HP gone). Unlocked kana and SRS stats are kept forever.
+  - Fight → add 1 of 3 moves (75% common / 25% rare) or skip.
+  - Elite → add 1 of 3 moves (45% common / 55% rare) + pick 1 of 2 relics.
+  - Boss → **unlock the next kana group** (they start labelling moves immediately) + pick 1 of 3 relics + heal 50% of missing HP.
+  - Rest → heal 30% **or** Study drill (5 kana; each correct = +1 max HP, heal 3).
+- **Permadeath**: dying ends the run. Unlocked kana and SRS stats are kept forever.
 
----
-
-## 5. Unlock order (one group per boss kill, persistent)
-
+## 4. Unlock order (one group per boss kill, persistent)
 | # | Group |
 |---|---|
 | 1 | あ row (start) |
-| 2–10 | か, さ, た, な, は, ま, や, ら, わ rows (わ row includes を ん) |
-| 11–15 | dakuten/handakuten: が, ざ, だ, ば, ぱ |
+| 2–10 | か, さ, た, な, は, ま, や, ら, わ rows |
+| 11–15 | が, ざ, だ, ば, ぱ |
 | 16–25 | katakana rows ア … ワ |
 | 26–30 | katakana dakuten ガ … パ |
-| 31 | 📜 Word Scrolls (vocab cards) |
+| 31 | 📜 Word moves |
 
----
-
-## 6. Relics (`data/relics.json`)
-
+## 5. Relics (`data/relics.json`)
 | Relic | Effect |
 |---|---|
-| 🗡️ Dakuten Blade | が/ぱ-type attacks pierce armor, +2 dmg |
+| 🗡️ Dakuten Blade | moves labelled with a voiced kana (ga, za, pa…) +5 dmg and pierce |
 | 🎎 Daruma Doll | +12 max HP |
-| 🧧 Omamori | first wrong reading per fight is free |
-| 🖋️ Suzuri Inkstone | word combo multiplier +0.5 |
-| 🏮 Paper Lantern | draw 6 instead of 5 |
+| 🧧 Omamori | first decoy pick per fight costs no HP |
+| 🖋️ Suzuri Inkstone | word moves ×2 instead of ×1.5 |
+| 🏮 Paper Lantern | 5 moves per turn instead of 4 |
 | 🍵 Matcha Bowl | heal 5 after every fight |
 | 🔔 Shrine Bell | start fights with 8 block |
-| ⛩️ Tiny Torii | +2 energy on turn 1 |
-| 🖌️ Calligraphy Brush | Perfect Guard ×3 |
-| ⚔️ Katana | weak spots ×2.5 |
-| ⭕ Maru Ring | handakuten cards +4 |
-| 🦊 Kitsune Mask | +1 energy per turn |
+| ⛩️ Tiny Torii | first move each fight has double power |
+| 🖌️ Calligraphy Brush | block moves +5 |
+| ⚔️ Katana | weakness hits ×2.5 |
+| ⭕ Maru Ring | heal moves +5 |
+| 🦊 Kitsune Mask | attacks +2 per hit |
 
----
+## 6. Screens
+Title (Continue / New Run / Kana Library, sound + read-aloud toggles) → Map → Battle →
+Reward → … → Run Over. Kana Library: every kana by row with mastery, tap to hear.
 
-## 7. Screens
-Title (New Run / Continue / Kana Library) → Map → Battle → Reward → … → Run Over.
-Kana Library: every kana by row with its mastery colour, tap to hear it, stats and mnemonic.
+## 7. Pronunciation & sound
+`speechSynthesis` with a Japanese voice when present (hint shown if missing). In battle the
+picked kana is spoken **after** End Turn, never on tap. Sound effects are synthesized with
+Web Audio (no files).
 
-## 8. Pronunciation
-`window.speechSynthesis`, `lang = "ja-JP"`, the first voice whose `lang` starts with `ja`.
-If none exists we still try (some browsers speak without listing voices) and show a
-one-time hint on how to install a Japanese voice.
-
-## 9. Persistence keys
+## 8. Persistence keys
 | Key | Content |
 |---|---|
 | `kanaslayer.profile.v1` | unlocks, SRS stats, settings, lifetime stats |
-| `kanaslayer.run.v1` | current run incl. in-progress battle (deleted on run end) |
+| `kanaslayer.run.v2` | current run incl. in-progress battle (v1 runs from the old card combat are dropped) |

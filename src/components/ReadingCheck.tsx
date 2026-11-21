@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { KANA_BY_ID, VOCAB_BY_ID } from '../data';
-import type { PlayStep } from '../game/battle';
+import type { ReadingStep as PlayStep } from '../types';
 import { meaningOptions, romajiOptions } from '../game/distractors';
 import { defaultRng } from '../game/rng';
 import { CONFIG } from '../config';

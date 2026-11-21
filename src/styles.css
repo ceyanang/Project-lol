@@ -77,66 +77,6 @@ button {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
 
-/* ---------- Cards ---------- */
-.card {
-  position: relative;
-  flex: 0 0 auto;
-  width: 64px;
-  height: 92px;
-  min-height: var(--tap);
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  background: linear-gradient(170deg, #fffaf0, #efe4cf);
-  color: #2a1f3d;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 2px 4px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
-  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms;
-}
-.card-attack { border-color: var(--attack); }
-.card-block { border-color: var(--block); }
-.card-word { border-color: var(--word); background: linear-gradient(170deg, #fff6d8, #f2dca0); }
-.card.is-selected { transform: translateY(-14px); box-shadow: 0 0 0 3px var(--gold), 0 10px 14px rgba(0, 0, 0, 0.45); }
-.card.is-disabled { opacity: 0.45; }
-.card.is-echo { background: linear-gradient(170deg, #efe6ff, #d8c8ff); }
-.card.is-match-weak { box-shadow: 0 0 0 2px var(--attack), 0 0 14px var(--attack), 0 4px 0 rgba(0, 0, 0, 0.35); }
-.card.is-match-guard { box-shadow: 0 0 0 2px var(--block), 0 0 14px var(--block), 0 4px 0 rgba(0, 0, 0, 0.35); }
-.card.is-selected.is-match-weak, .card.is-selected.is-match-guard { box-shadow: 0 0 0 3px var(--gold), 0 0 16px var(--gold); }
-
-.card-glyph { font-size: 40px; font-weight: 700; line-height: 1; }
-.card-glyph.is-long { font-size: 17px; letter-spacing: -0.02em; }
-.card-romaji { font-size: 13px; color: #6b5a8c; }
-.card-value { margin-top: auto; font-size: 13px; font-weight: 700; white-space: nowrap; }
-.card-cost {
-  position: absolute; top: -8px; left: -8px; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--gold); color: #3a2400; font-size: 13px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center; border: 2px solid #3a2400;
-}
-.card-order {
-  position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--purple); color: white; font-size: 12px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-}
-.card-match { position: absolute; bottom: 22px; right: 3px; font-size: 12px; }
-.card-echo { position: absolute; top: 2px; font-size: 9px; text-transform: uppercase; color: #6a4fb3; font-weight: 800; letter-spacing: 0.05em; }
-
-.card-big { width: 120px; height: 170px; border-radius: 18px; }
-.card-big .card-glyph { font-size: 76px; }
-.card-big .card-glyph.is-long { font-size: 30px; }
-.card-big .card-value { font-size: 16px; }
-.card-mini { width: 52px; height: 72px; }
-.card-mini .card-glyph { font-size: 30px; }
-.card-mini .card-glyph.is-long { font-size: 13px; }
-.card-mini .card-value { font-size: 11px; }
-
-@media (max-width: 340px) {
-  .card { width: 56px; height: 84px; }
-  .card-glyph { font-size: 34px; }
-}
-
 /* ---------- Buttons ---------- */
 .btn {
   min-height: var(--tap);
@@ -205,35 +145,10 @@ button {
   border-radius: 14px; padding: 4px 10px; font-weight: 800; font-size: 1rem;
 }
 
-.prompts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 34px; }
-.prompt {
-  border-radius: 12px; padding: 6px 10px; font-size: 0.95rem; background: var(--panel);
-  border: 2px solid var(--panel2);
-}
-.prompt b { font-size: 1.15rem; letter-spacing: 0.03em; }
-.prompt-guard { border-color: var(--block); }
-.prompt-weak { border-color: var(--attack); }
-.prompt-word { border-color: var(--word); color: var(--gold); font-weight: 700; }
 
-.play-preview { text-align: center; min-height: 24px; }
-.preview-label { color: var(--gold); }
 
 .player-bar { position: relative; display: flex; align-items: center; gap: 10px; }
-.player-hp { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.who { font-size: 0.8rem; color: var(--muted); }
-.energy {
-  width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(circle, #ffe28a, #f0a92a); color: #3a2400; font-size: 1rem; box-shadow: 0 0 12px rgba(255, 207, 90, 0.5);
-}
-.energy b { font-size: 1.5rem; }
 
-.hand {
-  --gap: 6px;
-  flex: 1; min-height: 116px;
-  display: flex; gap: var(--gap); justify-content: center; align-items: flex-end;
-  padding: 18px 4px 4px;
-}
-.hand .card { width: min(64px, calc((100% - (var(--n) - 1) * var(--gap)) / var(--n))); }
 
 .battle-actions { display: flex; gap: 8px; align-items: center; }
 .battle-actions .grow { flex: 1; }
@@ -243,7 +158,6 @@ button {
 .fx-layer { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
 .fx { position: absolute; font-weight: 900; font-size: 1.6rem; text-shadow: 0 2px 0 #000; animation: floatUp 1s ease-out forwards; }
 .fx-enemyHit { color: #fff; }
-.fx-combo { color: var(--gold); top: 20%; font-family: var(--jp); }
 .fx-enemyBlock, .fx-block { color: var(--block); }
 .fx-buff { color: var(--attack); }
 .fx-playerHit, .fx-miss { color: var(--red); }
@@ -293,10 +207,6 @@ button {
 .rc-feedback { display: flex; flex-direction: column; gap: 6px; text-align: center; }
 .rc-feedback p { margin: 0; }
 .big-inline { font-size: 1.6rem; }
-.card-missed {
-  position: absolute; bottom: 22px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
-  background: var(--red); color: white; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center;
-}
 
 /* ---------- Title ---------- */
 .tagline { margin: 0; }
@@ -334,7 +244,6 @@ button {
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 207, 90, 0.6); } 50% { box-shadow: 0 0 0 9px rgba(255, 207, 90, 0); } }
 
 .sheet-title { margin: 0; }
-.deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px 8px; padding-top: 8px; justify-items: center; }
 
 /* ---------- Rest / Reward / Run over ---------- */
 .rest-screen, .reward-screen, .runover-screen { justify-content: center; align-items: center; overflow-y: auto; }
@@ -356,11 +265,6 @@ button {
 .runover-screen section { width: 100%; }
 .runover-screen h3 { margin: 6px 0; font-size: 1rem; text-align: center; }
 .runover-screen p { margin: 4px 0; text-align: center; }
-.reward-cards { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding-top: 14px; }
-.reward-option-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 104px; }
-.reward-cards .card-big { width: 100px; height: 142px; }
-.reward-cards .card-big .card-glyph { font-size: 60px; }
-.reward-cards .card-big .card-glyph.is-long { font-size: 24px; }
 .relic-options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .relic-option {
   display: flex; gap: 12px; align-items: center; text-align: left; min-height: 64px; padding: 10px 12px;
@@ -422,66 +326,72 @@ button {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); animation: slideUp 200ms ease-out; text-align: left; width: auto;
 }
 .fx-reveal { color: var(--block); top: 32%; font-size: 1.3rem; }
-.fx-combo { font-size: 1.3rem; }
 .settings-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
 
-/* ---------- Spells ---------- */
-.spellbook { display: flex; flex-direction: column; gap: 6px; }
-.spellbook-head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; font-size: 0.9rem; gap: 8px; }
-.spell-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.spell-card {
-  display: flex; gap: 8px; align-items: center; text-align: left; min-height: 64px; padding: 6px 8px;
-  border-radius: 14px; border: 2px solid var(--purple); background: linear-gradient(160deg, #3b2a6e, #2a2050);
-  box-shadow: 0 0 10px rgba(180, 140, 255, 0.25);
+/* battle: sections keep their natural height; the screen scrolls as a last resort on tiny phones */
+.battle { overflow-y: auto; }
+.battle > * { flex-shrink: 0; }
+.battle .enemy-emoji { font-size: clamp(52px, 11dvh, 96px); }
+.player-hp { flex: 1; }
+.battle-actions { margin-top: auto; }
+
+/* ---------- Moves & kana tiles ---------- */
+.matchups { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.matchup { font-size: 0.8rem; font-weight: 800; border-radius: 99px; padding: 3px 10px; background: var(--panel); }
+.matchup-weak { border: 2px solid var(--gold); color: var(--gold); }
+.matchup-resist { border: 2px solid var(--panel2); color: var(--muted); }
+
+.turn-result { margin: 0; text-align: center; font-size: 0.9rem; min-height: 1.3em; }
+.turn-result.is-ok { color: var(--green); }
+.turn-result.is-bad { color: var(--red); }
+
+.moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.move-card {
+  display: flex; align-items: center; gap: 8px; text-align: left; min-height: 58px; padding: 6px 8px;
+  border-radius: 14px; border: 2px solid var(--panel2); background: var(--panel); color: var(--ink); min-width: 0;
 }
-.spell-card:disabled { opacity: 0.4; box-shadow: none; }
-.spell-kana {
-  flex: 0 0 auto; width: 44px; height: 48px; border-radius: 10px; background: #fffaf0; color: #2a1f3d;
-  font-size: 30px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+.move-card.kind-attack, .move-card.kind-drain { border-color: #a8553f; }
+.move-card.kind-block, .move-card.kind-mirror { border-color: #3d6fa3; }
+.move-card.kind-heal, .move-card.kind-weaken { border-color: #3f8a64; }
+.move-card.is-selected { border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 207, 90, 0.45); }
+.move-romaji {
+  flex: 0 0 auto; min-width: 52px; height: 44px; padding: 0 6px; border-radius: 10px; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 900; letter-spacing: 0.03em; color: var(--gold);
 }
-.spell-info { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.spell-info b { font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.spell-info .small { font-size: 0.7rem; color: var(--muted); }
-.fx-spell { color: var(--purple); top: 8%; font-size: 1.3rem; }
+.move-body { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.move-name { font-weight: 800; font-size: 0.85rem; }
+.move-count { color: var(--gold); }
+.move-sum { font-size: 0.75rem; color: var(--muted); }
+.badge { margin-left: 4px; font-size: 0.6rem; font-weight: 900; border-radius: 6px; padding: 1px 5px; vertical-align: 1px; }
+.badge-weak { background: var(--gold); color: #3a2400; }
+.badge-resist { background: var(--panel2); color: var(--muted); }
+
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.kana-pick {
+  min-height: 58px; border-radius: 14px; border: 3px solid transparent; background: #fffaf0; color: #2a1f3d;
+  font-size: 2.1rem; font-weight: 700; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); transition: transform 80ms;
+}
+.kana-pick.is-word { font-size: 1.35rem; }
+.kana-pick:active { transform: translateY(2px); }
+.kana-pick.is-picked { border-color: var(--gold); background: #fff1b8; transform: translateY(-3px); box-shadow: 0 0 0 3px rgba(255, 207, 90, 0.5), 0 6px 0 rgba(0, 0, 0, 0.35); }
+.kana-pick:disabled { opacity: 0.5; }
+
+.fx-move { color: var(--purple); top: 8%; font-size: 1.3rem; }
+.fx-weak { color: var(--gold); top: 28%; font-size: 1.2rem; }
+.fx-resist { color: var(--muted); top: 28%; font-size: 1.1rem; }
 .fx-heal { color: var(--green); }
 
-.spell-cast .rc-head { flex-direction: column; align-items: flex-start; gap: 2px; }
-.spell-list { display: flex; flex-direction: column; gap: 6px; }
-.spell-chip { background: var(--panel); border-radius: 10px; padding: 8px 10px; }
-/* battle sections keep their natural height; only the hand flexes */
-.battle > * { flex-shrink: 0; }
-.battle > .hand { flex-shrink: 1; min-height: 108px; }
-.battle .enemy-emoji { font-size: clamp(56px, 13dvh, 104px); }
-.spell-info b { white-space: normal; overflow: visible; }
+.reward-moves { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.reward-move { display: flex; flex-direction: column; gap: 3px; }
+.reward-move .move-card { width: 100%; min-height: 64px; }
+.deck-list { display: flex; flex-direction: column; gap: 6px; }
+
 @media (max-height: 720px) {
   .battle { gap: 6px; }
-  .battle .play-preview .small { display: none; }
   .enemy { padding-block: 6px 8px; }
-}
-@media (max-height: 720px) {
-  .battle .enemy-emoji { font-size: clamp(48px, 9dvh, 80px); }
-  .battle .play-preview { min-height: 20px; }
-  .spell-card { min-height: 52px; }
-  .spell-info .small { display: none; }
-  .energy { width: 46px; height: 46px; }
-  .battle .hand { padding-top: 14px; min-height: 100px; }
+  .battle .enemy-emoji { font-size: clamp(44px, 8dvh, 72px); }
+  .move-card { min-height: 50px; }
+  .move-romaji { height: 38px; font-size: 1.2rem; }
+  .kana-pick { min-height: 50px; font-size: 1.8rem; }
   .battle-top .icon-btn { min-height: 40px; }
 }
-.battle { overflow-y: auto; }
-
-/* spells: romaji prompt → pick the kana */
-.spell-kana-romaji { flex-direction: column; font-family: system-ui, sans-serif; font-size: 20px; font-weight: 900; line-height: 1; gap: 2px; }
-.spell-kana-romaji small { font-size: 9px; font-weight: 700; color: #6b5a8c; }
-.spell-romaji {
-  align-self: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  min-width: 150px; padding: 14px 24px; border-radius: 20px; background: var(--panel); border: 3px solid var(--purple);
-}
-.spell-romaji.is-ok { border-color: var(--green); }
-.spell-romaji.is-bad { border-color: var(--red); }
-.spell-romaji-text { font-size: 3.2rem; font-weight: 900; letter-spacing: 0.04em; line-height: 1; }
-.script-tag { font-size: 0.8rem; font-weight: 700; color: var(--muted); background: var(--bg); border-radius: 99px; padding: 2px 10px; }
-.spell-cast > p { margin: 0; }
-.kana-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.kana-tile { min-height: 72px; font-size: 2.4rem; font-weight: 700; background: #fffaf0; color: #2a1f3d; }
-.kana-tile.is-correct { background: var(--green); }
-.kana-tile.is-wrong { background: var(--red); color: white; }

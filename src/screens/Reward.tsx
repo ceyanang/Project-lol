@@ -1,25 +1,20 @@
 import { useEffect, useState } from 'react';
-import { playSfx } from '../game/sfx';
-import KanaCard from '../components/KanaCard';
-import { KANA_BY_ID, RELIC_BY_ID, SPELL_BY_ID, UNLOCK_GROUPS, VOCAB_BY_ID } from '../data';
-import { cardValue } from '../game/battle';
-import { cardCost } from '../game/deck';
+import MoveCard from '../components/MoveCard';
+import { KANA_BY_ID, MOVE_BY_ID, RELIC_BY_ID, UNLOCK_GROUPS } from '../data';
 import type { RewardStep } from '../game/run';
+import { playSfx } from '../game/sfx';
 import type { Card } from '../types';
 
 interface Props {
   step: RewardStep;
-  relics: string[];
+  deck: Card[];
   onSpeak: (text: string) => void;
   onTakeCard: (card: Card) => void;
   onTakeRelic: (relicId: string) => void;
-  onTakeSpell: (spellId: string) => void;
   onSkip: () => void;
 }
 
-const noPrompts = { guard: null, weak: [], word: null };
-
-export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic, onTakeSpell, onSkip }: Props) {
+export default function Reward({ step, deck, onSpeak, onTakeCard, onTakeRelic, onSkip }: Props) {
   const [chosen, setChosen] = useState<string | null>(null);
   useEffect(() => {
     if (step.kind === 'unlock') playSfx('unlock');
@@ -31,7 +26,7 @@ export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic,
       <main className="screen reward-screen">
         <div className="big-emoji">🔓</div>
         <h2 className="center">New kana unlocked!</h2>
-        <p className="center muted">They join your deck now and every future run. Tap to hear.</p>
+        <p className="center muted">From now on these can label your moves, in this run and every future one. Tap to hear.</p>
         <div className="kana-chips">
           {g.kana.map((k) => (
             <button key={k} type="button" className="kana-chip jp big" onClick={() => onSpeak(KANA_BY_ID[k].char)}>
@@ -39,7 +34,7 @@ export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic,
               <small>{KANA_BY_ID[k].romaji}</small>
             </button>
           ))}
-          {g.words && <p className="center">📜 Word Scrolls: whole-word cards. Pick the right meaning to unleash them.</p>}
+          {g.words && <p className="center">📜 Word moves: sometimes a move is labelled with a whole word. Find the word’s tile for ×1.5 power.</p>}
         </div>
         <button type="button" className="btn btn-gold btn-wide" onClick={onSkip}>
           Continue
@@ -48,68 +43,30 @@ export default function Reward({ step, relics, onSpeak, onTakeCard, onTakeRelic,
     );
   }
 
-  if (step.kind === 'cards') {
+  if (step.kind === 'moves') {
     const picked = step.options.find((c) => c.uid === chosen);
     return (
       <main className="screen reward-screen">
         <div className="big-emoji">🎴</div>
-        <h2 className="center">Choose a card</h2>
-        <p className="center muted small">Tap a card to hear it, then add it to your deck.</p>
-        <div className="reward-cards">
-          {step.options.map((c) => (
-            <div key={c.uid} className="reward-option-wrap">
-              <KanaCard
-                card={c}
-                size="big"
-                cost={cardCost(c)}
-                value={cardValue(c, { prompts: noPrompts, relics })}
-                revealRomaji
-                selected={chosen === c.uid}
-                onTap={() => {
-                  setChosen(c.uid);
-                  onSpeak(c.type === 'word' ? VOCAB_BY_ID[c.ref].reading : KANA_BY_ID[c.ref].char);
-                }}
-              />
-              {c.type === 'word' && <span className="small muted center">“{VOCAB_BY_ID[c.ref].meaning}”</span>}
-            </div>
-          ))}
-        </div>
-        <div className="menu">
-          <button type="button" className="btn btn-gold btn-wide" disabled={!picked} onClick={() => picked && onTakeCard(picked)}>
-            {picked ? `Take ${picked.type === 'word' ? VOCAB_BY_ID[picked.ref].reading : KANA_BY_ID[picked.ref].char}` : 'Pick a card'}
-          </button>
-          <button type="button" className="btn btn-ghost btn-wide" onClick={onSkip}>
-            Skip
-          </button>
-        </div>
-      </main>
-    );
-  }
-
-  if (step.kind === 'spells') {
-    return (
-      <main className="screen reward-screen">
-        <div className="big-emoji">🪄</div>
-        <h2 className="center">Learn a spell</h2>
-        <p className="center muted small">Spells join your spellbook. Each turn they show a random kana — type its reading to cast.</p>
-        <div className="relic-options">
-          {step.options.map((id) => {
-            const s = SPELL_BY_ID[id];
+        <h2 className="center">Add a move to your deck</h2>
+        <p className="center muted small">More copies of a move = it gets dealt more often.</p>
+        <div className="reward-moves">
+          {step.options.map((c) => {
+            const owned = deck.filter((d) => d.moveId === c.moveId).length;
             return (
-              <button key={id} type="button" className={`reward-option relic-option ${chosen === id ? 'is-chosen' : ''}`} onClick={() => setChosen(id)}>
-                <span className="relic-emoji">{s.emoji}</span>
-                <span>
-                  <b>{s.name}</b>
-                  <br />
-                  <span className="small">{s.description}</span>
+              <div key={c.uid} className="reward-move">
+                <MoveCard move={MOVE_BY_ID[c.moveId]} selected={chosen === c.uid} onTap={() => setChosen(c.uid)} />
+                <span className="small muted">
+                  {MOVE_BY_ID[c.moveId].rarity === 'rare' ? '✨ rare · ' : ''}
+                  {owned ? `you have ${owned}` : 'new'}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
         <div className="menu">
-          <button type="button" className="btn btn-gold btn-wide" disabled={!chosen} onClick={() => chosen && onTakeSpell(chosen)}>
-            {chosen ? `Learn ${SPELL_BY_ID[chosen].name}` : 'Pick a spell'}
+          <button type="button" className="btn btn-gold btn-wide" disabled={!picked} onClick={() => picked && onTakeCard(picked)}>
+            {picked ? `Take ${MOVE_BY_ID[picked.moveId].name}` : 'Pick a move'}
           </button>
           <button type="button" className="btn btn-ghost btn-wide" onClick={onSkip}>
             Skip

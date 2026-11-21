@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { castSpell, endTurn, resolvePlay, type PlayPlan } from './game/battle';
+import { confirmTurn, pickTile } from './game/battle';
 import { defaultRng } from './game/rng';
-import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, takeSpell, type RunState } from './game/run';
+import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { VOICE_HELP, initSpeech, speak as speakJa, voicesKnown } from './game/speech';
@@ -44,7 +44,6 @@ export default function App() {
 
   const weightOf = useMemo(() => makeWeightOf(profile.srs, Date.now()), [profile.srs]);
   const ctx = useMemo(() => runCtx(profile, defaultRng, weightOf), [profile, weightOf]);
-  const missed = useMemo(() => new Set(Object.keys(profile.srs).filter((k) => profile.srs[k].missDebt > 0)), [profile.srs]);
 
   const [toast, setToast] = useState<string | null>(null);
   const voiceHintShown = useRef(false);
@@ -82,23 +81,23 @@ export default function App() {
     setView('run');
   }
 
-  function onPlay(plan: PlayPlan, results: boolean[]) {
+  function onPick(tileId: string) {
     if (!run?.battle) return;
-    const r = resolvePlay(run.battle, plan, results);
-    recordSrs(r.answers);
-    setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
+    setRun({ ...run, battle: pickTile(run.battle, tileId) });
   }
 
-  function onCastSpell(uid: string, pickedKana: string) {
+  /** End Turn: the picked kana is revealed and its move resolves, then the enemy acts. */
+  function onConfirm() {
     if (!run?.battle) return;
-    const r = castSpell(run.battle, uid, pickedKana, ctx);
+    const picked = run.battle.tiles.find((t) => t.id === run.battle!.picked);
+    const r = confirmTurn(run.battle, ctx);
+    if (picked) {
+      playSfx(r.battle.lastResult?.ok ? 'correct' : 'wrong');
+      // speak only after confirming, so audio never gives the reading away early
+      speakAuto(picked.text);
+    }
     recordSrs(r.answers);
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
-  }
-
-  function onEndTurn() {
-    if (!run?.battle) return;
-    setRun({ ...run, battle: endTurn(run.battle, ctx) });
   }
 
   // When a battle has an outcome, let the last hit animate, then move on.
@@ -176,14 +175,9 @@ export default function App() {
       <Battle
         key={run.battleNode ?? 'battle'}
         battle={run.battle}
-        words={ctx.words}
-        unlocked={ctx.unlocked}
         floor={run.floor}
-        missed={missed}
-        onPlay={onPlay}
-        onEndTurn={onEndTurn}
-        onCastSpell={onCastSpell}
-        onSpeak={speakAuto}
+        onPick={onPick}
+        onConfirm={onConfirm}
         onMenu={() => setView('title')}
       />
     );
@@ -209,15 +203,11 @@ export default function App() {
       <Reward
         key={`${run.position}-${run.rewards.length}`}
         step={run.rewards[0]}
-        relics={run.relics}
+        deck={run.deck}
         onSpeak={speak}
         onTakeCard={(card) => {
           playSfx('pickup');
           claim((r) => takeCard(r, card));
-        }}
-        onTakeSpell={(id) => {
-          playSfx('pickup');
-          claim((r) => takeSpell(r, id));
         }}
         onTakeRelic={(id) => {
           playSfx('pickup');

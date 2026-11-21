@@ -1,0 +1,18 @@
+[
+  {"id": "strike", "name": "Strike", "emoji": "⚔️", "kind": "attack", "element": "physical", "value": 9, "rarity": "starter", "description": "Deal 9 damage."},
+  {"id": "guard", "name": "Guard", "emoji": "🛡️", "kind": "block", "value": 9, "rarity": "starter", "description": "Gain 9 block this turn."},
+  {"id": "fire_talisman", "name": "Fire Talisman", "emoji": "🔥", "kind": "attack", "element": "fire", "value": 11, "rarity": "starter", "description": "Deal 11 fire damage."},
+  {"id": "water_jet", "name": "Water Jet", "emoji": "💧", "kind": "attack", "element": "water", "value": 11, "rarity": "starter", "description": "Deal 11 water damage."},
+  {"id": "wind_slash", "name": "Wind Slash", "emoji": "🌪️", "kind": "attack", "element": "wind", "value": 5, "hits": 3, "rarity": "starter", "description": "Deal 5 wind damage 3 times."},
+  {"id": "lightning_seal", "name": "Lightning Seal", "emoji": "⚡", "kind": "attack", "element": "thunder", "value": 11, "pierce": true, "rarity": "common", "description": "Deal 11 thunder damage that ignores armor."},
+  {"id": "shuriken", "name": "Shuriken", "emoji": "🌟", "kind": "attack", "element": "physical", "value": 3, "hits": 4, "rarity": "common", "description": "Deal 3 damage 4 times."},
+  {"id": "stone_ward", "name": "Stone Ward", "emoji": "🪨", "kind": "block", "value": 15, "rarity": "common", "description": "Gain 15 block this turn."},
+  {"id": "spring_water", "name": "Spring Water", "emoji": "🍵", "kind": "heal", "value": 10, "rarity": "common", "description": "Heal 10 HP."},
+  {"id": "binding_charm", "name": "Binding Charm", "emoji": "🪢", "kind": "weaken", "value": 3, "rarity": "common", "description": "The enemy loses 3 strength for the rest of the fight."},
+  {"id": "yata_mirror", "name": "Yata Mirror", "emoji": "🪞", "kind": "mirror", "value": 0, "rarity": "common", "description": "Block the enemy's whole incoming attack this turn."},
+  {"id": "blaze", "name": "Blaze", "emoji": "☄️", "kind": "attack", "element": "fire", "value": 18, "rarity": "rare", "description": "Deal 18 fire damage."},
+  {"id": "tidal_wave", "name": "Tidal Wave", "emoji": "🌊", "kind": "attack", "element": "water", "value": 18, "rarity": "rare", "description": "Deal 18 water damage."},
+  {"id": "thunder_drum", "name": "Thunder Drum", "emoji": "🥁", "kind": "attack", "element": "thunder", "value": 18, "rarity": "rare", "description": "Deal 18 thunder damage."},
+  {"id": "iron_fan", "name": "Iron Fan", "emoji": "🪭", "kind": "attack", "element": "wind", "value": 7, "hits": 3, "rarity": "rare", "description": "Deal 7 wind damage 3 times."},
+  {"id": "vampire_ink", "name": "Vampire Ink", "emoji": "🖋️", "kind": "drain", "element": "physical", "value": 10, "rarity": "rare", "description": "Deal 10 damage and heal what you deal."}
+]
