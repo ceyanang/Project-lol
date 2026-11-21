@@ -24,12 +24,17 @@ describe('storage', () => {
     expect(back.srs['か'].lastSeen).toBe(123);
   });
 
+  it('migrates the old unlockedCount to a list of groups', () => {
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlockedCount: 3, srs: {} }));
+    expect(loadProfile().unlocked).toEqual(['h-a', 'h-ka', 'h-sa']);
+  });
+
   it('falls back to a fresh profile on garbage', () => {
     mem.set(PROFILE_KEY, '{not json');
     expect(loadProfile()).toEqual(newProfile());
     mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlockedCount: 'x', srs: { か: 'bad' } }));
     const p = loadProfile();
-    expect(p.unlockedCount).toBe(1);
+    expect(p.unlocked).toEqual(['h-a']);
     expect(p.srs).toEqual({});
   });
 });

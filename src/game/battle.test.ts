@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../config';
-import { ENEMY_BY_ID, KANA_BY_ID, MOVE_BY_ID, availableWords, unlockedKanaIds } from '../data';
+import { ENEMY_BY_ID, KANA_BY_ID, MOVE_BY_ID, availableWords, firstGroups, unlockedKanaIds } from '../data';
 import { type BattleCtx, type BattleState, advanceBeat, confirmTurn, createBattle, incomingDamage, pickTile, playTurn, previewMove } from './battle';
 import { makeCard, moveRewardOptions } from './deck';
 import { seeded } from './rng';
@@ -8,8 +8,9 @@ import { seeded } from './rng';
 const H = CONFIG.player.startHp;
 
 const ctxFor = (unlockedCount = 3, seed = 1): BattleCtx => {
-  const unlocked = unlockedKanaIds(unlockedCount);
-  return { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), unlockedCount, rng: seeded(seed) };
+  const groups = firstGroups(unlockedCount);
+  const unlocked = unlockedKanaIds(groups);
+  return { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), wordsUnlocked: groups.includes('words'), difficulty: 'normal', rng: seeded(seed) };
 };
 
 function battle(deck: string[], enemy = 'kodama', ctx = ctxFor()): BattleState {
@@ -31,7 +32,7 @@ describe('dealing moves', () => {
       expect(new Set(romaji).size).toBe(romaji.length);
       expect(b.tiles.filter((t) => t.slot)).toHaveLength(b.slots.length);
       const decoys = b.tiles.filter((t) => !t.slot);
-      expect(decoys.length).toBe(CONFIG.combat.decoyTiles);
+      expect(decoys.length).toBe(CONFIG.difficulty.normal.decoys);
       // a decoy never shares a reading with any move, so exactly one tile reads each label
       for (const d of decoys) expect(romaji).not.toContain(d.romaji);
       // tiles are kana from the unlocked pool
@@ -48,6 +49,38 @@ describe('dealing moves', () => {
       b = { ...playTurn(b, ctx).battle, playerHp: H };
     }
     expect(seen.size).toBeGreaterThan(CONFIG.combat.movesPerTurn);
+  });
+});
+
+describe('difficulty', () => {
+  it('easy: only the 4 right tiles', () => {
+    const ctx = { ...ctxFor(3, 4), difficulty: 'easy' as const };
+    const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctx);
+    expect(b.tiles).toHaveLength(CONFIG.combat.movesPerTurn);
+    expect(b.tiles.every((t) => t.slot)).toBe(true);
+  });
+
+  it('normal: 4 right + 4 decoys = 8 tiles', () => {
+    const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctxFor(3, 4));
+    expect(b.tiles).toHaveLength(8);
+  });
+
+  it('hard: every unlocked kana is a tile; same-reading kana also cast the move', () => {
+    const groups = ['h-a', 'h-ka', 'k-a', 'k-ka'];
+    const unlocked = unlockedKanaIds(groups);
+    const ctx: BattleCtx = { ...ctxFor(), unlocked, words: availableWords(new Set(unlocked)), difficulty: 'hard' };
+    const b = battle(CONFIG.player.starterDeck as unknown as string[], 'kodama', ctx);
+    expect(b.tiles).toHaveLength(unlocked.length);
+    for (const s of b.slots) {
+      const casting = b.tiles.filter((t) => t.slot === s.uid);
+      // e.g. both か and カ cast the "ka" move
+      expect(casting.length).toBe(unlocked.filter((k) => KANA_BY_ID[k].romaji === s.label.romaji).length);
+    }
+    // a non-matching tile records a miss (on the look-alike move's kana or on itself)
+    const decoy = b.tiles.find((t) => !t.slot)!;
+    const { answers } = playTurn(pickTile(b, decoy.id), ctx);
+    expect(answers.every((a) => !a.correct)).toBe(true);
+    expect(answers.length).toBeGreaterThan(0);
   });
 });
 

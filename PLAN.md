@@ -15,17 +15,21 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
 1. **Deal.** At the start of your turn, **4 moves** are dealt from your deck
    (`movesPerTurn`). A move is not tied to any kana: each one gets a fresh label every
    turn, the **romaji of a different kana** (e.g. `ka`, `mi`, `su`, `te`).
-2. **Tiles.** Below the moves sits a grid of **kana tiles**: the 4 right answers plus
-   **2 decoys** (`decoyTiles`): look-alikes (シ/ツ, ね/れ/わ…) or same-row / same-vowel
-   kana, drawn from kana you've unlocked. A decoy never shares a reading with any move,
-   so exactly one tile fits each label.
+2. **Tiles.** Below the moves sits a grid of **kana tiles**. How many depends on the
+   **difficulty** you pick when starting a run (`CONFIG.difficulty`):
+   | Difficulty | Tiles |
+   |---|---|
+   | 🟢 Easy | 4: just the right answers |
+   | 🟡 Normal | 8: the 4 answers + 4 decoys (look-alikes like シ/ツ, ね/れ/わ, or same-row / same-vowel kana, from kana you've unlocked). A decoy never shares a reading with any move. |
+   | 🔴 Hard | every kana you've unlocked, in chart order (scrolls). Kana with the same reading as a label also cast it (か and カ both cast `ka`). |
 3. **Pick.** Tap the kana for the move you want. Tapping does **nothing visible**
    except highlight the tile: the game never shows which move a tile belongs to
    before you confirm (no audio either), so you can't probe for the answer.
 4. **Confirm.** Press **End Turn**. The pick is revealed (`き = ki → 🛡 Guard`):
    - the tile belongs to a move → that move happens (even if it's not the one you meant!);
    - the tile is a decoy → **fizzle**, you take **3 damage** (`decoyHpCost`), and the kana
-     it imitates is marked missed in your SRS;
+     it imitates is marked missed in your SRS (on Hard, a non-look-alike tile marks the
+     tapped kana itself as missed);
    - no tile picked → you skip your move.
 5. **Beat, then the enemy acts.** After your move resolves there's a pause (1.3 s,
    `enemyDelayMs`), then the enemy acts (its intent was shown all turn), then another
@@ -130,7 +134,11 @@ to label your moves.
   - Rest → heal 30% **or** Study drill (5 kana; each correct = +1 max HP, heal 3).
 - **Permadeath**: dying ends the run. Unlocked kana and SRS stats are kept forever.
 
-## 4. Unlock order (one group per boss kill, persistent)
+## 4. Unlocks
+
+Unlocks are stored as a list of group ids (`profile.unlocked`; old saves with a count migrate).
+
+**Bosses** unlock the next group you don't have yet, in this order:
 | # | Group |
 |---|---|
 | 1 | あ row (start) |
@@ -139,6 +147,13 @@ to label your moves.
 | 16–25 | katakana rows ア … ワ |
 | 26–30 | katakana dakuten ガ … パ |
 | 31 | 📜 Word moves |
+
+**🎓 Skip-ahead Quiz** (home menu): if you already know some kana, test out of them.
+- **A row** (e.g. か row): every kana in it, no misses → that row unlocks.
+- **A family** (Hiragana, Hiragana dakuten, Katakana, Katakana dakuten): 14 questions with at
+  least one per row, at most 1 miss → every row in the family unlocks.
+- Kana → romaji, 4 options, distractors from the same family. Answers count toward SRS.
+- Word moves can't be quizzed; they unlock from a boss once every kana group is unlocked.
 
 ## 5. Relics (`data/relics.json`)
 | Relic | Effect |

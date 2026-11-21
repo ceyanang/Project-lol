@@ -10,8 +10,7 @@ export const CONFIG = {
   combat: {
     /** Moves dealt each turn, each labelled with a different romaji. */
     movesPerTurn: 4,
-    /** Extra look-alike kana tiles that match no move. */
-    decoyTiles: 2,
+
     /** Picking a decoy tile: the move fizzles and you take this much damage. */
     decoyHpCost: 3,
     weaknessMultiplier: 2,
@@ -25,6 +24,23 @@ export const CONFIG = {
     dealDelayMs: 900,
     /** Reading-check tiles in Study drills. */
     readingOptions: 4,
+  },
+  /**
+   * Difficulty = how many kana tiles you pick from each turn (chosen when starting a run).
+   * decoys: extra tiles that match no move; 'all' = every kana you've unlocked is a tile.
+   */
+  difficulty: {
+    easy: { label: 'Easy', emoji: '🟢', decoys: 0, blurb: '4 tiles: just the right kana' },
+    normal: { label: 'Normal', emoji: '🟡', decoys: 4, blurb: '8 tiles: 4 right + 4 look-alikes' },
+    hard: { label: 'Hard', emoji: '🔴', decoys: 'all', blurb: 'Every kana you’ve unlocked is a tile' },
+  },
+  /** Skip-ahead Quiz: pass to unlock kana groups without beating bosses. */
+  quiz: {
+    /** A single row: every kana in it, no misses allowed. */
+    rowMaxMisses: 0,
+    /** A whole family: one question per row plus extras, up to this many misses. */
+    familyQuestions: 14,
+    familyMaxMisses: 1,
   },
   srs: {
     bucketWeights: { new: 1.5, learning: 2, known: 1, mastered: 0.35 },

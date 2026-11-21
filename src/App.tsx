@@ -4,18 +4,20 @@ import { CONFIG } from './config';
 import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
-import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
+import { type Difficulty, type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { VOICE_HELP, initSpeech, speak as speakJa, voicesKnown } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
+import Quiz from './screens/Quiz';
+import { applyQuizUnlock } from './game/quiz';
 import MapScreen from './screens/MapScreen';
 import Rest from './screens/Rest';
 import Reward from './screens/Reward';
 import RunOver from './screens/RunOver';
 import Title from './screens/Title';
 
-type View = 'title' | 'library' | 'run';
+type View = 'title' | 'library' | 'quiz' | 'run';
 
 export default function App() {
   const [profile, setProfileState] = useState<Profile>(() => loadProfile());
@@ -44,7 +46,8 @@ export default function App() {
   useEffect(() => saveRunRaw(run), [run]);
 
   const weightOf = useMemo(() => makeWeightOf(profile.srs, Date.now()), [profile.srs]);
-  const ctx = useMemo(() => runCtx(profile, defaultRng, weightOf), [profile, weightOf]);
+  const runDifficulty = run?.difficulty;
+  const ctx = useMemo(() => runCtx(profile, defaultRng, weightOf, runDifficulty), [profile, weightOf, runDifficulty]);
 
   const [toast, setToast] = useState<string | null>(null);
   const voiceHintShown = useRef(false);
@@ -77,8 +80,10 @@ export default function App() {
     setProfile({ ...p, srs: recordAnswers(p.srs, answers, Date.now()) });
   }, [setProfile]);
 
-  function startNewRun() {
-    setRun(newRun(profile, ctx, Date.now()));
+  function startNewRun(difficulty: Difficulty) {
+    const p = { ...profileRef.current, difficulty };
+    setProfile(p);
+    setRun(newRun(p, runCtx(p, defaultRng, weightOf, difficulty), Date.now()));
     setView('run');
   }
 
@@ -112,7 +117,7 @@ export default function App() {
       const r = runRef.current;
       if (!r || r.phase !== 'battle' || !r.battle || r.battle.outcome === 'ongoing') return;
       const p = profileRef.current;
-      const res = finishBattle(r, p, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now())));
+      const res = finishBattle(r, p, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()), r.difficulty));
       setProfile(res.profile);
       setRun(res.run);
     }, 900);
@@ -130,7 +135,7 @@ export default function App() {
         const r = runRef.current;
         if (!r?.battle || r.phase !== 'battle' || r.battle.pending !== beat) return;
         const p = profileRef.current;
-        setRun({ ...r, battle: advanceBeat(r.battle, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()))) });
+        setRun({ ...r, battle: advanceBeat(r.battle, runCtx(p, defaultRng, makeWeightOf(p.srs, Date.now()), r.difficulty)) });
       },
       beat === 'enemy' ? CONFIG.combat.enemyDelayMs : CONFIG.combat.dealDelayMs,
     );
@@ -157,6 +162,19 @@ export default function App() {
         }}
       />
     );
+  } else if (view === 'quiz') {
+    screen = (
+      <Quiz
+        profile={profile}
+        onBack={() => setView('title')}
+        onSpeak={speakAuto}
+        onFinish={(plan, answers, passed) => {
+          const p = profileRef.current;
+          const withSrs = { ...p, srs: recordAnswers(p.srs, answers, Date.now()) };
+          setProfile(passed ? applyQuizUnlock(withSrs, plan) : withSrs);
+        }}
+      />
+    );
   } else if (view === 'title' || !run) {
     screen = (
       <Title
@@ -166,6 +184,7 @@ export default function App() {
         onNewRun={startNewRun}
         onContinue={() => setView('run')}
         onLibrary={() => setView('library')}
+        onQuiz={() => setView('quiz')}
         onToggleSfx={() => {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, sfx: !p.settings.sfx } });

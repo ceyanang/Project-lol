@@ -7,7 +7,7 @@ const CONFUSABLE_SETS = [
   'シツ', 'ソンリ', 'クタケ', 'ウワフラ', 'コユロ', 'ノメ', 'チテ', 'ナメ', 'ヌス', 'ヲラ', 'ホオ', 'マア', 'ルレ', 'セサ', 'ニエ',
 ];
 
-function confusablesOf(char: string): string[] {
+export function confusablesOf(char: string): string[] {
   return CONFUSABLE_SETS.filter((s) => s.includes(char)).flatMap((s) => [...s]).filter((c) => c !== char);
 }
 

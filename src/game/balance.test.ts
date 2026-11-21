@@ -1,6 +1,6 @@
 import { it } from 'vitest';
 import { CONFIG } from '../config';
-import { ENEMIES, MOVE_BY_ID, availableWords, unlockedKanaIds } from '../data';
+import { ENEMIES, MOVE_BY_ID, availableWords, firstGroups, unlockedKanaIds } from '../data';
 import { type BattleState, playTurn, createBattle, incomingDamage, pickTile, previewMove } from './battle';
 import { makeCard } from './deck';
 import { seeded } from './rng';
@@ -8,7 +8,7 @@ import { seeded } from './rng';
 // Balance sim: a perfect reader with a simple policy. Run with SIM=1.
 const run = process.env.SIM ? it : it.skip;
 run('balance sim', () => {
-  const unlocked = unlockedKanaIds(3);
+  const unlocked = unlockedKanaIds(firstGroups(3));
   const deck = (CONFIG.player.starterDeck as readonly string[]).slice();
   const extra = process.env.SIM_EXTRA ? process.env.SIM_EXTRA.split(',') : [];
   const rows: string[] = [];
@@ -18,7 +18,7 @@ run('balance sim', () => {
       let lost = 0, turns = 0, deaths = 0;
       const N = 300;
       for (let i = 0; i < N; i++) {
-        const ctx = { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), unlockedCount: 3, rng: seeded(i * 7 + floor) };
+        const ctx = { weightOf: () => 1, unlocked, words: availableWords(new Set(unlocked)), wordsUnlocked: false, difficulty: (process.env.SIM_DIFF ?? 'normal') as 'normal', rng: seeded(i * 7 + floor) };
         let b: BattleState = createBattle({ enemy: e, floor, deck: [...deck, ...extra].map(makeCard), hp: CONFIG.player.startHp, maxHp: CONFIG.player.startHp, relics: [], ctx });
         let t = 0;
         while (b.outcome === 'ongoing' && t < 60) {

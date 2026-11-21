@@ -34,12 +34,40 @@ export const UNLOCK_GROUPS: UnlockGroup[] = [
   { id: 'words', label: '📜 Word moves — whole words appear as move labels', kana: [], words: true },
 ];
 
-export function unlockedKanaIds(unlockedCount: number): string[] {
-  return UNLOCK_GROUPS.slice(0, unlockedCount).flatMap((g) => g.kana);
+/** Kana ids of the unlocked groups, in chart order. */
+export function unlockedKanaIds(groups: readonly string[]): string[] {
+  const set = new Set(groups);
+  return UNLOCK_GROUPS.filter((g) => set.has(g.id)).flatMap((g) => g.kana);
 }
 
-export function wordMovesUnlocked(unlockedCount: number): boolean {
-  return UNLOCK_GROUPS.slice(0, unlockedCount).some((g) => g.words);
+/** The group the next boss kill unlocks: the first one (in unlock order) you don't have yet. */
+export function nextLockedGroup(groups: readonly string[]): UnlockGroup | undefined {
+  const set = new Set(groups);
+  return UNLOCK_GROUPS.find((g) => !set.has(g.id));
+}
+
+/** The first N groups in unlock order (used to migrate old saves and in tests). */
+export function firstGroups(n: number): string[] {
+  return UNLOCK_GROUPS.slice(0, Math.max(1, n)).map((g) => g.id);
+}
+
+export interface KanaFamily {
+  id: string;
+  label: string;
+  /** Unlock group ids in this family. */
+  groups: string[];
+}
+
+/** Big families you can test out of in the Skip-ahead Quiz. */
+export const FAMILIES: KanaFamily[] = [
+  { id: 'hiragana', label: 'Hiragana', groups: BASIC_ROWS.map((r) => `h-${r}`) },
+  { id: 'hiragana-voiced', label: 'Hiragana dakuten ゛゜', groups: VOICED_ROWS.map((r) => `h-${r}`) },
+  { id: 'katakana', label: 'Katakana', groups: BASIC_ROWS.map((r) => `k-${r}`) },
+  { id: 'katakana-voiced', label: 'Katakana dakuten ゛゜', groups: VOICED_ROWS.map((r) => `k-${r}`) },
+];
+
+export function wordMovesUnlocked(groups: readonly string[]): boolean {
+  return groups.includes('words');
 }
 
 /** Words whose every kana is unlocked. */

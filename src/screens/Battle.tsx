@@ -128,7 +128,7 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
             <span className="jp">{battle.lastResult.text}</span>
           </>
         ) : (
-          <span className="muted">Find the kana for the move you want, then End Turn.</span>
+          <span className="muted">Tap a move's kana, then End Turn.</span>
         )}
       </p>
 
@@ -154,7 +154,10 @@ export default function Battle({ battle, floor, onPick, onConfirm, onMenu }: Pro
         </div>
       </section>
 
-      <section className={`tiles ${battle.pending ? 'is-waiting' : ''}`} aria-label="Kana tiles">
+      <section
+        className={`tiles ${battle.tiles.length <= 4 ? 'tiles-4' : battle.tiles.length <= 8 ? 'tiles-8' : 'tiles-many'} ${battle.pending ? 'is-waiting' : ''}`}
+        aria-label="Kana tiles"
+      >
         {battle.tiles.map((t) => (
           <button
             key={t.id}

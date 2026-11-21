@@ -1,7 +1,8 @@
 import { CONFIG } from '../config';
-import { KANA_BY_ID, MOVE_BY_ID, isVoiced, wordMovesUnlocked } from '../data';
+import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
+import type { Difficulty } from './storage';
 import type { Card, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
-import { kanaOptions } from './distractors';
+import { confusablesOf, kanaOptions } from './distractors';
 import { type Rng, chance, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
 
@@ -107,7 +108,8 @@ export interface BattleCtx {
   weightOf: (kanaId: string) => number;
   unlocked: readonly string[];
   words: readonly Vocab[];
-  unlockedCount: number;
+  wordsUnlocked: boolean;
+  difficulty: Difficulty;
   rng: Rng;
 }
 
@@ -221,7 +223,7 @@ export function makeLabels(n: number, b: Pick<BattleState, 'reviewKana'>, ctx: B
   const used = new Set<string>();
   const labels: Label[] = [];
   const review = new Set(b.reviewKana);
-  const wordsOk = wordMovesUnlocked(ctx.unlockedCount);
+  const wordsOk = ctx.wordsUnlocked;
   const kanaWeight = (k: string) => ctx.weightOf(k) * (review.has(k) ? CONFIG.srs.reviewFightBoost : 1);
   for (let i = 0; i < n; i++) {
     if (wordsOk && chance(ctx.rng, CONFIG.combat.wordMoveChance)) {
@@ -242,15 +244,38 @@ export function makeLabels(n: number, b: Pick<BattleState, 'reviewKana'>, ctx: B
   return labels;
 }
 
-/** Answer tiles plus look-alike decoys that match no move. */
+/**
+ * Kana tiles for this turn, by difficulty:
+ * easy = just the answers; normal = answers + look-alike decoys; hard = every unlocked kana
+ * (kana that read the same as a label, e.g. か/カ for "ka", also cast that move).
+ */
 export function makeTiles(slots: Slot[], ctx: BattleCtx): Tile[] {
   const tiles: Tile[] = slots.map((s) => ({ id: uid('t'), text: s.label.text, romaji: s.label.romaji, kana: s.label.kana, slot: s.uid, decoyOf: null }));
-  const usedRomaji = new Set(tiles.map((t) => t.romaji));
+  const decoys = CONFIG.difficulty[ctx.difficulty]?.decoys ?? CONFIG.difficulty.normal.decoys;
   const usedText = new Set(tiles.map((t) => t.text));
+
+  if (decoys === 'all') {
+    const bySlotRomaji = new Map(slots.map((s) => [s.label.romaji, s.uid]));
+    const kanaSlots = slots.filter((s) => s.label.kind === 'kana');
+    for (const k of ctx.unlocked) {
+      const kana = KANA_BY_ID[k];
+      if (usedText.has(kana.char)) continue;
+      usedText.add(kana.char);
+      const slot = bySlotRomaji.get(kana.romaji) ?? null;
+      // a wrong pick that looks like a move's kana counts as missing that kana; otherwise the tapped one
+      const lookalikeOf = slot ? null : (kanaSlots.find((s) => confusablesOf(s.label.text).includes(kana.char))?.uid ?? null);
+      tiles.push({ id: uid('t'), text: kana.char, romaji: kana.romaji, kana: [k], slot, decoyOf: lookalikeOf });
+    }
+    // chart order keeps a big grid searchable; whole-word tiles go first
+    const order = new Map(ctx.unlocked.map((k, i) => [k, i]));
+    return tiles.sort((x, y) => (x.kana.length > 1 ? -1 : y.kana.length > 1 ? 1 : (order.get(x.kana[0]) ?? 0) - (order.get(y.kana[0]) ?? 0)));
+  }
+
+  const usedRomaji = new Set(tiles.map((t) => t.romaji));
   const kanaSlots = shuffle(ctx.rng, slots.filter((s) => s.label.kind === 'kana'));
-  for (let i = 0; i < CONFIG.combat.decoyTiles && kanaSlots.length; i++) {
+  for (let i = 0; i < decoys && kanaSlots.length; i++) {
     const target = kanaSlots[i % kanaSlots.length];
-    const decoy = kanaOptions(target.label.ref, ctx.unlocked, ctx.rng, 8).find(
+    const decoy = kanaOptions(target.label.ref, ctx.unlocked, ctx.rng, 10).find(
       (k) => !usedRomaji.has(KANA_BY_ID[k].romaji) && !usedText.has(KANA_BY_ID[k].char),
     );
     if (!decoy) continue;
@@ -451,7 +476,7 @@ export function confirmTurn(b: BattleState): PlayResult {
     };
   } else {
     const target = b.slots.find((s) => s.uid === tile.decoyOf);
-    if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
+    (target ? target.label.kana : tile.kana).forEach((k) => answers.push({ id: k, correct: false }));
     next = { ...next, movesMade: next.movesMade + 1, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
     if (has(next, 'omamori') && !next.freeMissUsed) {
       next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');

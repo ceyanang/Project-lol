@@ -33,6 +33,9 @@ export default function MapScreen({ run, bossEmoji, onEnter, onMenu }: Props) {
           <span className="pill">
             Floor {run.floor}/{CONFIG.run.floors}
           </span>
+          <span className="pill" title="Difficulty">
+            {CONFIG.difficulty[run.difficulty].emoji} {CONFIG.difficulty[run.difficulty].label}
+          </span>
           <button type="button" className="pill pill-btn" onClick={() => setShowDeck(true)}>
             🎴 Deck {run.deck.length}
           </button>

@@ -31,7 +31,7 @@ function when(ts: number | null, now: number): string {
 export default function Library({ profile, onSpeak, onBack, onToggleAutoSpeak }: Props) {
   const [tab, setTab] = useState<Tab>('hiragana');
   const [selected, setSelected] = useState<string | null>(null);
-  const unlocked = new Set(unlockedKanaIds(profile.unlockedCount));
+  const unlocked = new Set(unlockedKanaIds(profile.unlocked));
   const now = Date.now();
   const counts: Record<SrsBucket, number> = { new: 0, learning: 0, known: 0, mastered: 0 };
   for (const k of unlocked) counts[getStat(profile.srs, k).bucket]++;
@@ -72,7 +72,7 @@ export default function Library({ profile, onSpeak, onBack, onToggleAutoSpeak }:
           groups.map(({ g, i }) => (
             <section key={g.id} className="lib-row">
               <h4 className="lib-row-title">
-                {i < profile.unlockedCount ? '' : '🔒 '}
+                {profile.unlocked.includes(g.id) ? '' : '🔒 '}
                 <span className="jp">{KANA_BY_ID[g.kana[0]].char}</span> row <small className="muted">· {i === 0 ? 'starter' : `boss unlock #${i}`}</small>
               </h4>
               <div className="lib-grid">
