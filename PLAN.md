@@ -136,7 +136,7 @@ Due kana:
 - Rewards:
   - Fight → pick 1 of 3 kana cards (or skip). Offers are SRS-weighted and favour your newest row.
   - Elite → card pick + pick 1 of 2 relics.
-  - Boss → **unlock the next kana group** + pick 1 of 3 relics + heal 50% of missing HP.
+  - Boss → **unlock the next kana group** (its kana are added to your deck right away; the Word Scroll unlock adds 2 scrolls) + pick 1 of 3 relics + heal 50% of missing HP.
 - **Permadeath**: dying ends the run (map, deck, relics, HP gone). Unlocked kana and SRS stats are kept forever.
 
 ---

@@ -12,11 +12,10 @@ export interface Profile {
   wins: number;
   bestFloor: number;
   settings: { autoSpeak: boolean };
-  voiceHintShown: boolean;
 }
 
 export function newProfile(): Profile {
-  return { version: 1, unlockedCount: 1, srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true }, voiceHintShown: false };
+  return { version: 1, unlockedCount: 1, srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true } };
 }
 
 function safeGet(key: string): unknown {
@@ -58,7 +57,6 @@ export function loadProfile(): Profile {
     wins: num(raw.wins, 0),
     bestFloor: num(raw.bestFloor, 0),
     settings: { autoSpeak: isObj(raw.settings) && typeof raw.settings.autoSpeak === 'boolean' ? raw.settings.autoSpeak : true },
-    voiceHintShown: raw.voiceHintShown === true,
   };
 }
 
