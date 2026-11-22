@@ -74,7 +74,7 @@ export default function TypingCheck({ kana, title, onAnswer, onDone, onCancel, k
           onChange={(v) => !verdict && setTyped(normalizeTyped(v).slice(0, 6))}
           onEnter={submit}
           disabled={verdict === 'ok'}
-          autoFocus={keyboardMode === 'phone'}
+          keepFocus
           status={verdict === 'ok' ? 'ok' : null}
           placeholder={verdict === 'bad' ? '⏎ to continue' : keyboardMode === 'phone' ? 'tap to type · Go submits' : 'type it…'}
         />

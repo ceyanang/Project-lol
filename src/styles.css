@@ -547,3 +547,7 @@ button {
   .layout-phone .enemy { padding-block: 3px; }
   .layout-phone .enemy .hpbar { height: 15px; }
 }
+/* invisible focus anchor: lets the phone keyboard stay up while a fight screen mounts */
+.kbd-keeper { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; font-size: 16px; }
+/* invisible focus anchor: lets the phone keyboard stay up while a fight screen mounts */
+.kbd-keeper { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; font-size: 16px; }

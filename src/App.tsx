@@ -29,6 +29,7 @@ export default function App() {
   }, []);
   const [run, setRun] = useState<RunState | null>(() => parseRun(loadRunRaw()));
   const [view, setView] = useState<View>('title');
+  const keeperRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => saveProfile(profile), [profile]);
   useEffect(() => setSfxEnabled(profile.settings.sfx), [profile.settings.sfx]);
@@ -204,6 +205,9 @@ export default function App() {
         run={run}
         bossEmoji={bossNode ? pickEnemy('boss', run.floor, defaultRng).emoji : '👹'}
         onEnter={(id) => {
+          // Phone keyboard: focus a hidden field inside this tap so the keyboard is already up
+          // when the battle's own field mounts and takes over (browsers only open it from a tap).
+          if (profile.settings.keyboard === 'phone') keeperRef.current?.focus({ preventScroll: true });
           playSfx('step');
           setRun(enterNode(run, id, profile.srs, ctx, Date.now()));
         }}
@@ -273,6 +277,9 @@ export default function App() {
   return (
     <div className="app">
       {screen}
+      {profile.settings.keyboard === 'phone' && (
+        <input ref={keeperRef} className="kbd-keeper" aria-hidden="true" tabIndex={-1} autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck={false} />
+      )}
       {toast && (
         <button type="button" className="toast" onClick={() => setToast(null)}>
           🔇 {toast}

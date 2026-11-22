@@ -165,6 +165,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
           onChange={onType}
           onEnter={onConfirm}
           disabled={busy}
+          keepFocus
           placeholder={
             battle.pending === 'enemy'
               ? `${e.emoji} Enemy's turn…`

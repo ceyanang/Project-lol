@@ -13,9 +13,8 @@ interface Props {
   /** Extra content beside the box (e.g. pile counts). */
   left?: ReactNode;
   right?: ReactNode;
-  /** Reports whether the phone keyboard is open (the input is focused). */
-  onTypingChange?: (typing: boolean) => void;
-  autoFocus?: boolean;
+  /** Phone mode: focus on mount, and take focus back if it's lost (keeps the keyboard up). */
+  keepFocus?: boolean;
   status?: 'ok' | 'bad' | null;
 }
 
@@ -25,14 +24,14 @@ interface Props {
  * - 'phone': a real text field for the device keyboard, with autocorrect, autocapitalize,
  *   spellcheck and autofill turned off. Its Go/⏎ key submits.
  */
-export default function ReadingInput({ mode, value, onChange, onEnter, disabled, placeholder, left, right, onTypingChange, autoFocus, status }: Props) {
+export default function ReadingInput({ mode, value, onChange, onEnter, disabled, placeholder, left, right, keepFocus, status }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const statusClass = status === 'ok' ? 'is-ok' : status === 'bad' ? 'is-bad' : '';
 
   // keep the phone keyboard open between turns: refocus if it was open when we got disabled
   useEffect(() => {
-    if (mode === 'phone' && autoFocus) input.current?.focus({ preventScroll: true });
-  }, [mode, autoFocus]);
+    if (mode === 'phone' && keepFocus) input.current?.focus({ preventScroll: true });
+  }, [mode, keepFocus]);
 
   if (mode === 'phone') {
     return (
@@ -62,8 +61,15 @@ export default function ReadingInput({ mode, value, onChange, onEnter, disabled,
           value={value}
           // stays editable during enemy beats so the phone keyboard doesn't close; input is ignored then
           onChange={(e) => !disabled && onChange(e.target.value)}
-          onFocus={() => onTypingChange?.(true)}
-          onBlur={() => onTypingChange?.(false)}
+          onBlur={() => {
+            if (!keepFocus) return;
+            // keep the keyboard up: take focus back unless the player moved to another control
+            window.setTimeout(() => {
+              const el = input.current;
+              const active = document.activeElement;
+              if (el && el.isConnected && (!active || active === document.body)) el.focus({ preventScroll: true });
+            }, 60);
+          }}
         />
         <button type="submit" className="kbd-key kbd-enter dock-enter" disabled={disabled} aria-label="Enter">
           ⏎
