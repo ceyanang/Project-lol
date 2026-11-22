@@ -781,3 +781,4 @@ h1, h2, h3, h4, .lib-title, .sheet-title, .enemy-name, .rc-title, .logo { font-f
 .title-screen .menu .btn { letter-spacing: 0.01em; }
 .fx-enemyHit, .fx-playerHit { font-size: 1.9rem; }
 .badge { white-space: nowrap; }
+.pixel { image-rendering: pixelated; display: block; }

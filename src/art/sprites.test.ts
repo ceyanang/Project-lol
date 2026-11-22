@@ -1,0 +1,59 @@
+import { describe, expect, it } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement } from 'react';
+import PixelSprite from '../components/PixelSprite';
+import { bobSprite, defineSprite, flashSprite } from './sprite';
+import { renderSheet } from './sheet';
+
+const blank = (size: number) => Array.from({ length: size }, () => '.'.repeat(size));
+const withPixel = (size: 16 | 32, row: number, col: number, ch: string) => {
+  const rows = blank(size);
+  rows[row] = rows[row].slice(0, col) + ch + rows[row].slice(col + 1);
+  return rows;
+};
+
+describe('defineSprite', () => {
+  it('rejects a wrong row count, a wrong row length and unknown letters', () => {
+    expect(() => defineSprite(16, blank(15))).toThrow(/rows/);
+    expect(() => defineSprite(16, [...blank(15), '.'.repeat(15)])).toThrow(/length/);
+    expect(() => defineSprite(16, withPixel(16, 3, 3, '?'))).toThrow(/\?/);
+  });
+
+  it('merges the base palette with sprite-specific letters', () => {
+    const s = defineSprite(16, withPixel(16, 0, 0, 'Z'), { Z: '#123456' });
+    expect(s.palette.Z).toBe('#123456');
+    expect(s.palette.K).toBeDefined();
+  });
+});
+
+describe('derived frames', () => {
+  it('flashSprite keeps the ink outline and turns everything else paper white', () => {
+    const rows = withPixel(16, 2, 2, 'K');
+    rows[2] = rows[2].slice(0, 3) + 'G' + rows[2].slice(4);
+    const f = flashSprite(defineSprite(16, rows));
+    expect(f.rows[2].slice(2, 4)).toBe('KW');
+  });
+
+  it('bobSprite shifts everything down one row and drops the bottom row', () => {
+    const b = bobSprite(defineSprite(16, withPixel(16, 0, 5, 'K')));
+    expect(b.rows).toHaveLength(16);
+    expect(b.rows[0]).toBe('.'.repeat(16));
+    expect(b.rows[1][5]).toBe('K');
+    const bottom = bobSprite(defineSprite(16, withPixel(16, 15, 5, 'K')));
+    expect(bottom.rows.join('')).not.toContain('K');
+  });
+});
+
+describe('rendering', () => {
+  it('PixelSprite draws a canvas of size × scale pixels', () => {
+    const html = renderToStaticMarkup(createElement(PixelSprite, { sprite: defineSprite(32, blank(32)), scale: 3 }));
+    expect(html).toContain('<canvas');
+    expect(html).toContain('width="96"');
+    expect(html).toContain('height="96"');
+  });
+
+  it('renderSheet produces a PNG', () => {
+    const png = renderSheet([defineSprite(16, withPixel(16, 1, 1, 'K'))], { scale: 4, columns: 2 });
+    expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  });
+});
