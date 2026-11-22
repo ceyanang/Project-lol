@@ -6,7 +6,7 @@ import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
-import { type SpeakResult, VOICE_HELP, initSpeech, preloadClips, speakKana, voicesKnown } from './game/speech';
+import { type SpeakResult, VOICE_HELP, initSpeech, preloadClips, speakKana, voicesKnown, warmUpSpeech } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
@@ -54,6 +54,15 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const voiceHintShown = useRef(false);
   useEffect(() => initSpeech(), []);
+  useEffect(() => {
+    const warm = () => warmUpSpeech();
+    window.addEventListener('pointerdown', warm, { once: true });
+    window.addEventListener('keydown', warm, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', warm);
+      window.removeEventListener('keydown', warm);
+    };
+  }, []);
   // decode the voice clips for the kana you're studying up front, so they play with no delay
   useEffect(() => {
     const t = window.setTimeout(() => preloadClips(ctx.unlocked.map((k) => KANA_BY_ID[k].romaji)), 300);

@@ -115,7 +115,8 @@ export function speak(text: string, rate = 0.8): SpeakResult {
   const synth = window.speechSynthesis;
   const voice = jaVoice ?? pickVoice();
   try {
-    synth.cancel();
+    // cancel() itself adds lag in some browsers, so only interrupt when something is actually playing
+    if (synth.speaking || synth.pending) synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP';
     u.rate = rate;
@@ -125,6 +126,28 @@ export function speak(text: string, rate = 0.8): SpeakResult {
     return 'unsupported';
   }
   return voice ? 'ok' : 'no-voice';
+}
+
+let warmed = false;
+
+/**
+ * Speech engines are slow on the very first utterance (they load the voice). Speak a silent one on
+ * the first tap so the first real kana doesn't pay that cost.
+ */
+export function warmUpSpeech() {
+  if (warmed || !speechSupported()) return;
+  warmed = true;
+  try {
+    const u = new SpeechSynthesisUtterance('あ');
+    u.lang = 'ja-JP';
+    u.volume = 0;
+    u.rate = 2;
+    const voice = jaVoice ?? pickVoice();
+    if (voice) u.voice = voice;
+    window.speechSynthesis.speak(u);
+  } catch {
+    // ignore
+  }
 }
 
 export const VOICE_HELP =
