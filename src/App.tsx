@@ -216,6 +216,10 @@ export default function App() {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, sfx: !p.settings.sfx } });
         }}
+        onToggleMusic={() => {
+          const p = profileRef.current;
+          setProfile({ ...p, settings: { ...p.settings, music: !p.settings.music } });
+        }}
         onToggleAutoSpeak={() => {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, autoSpeak: !p.settings.autoSpeak } });
