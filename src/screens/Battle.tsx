@@ -45,7 +45,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
     const fresh = battle.fx.filter((f) => f.id > lastFx.current);
     lastFx.current = battle.fxSeq;
     if (!fresh.length) return;
-    [...new Set(fresh.map((f) => FX_SOUND[f.kind]).filter((s): s is Sfx => !!s))].forEach((s, i) => window.setTimeout(() => playSfx(s), i * 120));
+    [...new Set(fresh.map((f) => FX_SOUND[f.kind]).filter((s): s is Sfx => !!s))].forEach((s, i) => (i === 0 ? playSfx(s) : window.setTimeout(() => playSfx(s), i * 70)));
     setFx((cur) => [...cur, ...fresh]);
     const t = window.setTimeout(() => setFx((cur) => cur.filter((f) => !fresh.includes(f))), FX_MS);
     return () => window.clearTimeout(t);

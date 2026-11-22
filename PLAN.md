@@ -191,6 +191,8 @@ Reward → … → Run Over. Kana Library: every kana by row with mastery, tap t
 move you matched; on a misread it reads the kana of the move you were closest to, so you hear the
 right answer; skipping says nothing. The quiz reads each kana as you answer.
 
+**No lag.** Clips are fetched and decoded into memory at startup (`preloadClips`, for the rows you're studying), and played through the shared Web Audio context, so they start ~1 ms after ⏎; sound effects fire on the same frame (extra effects follow 70 ms apart). If no clips are bundled, the loader gives up after a few misses instead of requesting all 69 files.
+
 **How it speaks.** `speakKana` first plays a bundled recording `public/audio/<romaji>.mp3` (one
 file per reading, shared by hiragana and katakana, e.g. `ka.mp3`, `shi.mp3`; 69 files cover all
 kana) so it sounds identical on every phone and works offline. If the file is missing, or for whole

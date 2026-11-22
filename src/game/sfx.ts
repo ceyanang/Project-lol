@@ -29,6 +29,11 @@ export function setSfxEnabled(on: boolean) {
   enabled = on;
 }
 
+/** Shared Web Audio context (also used to play the preloaded voice clips with no start-up delay). */
+export function getAudioContext(): AudioContext | null {
+  return audio();
+}
+
 function audio(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;

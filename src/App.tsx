@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { advanceBeat, confirmTurn, setTyped } from './game/battle';
 import { CONFIG } from './config';
+import { KANA_BY_ID } from './data';
 import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
-import { type SpeakResult, VOICE_HELP, initSpeech, speakKana, voicesKnown } from './game/speech';
+import { type SpeakResult, VOICE_HELP, initSpeech, preloadClips, speakKana, voicesKnown } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
@@ -53,6 +54,11 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const voiceHintShown = useRef(false);
   useEffect(() => initSpeech(), []);
+  // decode the voice clips for the kana you're studying up front, so they play with no delay
+  useEffect(() => {
+    const t = window.setTimeout(() => preloadClips(ctx.unlocked.map((k) => KANA_BY_ID[k].romaji)), 300);
+    return () => window.clearTimeout(t);
+  }, [ctx.unlocked]);
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 9000);
@@ -103,7 +109,7 @@ export default function App() {
       // speak only after confirming, so audio never gives the reading away early:
       // the kana you got (or, on a misread, the one you were aiming at)
       const spoken = r.battle.lastResult?.speak;
-      if (spoken) window.setTimeout(() => speakAuto(spoken), 180);
+      if (spoken) speakAuto(spoken);
     }
     recordSrs(r.answers);
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));

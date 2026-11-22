@@ -1,4 +1,5 @@
 import { KANA_BY_ID } from '../data';
+import { getAudioContext } from './sfx';
 /**
  * Japanese text-to-speech via window.speechSynthesis (no audio files).
  * Side-effect module: only UI code calls it.
@@ -42,30 +43,67 @@ export function voicesKnown(): boolean {
 
 export type SpeakResult = 'ok' | 'no-voice' | 'unsupported';
 
+const BASE = import.meta.env.BASE_URL;
+/** Decoded voice clips by reading. null = this clip doesn't exist (use the device voice). */
+const clips = new Map<string, AudioBuffer | null>();
+const loading = new Set<string>();
+let clipHits = 0;
+let clipMisses = 0;
+
+async function loadClip(ac: AudioContext, reading: string) {
+  if (clips.has(reading) || loading.has(reading)) return;
+  // no recordings bundled at all (first few all missing): stop asking
+  if (clipHits === 0 && clipMisses >= 3) return;
+  loading.add(reading);
+  try {
+    const res = await fetch(`${BASE}audio/${reading}.mp3`);
+    if (!res.ok || (res.headers.get('content-type') ?? '').includes('text/html')) throw new Error('missing');
+    clips.set(reading, await ac.decodeAudioData(await res.arrayBuffer()));
+    clipHits++;
+  } catch {
+    clips.set(reading, null);
+    clipMisses++;
+  } finally {
+    loading.delete(reading);
+  }
+}
+
+/** Fetch and decode voice clips ahead of time so they play instantly. Safe to call repeatedly. */
+export function preloadClips(readings: Iterable<string>) {
+  const ac = getAudioContext();
+  if (!ac) return;
+  for (const r of new Set(readings)) void loadClip(ac, r);
+}
+
 /**
  * Read a kana aloud. A bundled recording (public/audio/<romaji>.mp3, same file for hiragana and
- * katakana) plays when it exists, so it sounds the same on every phone and works offline;
- * otherwise (and for whole words) the device's Japanese voice is used.
+ * katakana) plays instantly from memory once preloaded, so it sounds the same on every phone and
+ * works offline. If the clip is missing (or not loaded yet), and for whole words, the device's
+ * Japanese voice is used.
  */
 export function speakKana(text: string, onFallback?: (result: SpeakResult) => void): SpeakResult {
   const chars = [...text];
   const kana = chars.length === 1 ? KANA_BY_ID[chars[0]] : undefined;
-  if (!kana || typeof Audio === 'undefined') return speak(text);
-  try {
-    const audio = new Audio(`${import.meta.env.BASE_URL}audio/${kana.romaji}.mp3`);
-    let fell = false;
-    const fallback = () => {
-      if (!fell) {
-        fell = true;
-        onFallback?.(speak(text));
-      }
-    };
-    audio.addEventListener('error', fallback);
-    audio.play().catch(fallback);
-    return 'ok';
-  } catch {
-    return speak(text);
+  const ac = kana ? getAudioContext() : null;
+  if (!kana || !ac) return speak(text);
+  const buffer = clips.get(kana.romaji);
+  if (buffer) {
+    try {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+      const src = ac.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ac.destination);
+      src.start();
+      return 'ok';
+    } catch {
+      // fall through to the device voice
+    }
+  } else if (buffer === undefined) {
+    void loadClip(ac, kana.romaji); // ready for next time
   }
+  const res = speak(text);
+  onFallback?.(res);
+  return res;
 }
 
 /**
