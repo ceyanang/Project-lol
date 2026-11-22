@@ -194,6 +194,8 @@ to label your moves.
   - Fight → add 1 of 3 moves (75% common / 25% rare) or skip.
   - Elite → add 1 of 3 moves (45% common / 55% rare) + pick 1 of 2 relics.
   - Boss → **unlock the next kana group** (they start labelling moves immediately) + pick 1 of 3 relics + heal 50% of missing HP.
+  - Every won fight heals **25%** of max HP before the reward screen (`run.fightHealPct`).
+  - Normal enemies were cut to about 3 turns per fight on average (sim: `npm run sim`; hp 9–17 at their own floor).
   - Rest → heal 30% **or** Study drill (5 kana; each correct = +1 max HP, heal 3).
 - **Permadeath**: dying ends the run. Unlocked kana and SRS stats are kept forever.
 

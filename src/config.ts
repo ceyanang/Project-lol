@@ -94,6 +94,8 @@ export const CONFIG = {
     nodesPerRow: [2, 3] as [number, number],
     nodeOdds: { fight: 0.55, elite: 0.15, rest: 0.15, review: 0.15 },
     restHealPct: 0.3,
+    /** Share of max HP restored after every won fight, before the reward screen. */
+    fightHealPct: 0.25,
     studyKana: 5,
     studyMaxHpPerCorrect: 1,
     studyHealPerCorrect: 3,

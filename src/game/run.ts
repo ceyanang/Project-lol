@@ -133,7 +133,7 @@ export function finishBattle(run: RunState, profile: Profile, ctx: BattleCtx): {
       profile: { ...profile, runs: profile.runs + 1, bestFloor },
     };
   }
-  let hp = b.playerHp;
+  let hp = Math.min(run.maxHp, b.playerHp + Math.round(run.maxHp * CONFIG.run.fightHealPct));
   if (run.relics.includes('matcha')) hp = Math.min(run.maxHp, hp + CONFIG.relics.healAfterFight);
   const node = nodeById(run.map, run.battleNode);
   let next: RunState = { ...run, hp, stats, battle: null, battleNode: null };

@@ -3,11 +3,11 @@ import { ENEMIES } from '../data';
 import { simulate } from './sim';
 
 /**
- * Turns per fight at each enemy's own floor, measured before statuses/gimmicks existed.
+ * Turns per fight at each enemy's own floor (normal enemies retuned to ~3 turns on average).
  * The new mechanics may shorten fights but must not make them drag: ≤ +25% turns.
  */
 const BASELINE_TURNS: Record<string, number> = {
-  kodama: 2.5, hitodama: 2.1, bakeneko: 3.0, kappa: 4.3, kasaobake: 3.8, tanuki: 5.1, chochin: 5.9,
+  kodama: 1.6, hitodama: 1.5, bakeneko: 2.1, kappa: 2.7, kasaobake: 2.8, tanuki: 3.2, chochin: 3.8,
   tengu: 6.6, yukionna: 4.9, jorogumo: 8.1, oni: 6.4, gashadokuro: 11.8, ryujin: 8.1, memorywraith: 3.2,
 };
 
