@@ -36,7 +36,9 @@ export default function Battle({ battle, floor, onType, onConfirm, onTimeout, on
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
   const intent = effectiveIntent(e);
-  const scale = keyboardMode === 'phone' ? 2 : window.innerHeight >= 780 ? 4 : 3;
+  // short screens (iPhone SE class) get the compact layout so everything fits without scrolling
+  const compact = keyboardMode === 'game' && window.innerHeight < 700;
+  const scale = keyboardMode === 'phone' || compact ? 2 : window.innerHeight >= 780 ? 4 : 3;
   const ongoing = battle.outcome === 'ongoing';
   // during a beat (enemy acting / dealing) nothing is tappable
   const busy = !ongoing || !!battle.pending;
@@ -81,7 +83,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onTimeout, on
   const resist = e.resist ? ELEMENT_META[e.resist] : null;
 
   return (
-    <main className={`screen battle ${keyboardMode === 'phone' ? 'layout-phone' : ''}`}>
+    <main className={`screen battle ${keyboardMode === 'phone' ? 'layout-phone' : ''} ${compact ? 'is-compact' : ''}`}>
       <header className="battle-top">
         <span className="pill">Floor {floor}</span>
         <span className="pill">Turn {battle.turn}</span>

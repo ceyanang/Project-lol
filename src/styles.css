@@ -859,3 +859,29 @@ h1, h2, h3, h4, .lib-title, .sheet-title, .enemy-name, .rc-title, .logo { font-f
 .turn-timer.is-low .turn-timer-fill { background: var(--red); }
 .turn-timer-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 900; line-height: 1; color: var(--ink); mix-blend-mode: normal; }
 @media (prefers-reduced-motion: reduce) { .turn-timer-fill { transition: none; } }
+
+/* ---------- Compact battle (game keyboard on short phones) ---------- */
+.layout-phone .turn-timer { order: 3; }
+.battle.is-compact { gap: 4px; padding-top: 6px; padding-bottom: 6px; }
+.is-compact .enemy {
+  display: grid; grid-template-columns: 70px 1fr auto; grid-template-areas: 'art name intent' 'art hp hp' 'art match match';
+  align-items: center; column-gap: 10px; row-gap: 2px; padding: 4px 8px; border-radius: 14px;
+}
+.is-compact .enemy-art { grid-area: art; }
+.is-compact .enemy-name { grid-area: name; justify-self: start; font-size: 0.95rem; }
+.is-compact .enemy .hpbar { grid-area: hp; height: 16px; }
+.is-compact .matchups { grid-area: match; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; }
+.is-compact .matchup { font-size: 0.7rem; padding: 1px 7px; white-space: nowrap; }
+.is-compact .intent-bubble { position: static; grid-area: intent; justify-self: end; font-size: 0.85rem; padding: 2px 8px; }
+.is-compact .turn-result { font-size: 0.8rem; min-height: 1.15em; line-height: 1.2; }
+.is-compact .turn-timer { height: 12px; }
+.is-compact .moves { gap: 5px; }
+.is-compact .move-card { min-height: 44px; padding: 3px 6px; }
+.is-compact .move-label { height: 34px; min-width: 34px; font-size: 1.35rem; }
+.is-compact .move-name { font-size: 0.82rem; }
+.is-compact .move-sum { font-size: 0.72rem; }
+.is-compact .kbd-dock { margin: auto -14px -6px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); gap: 5px; }
+.is-compact .kbd { gap: 4px; }
+.is-compact .kbd-key { min-height: 40px; }
+.is-compact .typed-box { min-height: 40px; }
+.is-compact .player-bar .hpbar { height: 16px; }
