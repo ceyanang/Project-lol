@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../config';
 import { ENEMY_BY_ID, KANA_BY_ID, MOVE_BY_ID, availableWords, firstGroups, unlockedKanaIds } from '../data';
-import { type BattleCtx, type BattleState, advanceBeat, confirmTurn, createBattle, incomingDamage, matchSlot, playTurn, previewMove, setTyped } from './battle';
+import { type BattleCtx, type BattleState, advanceBeat, comboBonus, confirmTurn, createBattle, incomingDamage, matchSlot, playTurn, previewMove, setTyped } from './battle';
 import { makeCard, moveRewardOptions } from './deck';
+import { parseRun } from './run';
 import { seeded } from './rng';
 import { matchesReading, readingsOf } from './romaji';
 
@@ -184,5 +185,51 @@ describe('relics and words', () => {
     const opts = moveRewardOptions(3, CONFIG.run.rarityOdds, seeded(2));
     expect(opts).toHaveLength(3);
     expect(opts.every((c) => MOVE_BY_ID[c.moveId].rarity !== 'starter')).toBe(true);
+  });
+});
+
+describe('combo meter', () => {
+  const strikes = ['strike', 'strike', 'strike', 'strike'];
+  const castStrike = (b: BattleState, ctx: BattleCtx) => ({ ...playTurn(setTyped(b, b.slots[0].label.romaji), ctx).battle, playerHp: H });
+
+  it('comboBonus follows the configured tiers', () => {
+    expect(comboBonus(0)).toBe(0);
+    expect(comboBonus(2)).toBe(0);
+    expect(comboBonus(3)).toBe(0.1);
+    expect(comboBonus(6)).toBe(0.2);
+    expect(comboBonus(10)).toBe(0.3);
+    expect(comboBonus(25)).toBe(0.3);
+  });
+
+  it('three correct readings in a row boost the next strike by 10%', () => {
+    const ctx = ctxFor(3, 4);
+    let b = battle(strikes, 'kodama', ctx);
+    for (let i = 0; i < 3; i++) b = castStrike(b, ctx);
+    expect(b.combo).toBe(3);
+    expect(previewMove(MOVE_BY_ID.strike, b.slots[0].label, b).damagePerHit).toBe(Math.round(9 * 1.1));
+  });
+
+  it('a fizzle or a held turn resets the combo', () => {
+    const ctx = ctxFor(3, 5);
+    let b = battle(strikes, 'kodama', ctx);
+    b = castStrike(b, ctx);
+    b = castStrike(b, ctx);
+    expect(b.combo).toBe(2);
+    expect(confirmTurn(setTyped(b, 'zzz')).battle.combo).toBe(0);
+    expect(confirmTurn(setTyped(b, '')).battle.combo).toBe(0);
+  });
+
+  it('the enemyHit fx carries the element and the damage dealt', () => {
+    const b = battle(['fire_talisman', 'fire_talisman', 'fire_talisman', 'fire_talisman']);
+    const fx = confirmTurn(typeFor(b, 'fire_talisman')).battle.fx.find((f) => f.kind === 'enemyHit')!;
+    expect(fx.element).toBe('fire');
+    expect(fx.amount).toBe(22);
+  });
+
+  it('a saved battle without a combo field loads with combo 0', () => {
+    const b = battle(strikes);
+    const { combo: _combo, ...old } = b;
+    const run = parseRun({ version: 3, deck: [], map: [], hp: 10, floor: 1, phase: 'battle', battle: old });
+    expect(run?.battle?.combo).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 import { CONFIG } from '../config';
 import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
-import type { Card, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
+import type { Card, Element, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
 import { type Rng, chance, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
@@ -55,11 +55,15 @@ export interface TurnResult {
   text: string;
 }
 
-export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'enemyBlock' | 'buff' | 'move' | 'heal' | 'weak' | 'resist';
+export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'enemyBlock' | 'buff' | 'move' | 'heal' | 'weak' | 'resist' | 'status' | 'combo' | 'react';
 export interface Fx {
   id: number;
   kind: FxKind;
   text: string;
+  /** Element of the move or status behind this event (drives the cast animation). */
+  element?: Element;
+  /** Damage dealt (enemyHit) — scales shake and hit-stop. */
+  amount?: number;
 }
 
 export interface BattleState {
@@ -76,6 +80,8 @@ export interface BattleState {
   relics: string[];
   freeMissUsed: boolean;
   movesMade: number;
+  /** Consecutive correct readings this fight. */
+  combo: number;
   reviewKana: string[];
   outcome: 'ongoing' | 'won' | 'lost';
   /**
@@ -106,6 +112,13 @@ export interface PlayResult {
 }
 
 const has = (b: { relics: string[] }, id: string) => b.relics.includes(id);
+
+/** Power bonus for the current combo: the highest tier reached. */
+export function comboBonus(combo: number): number {
+  let bonus = 0;
+  for (const t of CONFIG.combo.tiers) if (combo >= t.at) bonus = t.bonus;
+  return bonus;
+}
 
 // ---------------------------------------------------------------- enemies
 
@@ -188,6 +201,7 @@ export function createBattle(opts: {
     relics: opts.relics,
     freeMissUsed: false,
     movesMade: 0,
+    combo: 0,
     reviewKana: opts.reviewKana ?? [],
     outcome: 'ongoing',
     lastResult: null,
@@ -263,17 +277,19 @@ export interface MovePreview {
   weaken: number;
   pierce: boolean;
   matchup: 'weak' | 'resist' | null;
+  /** Current combo power bonus (0.1 = +10%). */
+  combo: number;
 }
 
-function powerMultiplier(b: Pick<BattleState, 'relics' | 'movesMade'>, label: Label | null): number {
-  let m = 1;
+function powerMultiplier(b: Pick<BattleState, 'relics' | 'movesMade' | 'combo'>, label: Label | null): number {
+  let m = 1 + comboBonus(b.combo);
   if (label?.kind === 'word') m *= has(b, 'suzuri') ? CONFIG.relics.wordMultiplier : CONFIG.combat.wordMultiplier;
   if (has(b, 'torii') && b.movesMade === 0) m *= CONFIG.relics.firstMoveMultiplier;
   return m;
 }
 
 /** What a move would do right now with this label. Static info, safe to show before picking. */
-export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleState, 'relics' | 'movesMade' | 'enemy'>): MovePreview {
+export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleState, 'relics' | 'movesMade' | 'combo' | 'enemy'>): MovePreview {
   const power = powerMultiplier(b, label);
   const voiced = !!label && has(b, 'dakuten_blade') && label.kana.some(isVoiced);
   const isAttack = move.kind === 'attack' || move.kind === 'drain';
@@ -295,14 +311,15 @@ export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleSt
     weaken: move.kind === 'weaken' ? Math.round(move.value * power) : 0,
     pierce: !!move.pierce || voiced,
     matchup,
+    combo: comboBonus(b.combo),
   };
 }
 
 // ---------------------------------------------------------------- resolving a turn
 
-function pushFx(b: BattleState, kind: FxKind, text: string): BattleState {
+function pushFx(b: BattleState, kind: FxKind, text: string, extra: { element?: Element; amount?: number } = {}): BattleState {
   const id = b.fxSeq + 1;
-  return { ...b, fxSeq: id, fx: [...b.fx, { id, kind, text }].slice(-8) };
+  return { ...b, fxSeq: id, fx: [...b.fx, { id, kind, text, ...extra }].slice(-8) };
 }
 
 function log(b: BattleState, line: string): BattleState {
@@ -354,7 +371,7 @@ function performMove(b: BattleState, slot: Slot): BattleState {
       next = r.b;
       dealt += r.dealt;
     }
-    next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!');
+    next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!', { element: move.element, amount: dealt });
     if (p.matchup === 'weak') next = pushFx(next, 'weak', 'Weakness!');
     if (p.matchup === 'resist') next = pushFx(next, 'resist', 'Resisted…');
     if (move.kind === 'drain' && dealt > 0) {
@@ -412,7 +429,7 @@ export function confirmTurn(b: BattleState): PlayResult {
   let next: BattleState = b;
 
   if (!typed) {
-    next = { ...next, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
+    next = { ...next, combo: 0, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
   } else {
     const slot = matchSlot(b, typed);
     if (slot) {
@@ -422,9 +439,11 @@ export function confirmTurn(b: BattleState): PlayResult {
       next = {
         ...next,
         movesMade: next.movesMade + 1,
+        combo: next.combo + 1,
         stats: { ...next.stats, correct: next.stats.correct + 1, words: next.stats.words + (slot.label.kind === 'word' ? 1 : 0) },
         lastResult: { ok: true, speak: slot.label.text, tileText: slot.label.text, tileRomaji: typed, text: `${slot.label.text} = ${slot.label.romaji} → ${move.emoji} ${move.name}` },
       };
+      if (CONFIG.combo.tiers.some((t) => t.at === next.combo)) next = pushFx(next, 'combo', `Combo ×${next.combo}!`);
     } else {
       // a typo: guess which move it was aiming at (closest reading) and mark that kana missed
       const ranked = b.slots
@@ -432,7 +451,7 @@ export function confirmTurn(b: BattleState): PlayResult {
         .sort((x, y) => x.d - y.d);
       const target = ranked[0] && ranked[0].d <= Math.max(1, Math.floor(ranked[0].s.label.romaji.length / 2)) && ranked[1]?.d !== ranked[0].d ? ranked[0].s : undefined;
       if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
-      next = { ...next, movesMade: next.movesMade + 1, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
+      next = { ...next, movesMade: next.movesMade + 1, combo: 0, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
       if (has(next, 'omamori') && !next.freeMissUsed) {
         next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
       } else {

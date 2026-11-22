@@ -227,5 +227,6 @@ export function parseRun(raw: unknown): RunState | null {
   if (r.version !== 3 || !Array.isArray(r.deck) || !Array.isArray(r.map) || typeof r.hp !== 'number' || typeof r.floor !== 'number') return null;
   if (!r.phase || !['map', 'battle', 'reward', 'rest', 'over'].includes(r.phase)) return null;
   if (r.phase === 'battle' && (!r.battle || typeof r.battle.typed !== 'string')) return null;
-  return { rewards: [], relics: [], visited: [], afterRewards: 'map', ...r } as RunState;
+  const battle = r.battle ? { ...r.battle, combo: r.battle.combo ?? 0 } : r.battle;
+  return { rewards: [], relics: [], visited: [], afterRewards: 'map', ...r, battle } as RunState;
 }
