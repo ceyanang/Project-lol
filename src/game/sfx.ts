@@ -19,7 +19,14 @@ export type Sfx =
   | 'step'
   | 'pickup'
   | 'heal'
-  | 'spell';
+  | 'spell'
+  | 'castFire'
+  | 'castWater'
+  | 'castWind'
+  | 'castThunder'
+  | 'castPhysical'
+  | 'comboUp'
+  | 'react';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -154,6 +161,39 @@ export function playSfx(name: Sfx) {
         break;
       case 'heal':
         tone(ac, { freq: 392, to: 784, dur: 0.45, type: 'sine', vol: 0.5 });
+        break;
+      case 'castFire':
+        noise(ac, { dur: 0.38, vol: 0.7, cutoff: 1600 });
+        tone(ac, { freq: 220, to: 90, dur: 0.32, type: 'sawtooth', vol: 0.45 });
+        tone(ac, { freq: 620, to: 300, dur: 0.12, type: 'square', at: 0.05, vol: 0.25 });
+        break;
+      case 'castWater':
+        tone(ac, { freq: 760, to: 260, dur: 0.22, type: 'sine', vol: 0.55 });
+        tone(ac, { freq: 1100, to: 520, dur: 0.16, type: 'sine', at: 0.1, vol: 0.4 });
+        noise(ac, { dur: 0.22, vol: 0.4, cutoff: 2600, at: 0.12 });
+        break;
+      case 'castWind':
+        noise(ac, { dur: 0.42, vol: 0.55, cutoff: 4200 });
+        tone(ac, { freq: 420, to: 1100, dur: 0.2, type: 'triangle', vol: 0.3 });
+        tone(ac, { freq: 1100, to: 380, dur: 0.2, type: 'triangle', at: 0.18, vol: 0.25 });
+        break;
+      case 'castThunder':
+        noise(ac, { dur: 0.55, vol: 1, cutoff: 6000 });
+        tone(ac, { freq: 1800, to: 200, dur: 0.14, type: 'square', vol: 0.4 });
+        tone(ac, { freq: 95, to: 40, dur: 0.5, type: 'sawtooth', at: 0.05, vol: 0.55 });
+        break;
+      case 'castPhysical':
+        noise(ac, { dur: 0.1, vol: 0.8, cutoff: 3200 });
+        tone(ac, { freq: 940, to: 300, dur: 0.09, type: 'triangle', vol: 0.5 });
+        tone(ac, { freq: 150, to: 60, dur: 0.12, type: 'square', at: 0.04, vol: 0.35 });
+        break;
+      case 'comboUp':
+        arp(ac, [659, 784, 988, 1319], 0.05, 'square', 0.3);
+        break;
+      case 'react':
+        tone(ac, { freq: 988, dur: 0.12, type: 'sine', vol: 0.5 });
+        tone(ac, { freq: 1480, dur: 0.12, type: 'sine', at: 0.07, vol: 0.5 });
+        tone(ac, { freq: 1976, dur: 0.22, type: 'sine', at: 0.14, vol: 0.5 });
         break;
     }
   } catch {

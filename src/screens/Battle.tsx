@@ -11,7 +11,8 @@ import MoveCard from '../components/MoveCard';
 import { ELEMENT_META, MOVE_BY_ID, RELIC_BY_ID } from '../data';
 import { type BattleState, type Fx, effectiveIntent, intentDamage, previewMove } from '../game/battle';
 import { statusOf } from '../game/status';
-import { type Sfx, playSfx } from '../game/sfx';
+import { soundsFor } from '../game/fxSounds';
+import { playSfx } from '../game/sfx';
 import type { KeyboardMode } from '../game/storage';
 
 interface Props {
@@ -25,16 +26,6 @@ interface Props {
 
 const FX_MS = 1100;
 
-const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
-  move: 'spell',
-  enemyHit: 'hit',
-  playerHit: 'hurt',
-  block: 'block',
-  enemyBlock: 'block',
-  buff: 'buff',
-  heal: 'heal',
-  weak: 'combo',
-};
 const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist', 'combo', 'react'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
@@ -53,7 +44,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
     const fresh = battle.fx.filter((f) => f.id > lastFx.current);
     lastFx.current = battle.fxSeq;
     if (!fresh.length) return;
-    [...new Set(fresh.map((f) => FX_SOUND[f.kind]).filter((s): s is Sfx => !!s))].forEach((s, i) => (i === 0 ? playSfx(s) : window.setTimeout(() => playSfx(s), i * 70)));
+    soundsFor(fresh).forEach((s, i) => (i === 0 ? playSfx(s) : window.setTimeout(() => playSfx(s), i * 70)));
     setFx((cur) => [...cur, ...fresh]);
     const t = window.setTimeout(() => setFx((cur) => cur.filter((f) => !fresh.includes(f))), FX_MS);
     return () => window.clearTimeout(t);
