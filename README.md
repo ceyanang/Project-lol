@@ -11,7 +11,8 @@ Your deck is moves; each turn they're labelled with kana and you cast one by typ
 ```bash
 npm install
 npm run dev        # http://localhost:5173, also on your LAN (--host) for phone testing
-npm test           # vitest: SRS, combat, map, storage
+npm test           # vitest: SRS, combat, statuses, gimmicks, art, map, storage
+npm run sprites    # writes sprite-sheet.png + enemy-sheet.png to look at the pixel art
 npm run sim        # balance sim: turns, HP lost, death rate per enemy → balance-report.txt
 npm run build      # type-check + production build with service worker
 npm run preview    # serve the production build (needed to test offline/PWA)

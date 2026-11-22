@@ -117,6 +117,19 @@ the final boss (Ryūjin) should kill a perfect reader < 10% of the time. Add `SI
 
 ---
 
+## Art (pixel sprites)
+
+Battle art is pixel art stored as code: no image files, so it works offline and costs nothing to download.
+
+- A sprite is a square grid of letters (`.` = transparent) plus a palette (`src/art/palette.ts`), built with `defineSprite(size, rows)` (it throws on a wrong size or an unknown letter).
+- **Enemies are 32×32** (`src/art/enemies-normal.ts`, `enemies-elite.ts`, `enemies-boss.ts`, keyed by enemy id). **Icons and effects are 16×16** (`icons.ts`: element, move-kind and status icons; `effects.ts`: cast bursts).
+- Drawn crisply on a `<canvas>` by `PixelSprite` at an integer scale. `EnemySprite` shows two idle frames (the second is the first shifted down 1px, swapped by CSS) and a white hit-flash frame, both derived (`bobSprite`, `flashSprite`), so each enemy is drawn once.
+- Dark ink outline (`K`), limited palette matching the ink-and-paper theme.
+- **Adding an enemy**: add it to `data/enemies.json` and draw a 32×32 sprite under its id; `npm test` fails until `ENEMY_SPRITES` covers every enemy id.
+- **Looking at sprites**: `npm run sprites` writes `sprite-sheet.png` (icons/effects) and `enemy-sheet.png` (all enemies) to the repo root (git-ignored).
+- Cast effects (`CastFx`): one burst per element over the enemy, hit-stop and shake scaled by damage, a screen flash for thunder, a status-icon pop, and a dissolve on death. All motion degrades under `prefers-reduced-motion`.
+- Not yet pixel art: the player (UI-only HP bar), relic icons, map and reward screens (still emoji).
+
 ## 2. SRS (the learning engine)
 
 Per kana (profile key `kanaslayer.profile.v1`): `seen`, `correct`, `lastSeen`, `streak`,
