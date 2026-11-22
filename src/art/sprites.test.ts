@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import PixelSprite from '../components/PixelSprite';
-import { bobSprite, defineSprite, flashSprite } from './sprite';
+import { writeFileSync } from 'node:fs';
+import { CAST_SPRITE } from './effects';
+import { ELEMENT_ICON, KIND_ICON, STATUS_ICON } from './icons';
+import { type Sprite, bobSprite, defineSprite, flashSprite } from './sprite';
 import { renderSheet } from './sheet';
 
 const blank = (size: number) => Array.from({ length: size }, () => '.'.repeat(size));
@@ -56,4 +59,37 @@ describe('rendering', () => {
     const png = renderSheet([defineSprite(16, withPixel(16, 1, 1, 'K'))], { scale: 4, columns: 2 });
     expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   });
+});
+
+describe('icons and effects', () => {
+  const records: Record<string, Record<string, Sprite>> = { ELEMENT_ICON, KIND_ICON, STATUS_ICON, CAST_SPRITE };
+  const elements = ['physical', 'fire', 'water', 'wind', 'thunder'];
+
+  it('has an element icon and a cast sprite for every element', () => {
+    expect(Object.keys(ELEMENT_ICON).sort()).toEqual([...elements].sort());
+    expect(Object.keys(CAST_SPRITE).sort()).toEqual([...elements].sort());
+  });
+
+  it('has kind and status icons for everything the UI shows', () => {
+    expect(Object.keys(KIND_ICON).sort()).toEqual(['block', 'heal', 'mirror', 'weaken']);
+    expect(Object.keys(STATUS_ICON).sort()).toEqual(['burn', 'frozen', 'gust', 'shell', 'soak', 'stun']);
+  });
+
+  it('every icon is a non-blank 16×16 sprite and no two in a record look alike', () => {
+    for (const [name, rec] of Object.entries(records)) {
+      const seen = new Set<string>();
+      for (const [key, s] of Object.entries(rec)) {
+        expect(s.size, `${name}.${key}`).toBe(16);
+        expect(s.rows.join('').replace(/\./g, '').length, `${name}.${key} blank`).toBeGreaterThan(20);
+        const sig = s.rows.join('/');
+        expect(seen.has(sig), `${name}.${key} duplicates another`).toBe(false);
+        seen.add(sig);
+      }
+    }
+  });
+});
+
+it.skipIf(!process.env.SPRITES)('writes sprite-sheet.png for a human to look at', () => {
+  const all = [ELEMENT_ICON, CAST_SPRITE, KIND_ICON, STATUS_ICON].flatMap((r) => Object.values(r));
+  writeFileSync('sprite-sheet.png', renderSheet(all, { scale: 8, columns: 5 }));
 });
