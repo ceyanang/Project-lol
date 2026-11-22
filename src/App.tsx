@@ -8,6 +8,7 @@ import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { type SpeakResult, VOICE_HELP, initSpeech, preloadClips, speakKana, voicesKnown, warmUpSpeech } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
+import { useMusic } from './music/useMusic';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
 import Quiz from './screens/Quiz';
@@ -35,6 +36,7 @@ export default function App() {
 
   useEffect(() => saveProfile(profile), [profile]);
   useEffect(() => setSfxEnabled(profile.settings.sfx), [profile.settings.sfx]);
+  useMusic(view, run, profile.settings.music);
 
   // Universal button tick. Cards, answer tiles and map nodes have their own sounds.
   useEffect(() => {
@@ -215,6 +217,10 @@ export default function App() {
         onToggleSfx={() => {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, sfx: !p.settings.sfx } });
+        }}
+        onToggleMusic={() => {
+          const p = profileRef.current;
+          setProfile({ ...p, settings: { ...p.settings, music: !p.settings.music } });
         }}
         onToggleAutoSpeak={() => {
           const p = profileRef.current;

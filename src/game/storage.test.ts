@@ -37,6 +37,14 @@ describe('storage', () => {
     expect(loadProfile().settings.keyboard).toBe('game');
   });
 
+  it('music defaults to on (also for saves made before it existed) and keeps an explicit off', () => {
+    expect(newProfile().settings.music).toBe(true);
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { autoSpeak: true, sfx: true, keyboard: 'game' } }));
+    expect(loadProfile().settings.music).toBe(true);
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { music: false } }));
+    expect(loadProfile().settings.music).toBe(false);
+  });
+
   it('falls back to a fresh profile on garbage', () => {
     mem.set(PROFILE_KEY, '{not json');
     expect(loadProfile()).toEqual(newProfile());

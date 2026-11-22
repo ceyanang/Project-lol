@@ -20,13 +20,15 @@ export interface Profile {
   settings: {
     autoSpeak: boolean;
     sfx: boolean;
+    /** Background music (on by default; separate from sound effects). */
+    music: boolean;
     /** 'game' = in-game QWERTY keyboard (default); 'phone' = the device's own keyboard. */
     keyboard: KeyboardMode;
   };
 }
 
 export function newProfile(): Profile {
-  return { version: 1, unlocked: firstGroups(1), studyOff: [], srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true, keyboard: 'game' } };
+  return { version: 1, unlocked: firstGroups(1), studyOff: [], srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true, music: true, keyboard: 'game' } };
 }
 
 function safeGet(key: string): unknown {
@@ -71,6 +73,7 @@ export function loadProfile(): Profile {
     settings: {
       autoSpeak: isObj(raw.settings) && typeof raw.settings.autoSpeak === 'boolean' ? raw.settings.autoSpeak : true,
       sfx: isObj(raw.settings) && typeof raw.settings.sfx === 'boolean' ? raw.settings.sfx : true,
+      music: isObj(raw.settings) && typeof raw.settings.music === 'boolean' ? raw.settings.music : true,
       keyboard: isObj(raw.settings) && raw.settings.keyboard === 'phone' ? 'phone' : 'game',
     },
   };

@@ -12,11 +12,12 @@ interface Props {
   onQuiz: () => void;
   onStudy: () => void;
   onToggleSfx: () => void;
+  onToggleMusic: () => void;
   onToggleAutoSpeak: () => void;
   onToggleKeyboard: () => void;
 }
 
-export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onStudy, onToggleSfx, onToggleAutoSpeak, onToggleKeyboard }: Props) {
+export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onStudy, onToggleSfx, onToggleMusic, onToggleAutoSpeak, onToggleKeyboard }: Props) {
   const next = nextLockedGroup(profile.unlocked);
   const [sheet, setSheet] = useState<null | 'abandon'>(null);
   const kanaCount = unlockedKanaIds(profile.unlocked).length;
@@ -62,6 +63,9 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
       <div className="settings-row">
         <button type="button" className="pill pill-btn" onClick={onToggleSfx} aria-pressed={profile.settings.sfx}>
           {profile.settings.sfx ? '🔊 Sound on' : '🔇 Sound off'}
+        </button>
+        <button type="button" className="pill pill-btn" onClick={onToggleMusic} aria-pressed={profile.settings.music}>
+          {profile.settings.music ? '🎵 Music on' : '🔇 Music off'}
         </button>
         <button type="button" className="pill pill-btn" onClick={onToggleAutoSpeak} aria-pressed={profile.settings.autoSpeak}>
           {profile.settings.autoSpeak ? '🗣️ Read aloud on' : '🤐 Read aloud off'}

@@ -45,6 +45,20 @@ export const CONFIG = {
     shockStun: 1,
     gustHits: 1,
   },
+  /** Background music (code-made, see PLAN.md Music). Gains are relative to the sfx master (0.22). */
+  music: {
+    masterGain: 0.12,
+    /** While a voice clip plays the music drops to masterGain × duckGain. */
+    duckGain: 0.4,
+    duckFadeMs: 80,
+    crossfadeMs: 1200,
+    /** Scheduler: how far ahead (ms) notes are queued, and how often it checks. */
+    lookaheadMs: 120,
+    tickMs: 25,
+    /** Boss phase change: bars get this much faster. */
+    enragedTempo: 1.08,
+    bpm: { menu: 54, map: 112, battle: 156, boss: 126 },
+  },
   /** Skip-ahead Quiz: pass to unlock kana groups without beating bosses. */
   quiz: {
     /** Typed answers. A single row: every kana in it, no misses allowed. */

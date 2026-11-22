@@ -1,4 +1,5 @@
 import { KANA_BY_ID } from '../data';
+import { duckMusic } from '../music/music';
 import { getAudioContext } from './sfx';
 /**
  * Japanese text-to-speech via window.speechSynthesis (no audio files).
@@ -94,6 +95,7 @@ export function speakKana(text: string, onFallback?: (result: SpeakResult) => vo
       src.buffer = buffer;
       src.connect(ac.destination);
       src.start();
+      duckMusic(buffer.duration + 0.15);
       return 'ok';
     } catch {
       // fall through to the device voice
@@ -144,6 +146,7 @@ export function warmUpSpeech() {
     u.rate = 2;
     const voice = jaVoice ?? pickVoice();
     if (voice) u.voice = voice;
+    duckMusic(1.5);
     window.speechSynthesis.speak(u);
   } catch {
     // ignore
