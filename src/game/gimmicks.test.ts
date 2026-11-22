@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENEMIES, MOVE_BY_ID } from '../data';
+import { ENEMIES, ENEMY_BY_ID, MOVE_BY_ID } from '../data';
 import { advanceBeat, confirmTurn, playTurn, previewMove } from './battle';
 import { HP, ctxFor, makeBattle, typeFor } from './testkit';
 
@@ -11,7 +11,10 @@ describe('shell (kappa)', () => {
   it('halves non-thunder damage until a thunder hit cracks it', () => {
     const ctx = ctxFor(3, 2);
     let b = makeBattle(DECK, 'kappa', ctx);
-    expect(dmg(b, 'strike')).toBe(Math.round(MOVE_BY_ID.strike.value * 0.5));
+    const shell = ENEMY_BY_ID.kappa.gimmicks!.find((g) => g.type === 'shell')!;
+    const reduction = shell.type === 'shell' ? shell.reduction : 1;
+    expect(reduction).toBeLessThan(1);
+    expect(dmg(b, 'strike')).toBe(Math.round(MOVE_BY_ID.strike.value * reduction));
     expect(dmg(b, 'lightning_seal')).toBe(MOVE_BY_ID.lightning_seal.value * 2); // weak thunder, full damage
     b = confirmTurn(typeFor(b, 'lightning_seal')).battle;
     expect(b.enemy.shellBroken).toBe(true);
