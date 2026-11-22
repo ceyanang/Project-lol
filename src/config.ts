@@ -33,6 +33,18 @@ export const CONFIG = {
       { at: 10, bonus: 0.3 },
     ],
   },
+  /** Elemental statuses applied to the enemy by attack moves (see PLAN.md §1). */
+  status: {
+    burnStacksPerHit: 2,
+    burnMax: 6,
+    soakTurns: 2,
+    /** Thunder on a soaked enemy. */
+    shockMultiplier: 1.5,
+    /** Fire on a soaked enemy. */
+    steamMultiplier: 0.75,
+    shockStun: 1,
+    gustHits: 1,
+  },
   /** Skip-ahead Quiz: pass to unlock kana groups without beating bosses. */
   quiz: {
     /** Typed answers. A single row: every kana in it, no misses allowed. */

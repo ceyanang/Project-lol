@@ -134,11 +134,11 @@ describe('typing and confirming a turn', () => {
   });
 
   it('enemy weakness doubles damage, resistance halves it', () => {
-    const ctx = ctxFor();
     const b = battle(['fire_talisman', 'water_jet', 'guard', 'strike']); // kodama: weak fire, resists water
-    const fire = playTurn(typeFor(b, 'fire_talisman'), ctx).battle;
+    // measured right after the move: the enemy's turn would also tick burn damage
+    const fire = confirmTurn(typeFor(b, 'fire_talisman')).battle;
     expect(b.enemy.hp - fire.enemy.hp).toBe(MOVE_BY_ID.fire_talisman.value * 2);
-    const water = playTurn(typeFor(b, 'water_jet'), ctx).battle;
+    const water = confirmTurn(typeFor(b, 'water_jet')).battle;
     expect(b.enemy.hp - water.enemy.hp).toBe(Math.round(MOVE_BY_ID.water_jet.value * 0.5));
   });
 

@@ -4,6 +4,7 @@ import type { Card, Element, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from 
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
 import { type Rng, chance, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
+import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, tickStatuses } from './status';
 
 /*
  * Combat (see PLAN.md §1):
@@ -26,6 +27,7 @@ export interface EnemyState {
   pattern: Intent[];
   weak: MoveDef['element'];
   resist?: MoveDef['element'];
+  status: Status;
 }
 
 /** What a move is labelled with this turn: a kana or a whole word. */
@@ -145,6 +147,7 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     pattern: def.pattern,
     weak: def.weak,
     resist: def.resist,
+    status: NO_STATUS,
   };
 }
 
@@ -299,7 +302,7 @@ export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleSt
   if (matchup === 'resist') elem = CONFIG.combat.resistMultiplier;
   const base = move.value + (isAttack && has(b, 'kitsune_mask') ? CONFIG.relics.attackBonus : 0) + (isAttack && voiced ? CONFIG.relics.voicedBonus : 0);
   return {
-    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * power)) : 0,
+    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * reactionMultiplier(b.enemy, move.element) * power)) : 0,
     hits: isAttack ? (move.hits ?? 1) : 0,
     block:
       move.kind === 'block'
@@ -360,6 +363,17 @@ export function matchSlot(b: Pick<BattleState, 'slots'>, typed: string): Slot | 
   return b.slots.find((s) => matchesReading(s.label.kana, typed));
 }
 
+const STATUS_TEXT: Partial<Record<Element, string>> = { fire: 'Burn!', water: 'Soaked!', wind: 'Gust!' };
+
+/** Leave the element's status on the enemy (or trigger a reaction) and announce it. */
+function applyStatusFx(b: BattleState, element: Element | undefined): BattleState {
+  const r = applyElementStatus(b.enemy, element);
+  let next: BattleState = { ...b, enemy: r.enemy };
+  if (r.reaction) return pushFx(next, 'react', r.reaction === 'shock' ? 'Shock!' : 'Steam!', { element });
+  const text = element ? STATUS_TEXT[element] : undefined;
+  return text ? pushFx(next, 'status', text, { element }) : next;
+}
+
 function performMove(b: BattleState, slot: Slot): BattleState {
   const move = MOVE_BY_ID[slot.card.moveId];
   const p = previewMove(move, slot.label, b);
@@ -374,6 +388,7 @@ function performMove(b: BattleState, slot: Slot): BattleState {
     next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!', { element: move.element, amount: dealt });
     if (p.matchup === 'weak') next = pushFx(next, 'weak', 'Weakness!');
     if (p.matchup === 'resist') next = pushFx(next, 'resist', 'Resisted…');
+    if (next.enemy.hp > 0) next = applyStatusFx(next, move.element);
     if (move.kind === 'drain' && dealt > 0) {
       const heal = Math.min(dealt, next.playerMaxHp - next.playerHp);
       next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
@@ -418,7 +433,13 @@ function enemyTurn(b: BattleState): BattleState {
       );
       break;
   }
-  return { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
+  next = { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
+  if (next.outcome !== 'ongoing') return next;
+  const tick = tickStatuses(next.enemy);
+  next = { ...next, enemy: tick.enemy };
+  if (tick.burnDamage > 0) next = pushFx(next, 'enemyHit', `-${tick.burnDamage} 🔥`, { element: 'fire', amount: tick.burnDamage });
+  if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} burns away!`);
+  return next;
 }
 
 /** End Turn: resolve what was typed (if anything); the enemy acts on the next beat. */

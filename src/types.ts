@@ -51,6 +51,9 @@ export interface EnemyDef {
 
 export type Element = 'physical' | 'fire' | 'water' | 'wind' | 'thunder';
 
+/** Elemental statuses on an enemy. */
+export type StatusKind = 'burn' | 'soak' | 'stun' | 'gust';
+
 export type RelicEffect =
   | 'voicedBonus'
   | 'maxHp'
