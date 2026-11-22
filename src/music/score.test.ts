@@ -61,3 +61,60 @@ describe('map (upbeat adventure)', () => {
     for (const evs of bars('map')) for (const v of ['bass', 'arp', 'hat', 'tick']) expect(evs.some((e) => e.voice === v)).toBe(true);
   });
 });
+
+describe('battle (exciting)', () => {
+  const hookOff = NO_LAYERS;
+  const hookOn = { hook: true, enraged: false };
+
+  it('is 156 bpm with a kick on every beat of every bar', () => {
+    expect(barSeconds('battle', hookOff)).toBeCloseTo((4 * 60) / 156, 6);
+    for (let bar = 0; bar < TRACKS.battle.bars; bar++) {
+      const kicks = notesForBar('battle', bar, hookOff).filter((e) => e.voice === 'kick').map((e) => e.beat);
+      expect(kicks).toEqual([0, 1, 2, 3]);
+    }
+  });
+
+  it('has snares on 2 and 4, plus an eight-hit fill every fourth bar', () => {
+    const snares = (bar: number) => notesForBar('battle', bar, hookOff).filter((e) => e.voice === 'snare');
+    expect(snares(0).map((e) => e.beat)).toEqual([1, 3]);
+    expect(snares(3)).toHaveLength(2 + 8);
+  });
+
+  it('the hook melody is a layer: present with hook on, absent with it off', () => {
+    for (let bar = 0; bar < TRACKS.battle.bars; bar++) {
+      expect(notesForBar('battle', bar, hookOff).some((e) => e.voice === 'lead')).toBe(false);
+    }
+    expect(notesForBar('battle', 0, hookOn).some((e) => e.voice === 'lead')).toBe(true);
+  });
+
+  it('is deterministic and wraps at 16 bars', () => {
+    expect(notesForBar('battle', 16, hookOn)).toEqual(notesForBar('battle', 0, hookOn));
+  });
+});
+
+describe('boss (dangerous)', () => {
+  it('is faster than the 92 bpm sample, and faster again once enraged', () => {
+    expect(barSeconds('boss', NO_LAYERS)).toBeCloseTo((4 * 60) / 126, 6);
+    expect(barSeconds('boss', NO_LAYERS)).toBeLessThan((4 * 60) / 92);
+    expect(barSeconds('boss', { hook: false, enraged: true })).toBeCloseTo((4 * 60) / 126 / 1.08, 6);
+  });
+
+  it('plays its horn melody in E phrygian over a taiko pulse', () => {
+    const allowed = new Set([4, 5, 7, 9, 10, 11, 0, 2]);
+    const all = Array.from({ length: TRACKS.boss.bars }, (_, i) => notesForBar('boss', i, NO_LAYERS)).flat();
+    const horn = pcs(all, ['horn']);
+    expect(horn.size).toBeGreaterThan(0);
+    for (const pc of horn) expect(allowed.has(pc)).toBe(true);
+    expect(notesForBar('boss', 0, NO_LAYERS).filter((e) => e.voice === 'taiko').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('enraged adds more taiko and an extra drone note in every bar', () => {
+    for (let bar = 0; bar < TRACKS.boss.bars; bar++) {
+      const calm = notesForBar('boss', bar, NO_LAYERS);
+      const mad = notesForBar('boss', bar, { hook: false, enraged: true });
+      expect(mad.filter((e) => e.voice === 'taiko').length).toBeGreaterThan(calm.filter((e) => e.voice === 'taiko').length);
+    }
+    const padNotes = (l: { hook: boolean; enraged: boolean }) => notesForBar('boss', 0, l).filter((e) => e.voice === 'pad').flatMap((e) => e.midi ?? []).length;
+    expect(padNotes({ hook: false, enraged: true })).toBeGreaterThan(padNotes(NO_LAYERS));
+  });
+});

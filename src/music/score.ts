@@ -99,15 +99,62 @@ function mapBar(bar: number): NoteEvent[] {
   return out;
 }
 
+// ---------------------------------------------------------------- battle: exciting, A minor, 156 bpm
+
+const BATTLE_PROG: [number, number[]][] = [[45, [69, 72, 76, 72]], [43, [67, 71, 74, 71]], [41, [65, 69, 72, 69]], [40, [64, 68, 71, 68]]];
+const BATTLE_HOOK: (number | null)[][] = [
+  [81, null, 79, 81, 84, null, 81, 79], [79, null, 76, 79, 83, null, 79, 76], [77, null, 76, 77, 81, null, 77, 76], [76, null, 76, 80, 83, null, 80, 76],
+];
+
+function battleBar(bar: number, layers: Layers): NoteEvent[] {
+  const [root, arp] = BATTLE_PROG[bar % 4];
+  const out: NoteEvent[] = [];
+  for (let i = 0; i < 8; i++) out.push(ev(i / 2, 'bassSq', root, 0.42, 0.5));
+  for (let i = 0; i < 16; i++) out.push(ev(i / 4, 'zap', arp[i % 4], 0.2, 0.16));
+  for (let beat = 0; beat < 4; beat++) out.push(ev(beat, 'kick', undefined, 0.3, 0.9));
+  for (const beat of [1, 3]) out.push(ev(beat, 'snare', undefined, 0.2, 0.7));
+  for (let i = 0; i < 8; i++) out.push(ev(i / 2 + 0.25, i === 7 ? 'openHat' : 'hat', undefined, 0.15, 0.45));
+  if (layers.hook) {
+    BATTLE_HOOK[bar % 4].forEach((n, i) => {
+      if (n === null) return;
+      out.push(ev(i / 2, 'lead', n, 0.45, 0.32), ev(i / 2, 'bass', n - 12, 0.45, 0.1));
+    });
+  }
+  if (bar % 4 === 3) for (let i = 0; i < 8; i++) out.push(ev(3 + i / 8, 'snare', undefined, 0.15, 0.25 + 0.05 * i)); // fill
+  return out;
+}
+
+// ---------------------------------------------------------------- boss: dangerous, E phrygian, 126 bpm
+
+const BOSS_HORN: [number, number, number][] = [
+  [0, 52, 2], [2, 53, 1], [3, 52, 1], [4, 55, 2], [6, 53, 1], [7, 52, 1], [8, 58, 2], [10, 57, 1], [11, 55, 1], [12, 53, 2], [14, 52, 2],
+  [16, 52, 1], [17, 53, 1], [18, 55, 2], [20, 58, 2], [22, 59, 2], [24, 57, 1], [25, 55, 1], [26, 53, 2], [28, 52, 4],
+];
+
+function bossBar(bar: number, layers: Layers): NoteEvent[] {
+  const out: NoteEvent[] = [];
+  if (bar % 4 === 0) out.push(ev(0, 'pad', layers.enraged ? [28, 40, 46, 52, 34] : [28, 40, 46, 52], 17, 0.5)); // E and Bb: the tritone
+  out.push(...inBar(bar, BOSS_HORN.map(([b, n, l]) => [b, 'horn', n, l, 0.5] as [number, Voice, number, number, number])));
+  out.push(ev(0, 'taiko', undefined, 0.7, 0.9), ev(2, 'taiko', undefined, 0.7, 0.72));
+  if (bar % 4 === 3) for (let i = 0; i < 12; i++) out.push(ev(2 + i / 6, 'taiko', undefined, 0.3, 0.3 + 0.03 * i)); // roll into the next phrase
+  if (bar % 2 === 1) out.push(ev(3.5, 'stab', [64, 65, 71], 0.35, 0.5));
+  for (let i = 0; i < 4; i++) out.push(ev(i + 0.5, 'hat', undefined, 0.1, 0.2));
+  if (bar === 2 || bar === 6 || bar === 10) out.push(ev(2, 'breath', 76, 3, 0.4));
+  if (layers.enraged) for (let i = 0; i < 4; i++) out.push(ev(1 + i / 4, 'taiko', undefined, 0.2, 0.4)); // extra 16th roll
+  return out;
+}
+
 /** The note events of one bar of a scene's track (bar wraps around the track length). */
-export function notesForBar(scene: Scene, bar: number, _layers: Layers): NoteEvent[] {
+export function notesForBar(scene: Scene, bar: number, layers: Layers): NoteEvent[] {
   const n = bar % TRACKS[scene].bars;
   switch (scene) {
     case 'menu':
       return menuBar(n);
     case 'map':
       return mapBar(n);
-    default:
-      return []; // battle and boss: Task 4
+    case 'battle':
+      return battleBar(n, layers);
+    case 'boss':
+      return bossBar(n, layers);
   }
 }
