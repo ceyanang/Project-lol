@@ -4,6 +4,7 @@ import type { Card, Element, EnemyDef, Gimmick, EnemyTier, Intent, MoveDef, Voca
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
 import { type Rng, chance, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
+import { breaksShell, hardenAmount, mimicResist, retaliationDamage, shellFactor } from './gimmicks';
 import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, statusOf, tickStatuses } from './status';
 
 /*
@@ -29,6 +30,8 @@ export interface EnemyState {
   resist?: MoveDef['element'];
   status: Status;
   gimmicks: Gimmick[];
+  /** Shell gimmick: set once the breaker element has landed. */
+  shellBroken: boolean;
 }
 
 /** What a move is labelled with this turn: a kana or a whole word. */
@@ -150,6 +153,7 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     resist: def.resist,
     status: NO_STATUS,
     gimmicks: def.gimmicks ?? [],
+    shellBroken: false,
   };
 }
 
@@ -321,7 +325,7 @@ export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleSt
   if (matchup === 'resist') elem = CONFIG.combat.resistMultiplier;
   const base = move.value + (isAttack && has(b, 'kitsune_mask') ? CONFIG.relics.attackBonus : 0) + (isAttack && voiced ? CONFIG.relics.voicedBonus : 0);
   return {
-    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * reactionMultiplier(b.enemy, move.element) * power)) : 0,
+    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * reactionMultiplier(b.enemy, move.element) * shellFactor(b.enemy, move.element) * power)) : 0,
     hits: isAttack ? (move.hits ?? 1) : 0,
     block:
       move.kind === 'block'
@@ -393,6 +397,16 @@ function applyStatusFx(b: BattleState, element: Element | undefined): BattleStat
   return text ? pushFx(next, 'status', text, { element }) : next;
 }
 
+/** Gimmick reactions to a damaging move: shell cracks, mimic adapts, retaliate stings. */
+function afterHit(b: BattleState, move: MoveDef): BattleState {
+  let next = b;
+  if (breaksShell(next.enemy, move.element)) next = pushFx({ ...next, enemy: { ...next.enemy, shellBroken: true } }, 'react', 'Shell cracked!', { element: move.element });
+  if (next.enemy.hp <= 0) return next;
+  next = { ...next, enemy: { ...next.enemy, resist: mimicResist(next.enemy, move.element) } };
+  const back = retaliationDamage(next.enemy, move.element);
+  return back > 0 ? hitPlayer(log(next, `${next.enemy.name} hits back.`), back) : next;
+}
+
 function performMove(b: BattleState, slot: Slot): BattleState {
   const move = MOVE_BY_ID[slot.card.moveId];
   const p = previewMove(move, slot.label, b);
@@ -408,6 +422,7 @@ function performMove(b: BattleState, slot: Slot): BattleState {
     if (p.matchup === 'weak') next = pushFx(next, 'weak', 'Weakness!');
     if (p.matchup === 'resist') next = pushFx(next, 'resist', 'Resisted…');
     if (next.enemy.hp > 0) next = applyStatusFx(next, move.element);
+    next = afterHit(next, move);
     if (move.kind === 'drain' && dealt > 0) {
       const heal = Math.min(dealt, next.playerMaxHp - next.playerHp);
       next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
@@ -446,7 +461,9 @@ function enemyTurn(b: BattleState): BattleState {
     }
     case 'defend': {
       const amt = Math.round(intent.value * e.dmgScale);
-      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
+      const harden = hardenAmount(next.enemy);
+      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt, armor: next.enemy.armor + harden } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
+      if (harden > 0) next = pushFx(next, 'buff', `+${harden} ⛨`);
       break;
     }
     case 'buff':
@@ -508,6 +525,7 @@ export function confirmTurn(b: BattleState): PlayResult {
     }
   }
 
+  if (next.outcome === 'lost') return { battle: { ...next, typed: '', pending: null }, answers };
   if (next.enemy.hp <= 0) return { battle: log({ ...next, outcome: 'won', typed: '' }, `${next.enemy.name} is slain!`), answers };
   // the enemy acts on the next beat (see advanceBeat)
   return { battle: { ...next, pending: 'enemy', typed: '' }, answers };

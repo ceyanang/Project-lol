@@ -56,7 +56,16 @@ export type Element = 'physical' | 'fire' | 'water' | 'wind' | 'thunder';
 export type StatusKind = 'burn' | 'soak' | 'stun' | 'gust';
 
 /** Special rules an enemy fights by (see PLAN.md §1). */
-export type Gimmick = { type: 'immune'; to: StatusKind[] };
+export type Gimmick =
+  | { type: 'immune'; to: StatusKind[] }
+  /** Damage is multiplied by `reduction` until a hit of `breaker` cracks the shell. */
+  | { type: 'shell'; breaker: Element; reduction: number }
+  /** After each hit the enemy resists the element it was hit with (never its own weakness). */
+  | { type: 'mimic' }
+  /** A surviving hit of `element` costs the player `damage`. */
+  | { type: 'retaliate'; element: Element; damage: number }
+  /** Gains `armor` every time it defends. */
+  | { type: 'harden'; armor: number };
 
 export type RelicEffect =
   | 'voicedBonus'
