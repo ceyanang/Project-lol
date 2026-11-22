@@ -1,9 +1,11 @@
 import { CONFIG } from '../config';
 import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
-import type { Card, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
+import type { Card, Element, EnemyDef, Gimmick, Phase, EnemyTier, Intent, MoveDef, Vocab } from '../types';
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
-import { type Rng, chance, shuffle, weightedPick } from './rng';
+import { type Rng, chance, pick, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
+import { breaksShell, checkPhase, freezes, hardenAmount, mimicResist, retaliationDamage, shellFactor } from './gimmicks';
+import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, statusOf, tickStatuses } from './status';
 
 /*
  * Combat (see PLAN.md §1):
@@ -26,6 +28,14 @@ export interface EnemyState {
   pattern: Intent[];
   weak: MoveDef['element'];
   resist?: MoveDef['element'];
+  status: Status;
+  gimmicks: Gimmick[];
+  /** Shell gimmick: set once the breaker element has landed. */
+  shellBroken: boolean;
+  /** Freeze gimmick: the next deal freezes one move. */
+  freezeNext: boolean;
+  phase?: Phase;
+  phaseDone: boolean;
 }
 
 /** What a move is labelled with this turn: a kana or a whole word. */
@@ -55,11 +65,15 @@ export interface TurnResult {
   text: string;
 }
 
-export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'enemyBlock' | 'buff' | 'move' | 'heal' | 'weak' | 'resist';
+export type FxKind = 'enemyHit' | 'playerHit' | 'block' | 'miss' | 'enemyBlock' | 'buff' | 'move' | 'heal' | 'weak' | 'resist' | 'status' | 'combo' | 'react';
 export interface Fx {
   id: number;
   kind: FxKind;
   text: string;
+  /** Element of the move or status behind this event (drives the cast animation). */
+  element?: Element;
+  /** Damage dealt (enemyHit) — scales shake and hit-stop. */
+  amount?: number;
 }
 
 export interface BattleState {
@@ -67,6 +81,8 @@ export interface BattleState {
   drawPile: Card[];
   discard: Card[];
   slots: Slot[];
+  /** Uids of slots that can't be cast this turn (frozen). */
+  frozen: string[];
   /** What the player has typed this turn; resolved on End Turn. */
   typed: string;
   playerHp: number;
@@ -76,6 +92,8 @@ export interface BattleState {
   relics: string[];
   freeMissUsed: boolean;
   movesMade: number;
+  /** Consecutive correct readings this fight. */
+  combo: number;
   reviewKana: string[];
   outcome: 'ongoing' | 'won' | 'lost';
   /**
@@ -107,6 +125,13 @@ export interface PlayResult {
 
 const has = (b: { relics: string[] }, id: string) => b.relics.includes(id);
 
+/** Power bonus for the current combo: the highest tier reached. */
+export function comboBonus(combo: number): number {
+  let bonus = 0;
+  for (const t of CONFIG.combo.tiers) if (combo >= t.at) bonus = t.bonus;
+  return bonus;
+}
+
 // ---------------------------------------------------------------- enemies
 
 export function scaleFor(floor: number) {
@@ -132,6 +157,12 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     pattern: def.pattern,
     weak: def.weak,
     resist: def.resist,
+    status: NO_STATUS,
+    gimmicks: def.gimmicks ?? [],
+    shellBroken: false,
+    freezeNext: false,
+    phase: def.phase,
+    phaseDone: false,
   };
 }
 
@@ -148,10 +179,27 @@ export function isAttackIntent(i: Intent): boolean {
   return i.type === 'attack' || i.type === 'multi';
 }
 
+/**
+ * What the enemy will actually do this turn: null when it is stunned, or when a gust blows
+ * the intent away (a buff is cancelled; a multi-hit loses gustHits hits and is cancelled at 0).
+ */
+export function effectiveIntent(e: EnemyState): Intent | null {
+  const s = statusOf(e);
+  if (s.stun > 0) return null;
+  const i = currentIntent(e);
+  if (s.gust <= 0) return i;
+  if (i.type === 'buff') return null;
+  if (i.type === 'multi') {
+    const times = (i.times ?? 2) - CONFIG.status.gustHits;
+    return times > 0 ? { ...i, times } : null;
+  }
+  return i;
+}
+
 /** Total damage the enemy will deal this turn if unblocked. */
 export function incomingDamage(e: EnemyState): number {
-  const i = currentIntent(e);
-  if (!isAttackIntent(i)) return 0;
+  const i = effectiveIntent(e);
+  if (!i || !isAttackIntent(i)) return 0;
   return intentDamage(e, i) * (i.type === 'multi' ? (i.times ?? 2) : 1);
 }
 
@@ -180,6 +228,7 @@ export function createBattle(opts: {
     drawPile: shuffle(ctx.rng, opts.deck),
     discard: [],
     slots: [],
+    frozen: [],
     typed: '',
     playerHp: opts.hp,
     playerMaxHp: opts.maxHp,
@@ -188,6 +237,7 @@ export function createBattle(opts: {
     relics: opts.relics,
     freeMissUsed: false,
     movesMade: 0,
+    combo: 0,
     reviewKana: opts.reviewKana ?? [],
     outcome: 'ongoing',
     lastResult: null,
@@ -242,8 +292,12 @@ export function startPlayerTurn(b: BattleState, ctx: BattleCtx): BattleState {
   const cards = pile.slice(0, n);
   const labels = makeLabels(cards.length, b, ctx);
   const slots: Slot[] = labels.map((label, i) => ({ uid: uid('s'), card: cards[i], label }));
+  const freeze = !!b.enemy.freezeNext;
+  const frozen = freeze && slots.length >= 2 ? [pick(ctx.rng, slots).uid] : [];
   return {
     ...b,
+    enemy: freeze ? { ...b.enemy, freezeNext: false } : b.enemy,
+    frozen,
     turn: b.turn + 1,
     playerBlock: 0,
     typed: '',
@@ -263,17 +317,19 @@ export interface MovePreview {
   weaken: number;
   pierce: boolean;
   matchup: 'weak' | 'resist' | null;
+  /** Current combo power bonus (0.1 = +10%). */
+  combo: number;
 }
 
-function powerMultiplier(b: Pick<BattleState, 'relics' | 'movesMade'>, label: Label | null): number {
-  let m = 1;
+function powerMultiplier(b: Pick<BattleState, 'relics' | 'movesMade' | 'combo'>, label: Label | null): number {
+  let m = 1 + comboBonus(b.combo);
   if (label?.kind === 'word') m *= has(b, 'suzuri') ? CONFIG.relics.wordMultiplier : CONFIG.combat.wordMultiplier;
   if (has(b, 'torii') && b.movesMade === 0) m *= CONFIG.relics.firstMoveMultiplier;
   return m;
 }
 
 /** What a move would do right now with this label. Static info, safe to show before picking. */
-export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleState, 'relics' | 'movesMade' | 'enemy'>): MovePreview {
+export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleState, 'relics' | 'movesMade' | 'combo' | 'enemy'>): MovePreview {
   const power = powerMultiplier(b, label);
   const voiced = !!label && has(b, 'dakuten_blade') && label.kana.some(isVoiced);
   const isAttack = move.kind === 'attack' || move.kind === 'drain';
@@ -283,7 +339,7 @@ export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleSt
   if (matchup === 'resist') elem = CONFIG.combat.resistMultiplier;
   const base = move.value + (isAttack && has(b, 'kitsune_mask') ? CONFIG.relics.attackBonus : 0) + (isAttack && voiced ? CONFIG.relics.voicedBonus : 0);
   return {
-    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * power)) : 0,
+    damagePerHit: isAttack ? Math.max(1, Math.round(base * elem * reactionMultiplier(b.enemy, move.element) * shellFactor(b.enemy, move.element) * power)) : 0,
     hits: isAttack ? (move.hits ?? 1) : 0,
     block:
       move.kind === 'block'
@@ -295,14 +351,22 @@ export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleSt
     weaken: move.kind === 'weaken' ? Math.round(move.value * power) : 0,
     pierce: !!move.pierce || voiced,
     matchup,
+    combo: comboBonus(b.combo),
   };
 }
 
 // ---------------------------------------------------------------- resolving a turn
 
-function pushFx(b: BattleState, kind: FxKind, text: string): BattleState {
+/** Announce a boss phase change if the enemy just crossed its threshold. */
+function phaseCheck(b: BattleState): BattleState {
+  const r = checkPhase(b.enemy);
+  if (!r.fired) return b;
+  return pushFx(log({ ...b, enemy: r.enemy }, `${r.enemy.name}: ${r.fired.label}`), 'buff', r.fired.label);
+}
+
+function pushFx(b: BattleState, kind: FxKind, text: string, extra: { element?: Element; amount?: number } = {}): BattleState {
   const id = b.fxSeq + 1;
-  return { ...b, fxSeq: id, fx: [...b.fx, { id, kind, text }].slice(-8) };
+  return { ...b, fxSeq: id, fx: [...b.fx, { id, kind, text, ...extra }].slice(-8) };
 }
 
 function log(b: BattleState, line: string): BattleState {
@@ -339,8 +403,29 @@ export function setTyped(b: BattleState, typed: string): BattleState {
 }
 
 /** The move whose label reads as `typed` (Hepburn or a common alternate), if any. */
-export function matchSlot(b: Pick<BattleState, 'slots'>, typed: string): Slot | undefined {
-  return b.slots.find((s) => matchesReading(s.label.kana, typed));
+export function matchSlot(b: Pick<BattleState, 'slots'> & { frozen?: string[] }, typed: string): Slot | undefined {
+  return b.slots.find((s) => !b.frozen?.includes(s.uid) && matchesReading(s.label.kana, typed));
+}
+
+const STATUS_TEXT: Partial<Record<Element, string>> = { fire: 'Burn!', water: 'Soaked!', wind: 'Gust!' };
+
+/** Leave the element's status on the enemy (or trigger a reaction) and announce it. */
+function applyStatusFx(b: BattleState, element: Element | undefined): BattleState {
+  const r = applyElementStatus(b.enemy, element);
+  let next: BattleState = { ...b, enemy: r.enemy };
+  if (r.reaction) return pushFx(next, 'react', r.reaction === 'shock' ? 'Shock!' : 'Steam!', { element });
+  const text = element ? STATUS_TEXT[element] : undefined;
+  return text ? pushFx(next, 'status', text, { element }) : next;
+}
+
+/** Gimmick reactions to a damaging move: shell cracks, mimic adapts, retaliate stings. */
+function afterHit(b: BattleState, move: MoveDef): BattleState {
+  let next = b;
+  if (breaksShell(next.enemy, move.element)) next = pushFx({ ...next, enemy: { ...next.enemy, shellBroken: true } }, 'react', 'Shell cracked!', { element: move.element });
+  if (next.enemy.hp <= 0) return next;
+  next = { ...next, enemy: { ...next.enemy, resist: mimicResist(next.enemy, move.element) } };
+  const back = retaliationDamage(next.enemy, move.element);
+  return back > 0 ? hitPlayer(log(next, `${next.enemy.name} hits back.`), back) : next;
 }
 
 function performMove(b: BattleState, slot: Slot): BattleState {
@@ -354,13 +439,16 @@ function performMove(b: BattleState, slot: Slot): BattleState {
       next = r.b;
       dealt += r.dealt;
     }
-    next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!');
+    next = pushFx(next, 'enemyHit', dealt > 0 ? `-${dealt}` : 'Armor!', { element: move.element, amount: dealt });
     if (p.matchup === 'weak') next = pushFx(next, 'weak', 'Weakness!');
     if (p.matchup === 'resist') next = pushFx(next, 'resist', 'Resisted…');
+    if (next.enemy.hp > 0) next = applyStatusFx(next, move.element);
     if (move.kind === 'drain' && dealt > 0) {
       const heal = Math.min(dealt, next.playerMaxHp - next.playerHp);
       next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
     }
+    // gimmick reactions (retaliation) come after the drain heal, so a heal can save you from them
+    next = afterHit(next, move);
   }
   if (p.block > 0) next = pushFx({ ...next, playerBlock: next.playerBlock + p.block }, 'block', `+${p.block} 🛡`);
   if (p.heal > 0) {
@@ -368,14 +456,19 @@ function performMove(b: BattleState, slot: Slot): BattleState {
     next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
   }
   if (p.weaken > 0) next = pushFx({ ...next, enemy: { ...next.enemy, strength: next.enemy.strength - p.weaken } }, 'enemyBlock', `-${p.weaken} 💪`);
-  return log(next, `You used ${move.name}.`);
+  return phaseCheck(log(next, `You used ${move.name}.`));
 }
 
 function enemyTurn(b: BattleState): BattleState {
   const e = { ...b.enemy, block: 0 };
   let next: BattleState = { ...b, enemy: e };
-  const intent = currentIntent(e);
-  switch (intent.type) {
+  const st = statusOf(e);
+  const intent = effectiveIntent(e);
+  if (st.stun > 0) {
+    next = pushFx(log({ ...next, enemy: { ...e, status: { ...st, stun: st.stun - 1 } } }, `${e.name} is stunned!`), 'status', 'Stunned!', { element: 'thunder' });
+  } else if (!intent) {
+    next = pushFx(log(next, `${e.name} is blown off course.`), 'status', 'Gust!', { element: 'wind' });
+  } else switch (intent.type) {
     case 'attack': {
       const dmg = intentDamage(e, intent);
       next = hitPlayer(log(next, `${e.name} attacks for ${dmg}.`), dmg);
@@ -390,7 +483,9 @@ function enemyTurn(b: BattleState): BattleState {
     }
     case 'defend': {
       const amt = Math.round(intent.value * e.dmgScale);
-      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
+      const harden = hardenAmount(next.enemy);
+      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt, armor: next.enemy.armor + harden, freezeNext: freezes(next.enemy) } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
+      if (harden > 0) next = pushFx(next, 'buff', `+${harden} ⛨`);
       break;
     }
     case 'buff':
@@ -401,7 +496,13 @@ function enemyTurn(b: BattleState): BattleState {
       );
       break;
   }
-  return { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
+  next = { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1, status: { ...statusOf(next.enemy), gust: 0 } } };
+  if (next.outcome !== 'ongoing') return next;
+  const tick = tickStatuses(next.enemy);
+  next = { ...next, enemy: tick.enemy };
+  if (tick.burnDamage > 0) next = pushFx(next, 'enemyHit', `-${tick.burnDamage} 🔥`, { element: 'fire', amount: tick.burnDamage });
+  if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} burns away!`);
+  return phaseCheck(next);
 }
 
 /** End Turn: resolve what was typed (if anything); the enemy acts on the next beat. */
@@ -412,19 +513,25 @@ export function confirmTurn(b: BattleState): PlayResult {
   let next: BattleState = b;
 
   if (!typed) {
-    next = { ...next, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
+    next = { ...next, combo: 0, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
   } else {
     const slot = matchSlot(b, typed);
-    if (slot) {
+    const iced = slot ? undefined : b.slots.find((s) => b.frozen?.includes(s.uid) && matchesReading(s.label.kana, typed));
+    if (iced) {
+      // a frozen move: nothing happens, nothing is learned or lost
+      next = { ...next, combo: 0, lastResult: { ok: false, tileText: iced.label.text, tileRomaji: typed, text: `❄️ ${iced.label.text} is frozen — that move can't be cast` } };
+    } else if (slot) {
       const move = MOVE_BY_ID[slot.card.moveId];
       slot.label.kana.forEach((k) => answers.push({ id: k, correct: true }));
       next = performMove(next, slot);
       next = {
         ...next,
         movesMade: next.movesMade + 1,
+        combo: next.combo + 1,
         stats: { ...next.stats, correct: next.stats.correct + 1, words: next.stats.words + (slot.label.kind === 'word' ? 1 : 0) },
         lastResult: { ok: true, speak: slot.label.text, tileText: slot.label.text, tileRomaji: typed, text: `${slot.label.text} = ${slot.label.romaji} → ${move.emoji} ${move.name}` },
       };
+      if (CONFIG.combo.tiers.some((t) => t.at === next.combo)) next = pushFx(next, 'combo', `Combo ×${next.combo}!`);
     } else {
       // a typo: guess which move it was aiming at (closest reading) and mark that kana missed
       const ranked = b.slots
@@ -432,7 +539,7 @@ export function confirmTurn(b: BattleState): PlayResult {
         .sort((x, y) => x.d - y.d);
       const target = ranked[0] && ranked[0].d <= Math.max(1, Math.floor(ranked[0].s.label.romaji.length / 2)) && ranked[1]?.d !== ranked[0].d ? ranked[0].s : undefined;
       if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
-      next = { ...next, movesMade: next.movesMade + 1, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
+      next = { ...next, movesMade: next.movesMade + 1, combo: 0, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
       if (has(next, 'omamori') && !next.freeMissUsed) {
         next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
       } else {
@@ -444,6 +551,7 @@ export function confirmTurn(b: BattleState): PlayResult {
     }
   }
 
+  if (next.outcome === 'lost') return { battle: { ...next, typed: '', pending: null }, answers };
   if (next.enemy.hp <= 0) return { battle: log({ ...next, outcome: 'won', typed: '' }, `${next.enemy.name} is slain!`), answers };
   // the enemy acts on the next beat (see advanceBeat)
   return { battle: { ...next, pending: 'enemy', typed: '' }, answers };

@@ -47,9 +47,44 @@ export interface EnemyDef {
   weak: Element;
   /** Moves of this element deal ×0.5. */
   resist?: Element;
+  gimmicks?: Gimmick[];
+  phase?: Phase;
 }
 
 export type Element = 'physical' | 'fire' | 'water' | 'wind' | 'thunder';
+
+/** Elemental statuses on an enemy. */
+export type StatusKind = 'burn' | 'soak' | 'stun' | 'gust';
+
+/** Special rules an enemy fights by (see PLAN.md §1). */
+export type Gimmick =
+  | { type: 'immune'; to: StatusKind[] }
+  /** Damage is multiplied by `reduction` until a hit of `breaker` cracks the shell. */
+  | { type: 'shell'; breaker: Element; reduction: number }
+  /** After each hit the enemy resists the element it was hit with (never its own weakness). */
+  | { type: 'mimic' }
+  /** A surviving hit of `element` costs the player `damage`. */
+  | { type: 'retaliate'; element: Element; damage: number }
+  /** Gains `armor` every time it defends. */
+  | { type: 'harden'; armor: number }
+  /** After it defends, one of your moves is frozen (can't be cast) for the next turn. */
+  | { type: 'freeze' };
+
+/** A one-time change when a boss drops to `atHpPct` of its max HP. */
+export interface Phase {
+  atHpPct: number;
+  /** Shown when it fires. */
+  label: string;
+  pattern?: Intent[];
+  /** Added to strength. */
+  strength?: number;
+  /** Added to armor. */
+  armor?: number;
+  /** Heals this fraction of max HP. */
+  heal?: number;
+  weak?: Element;
+  resist?: Element;
+}
 
 export type RelicEffect =
   | 'voicedBonus'

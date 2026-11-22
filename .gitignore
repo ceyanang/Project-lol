@@ -5,3 +5,5 @@ dev-dist
 .DS_Store
 dist-artifact
 balance-report.txt
+sprite-sheet.png
+enemy-sheet.png

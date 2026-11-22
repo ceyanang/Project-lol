@@ -25,6 +25,26 @@ export const CONFIG = {
     /** Reading-check tiles in Study drills. */
     readingOptions: 4,
   },
+  /** Consecutive correct readings boost every move's power (highest reached tier applies). Resets on a fizzle or a held turn. */
+  combo: {
+    tiers: [
+      { at: 3, bonus: 0.1 },
+      { at: 6, bonus: 0.2 },
+      { at: 10, bonus: 0.3 },
+    ],
+  },
+  /** Elemental statuses applied to the enemy by attack moves (see PLAN.md §1). */
+  status: {
+    burnStacksPerHit: 2,
+    burnMax: 6,
+    soakTurns: 2,
+    /** Thunder on a soaked enemy. */
+    shockMultiplier: 1.5,
+    /** Fire on a soaked enemy. */
+    steamMultiplier: 0.75,
+    shockStun: 1,
+    gustHits: 1,
+  },
   /** Skip-ahead Quiz: pass to unlock kana groups without beating bosses. */
   quiz: {
     /** Typed answers. A single row: every kana in it, no misses allowed. */

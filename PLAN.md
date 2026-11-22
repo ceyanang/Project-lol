@@ -83,14 +83,52 @@ with a **whole word** instead of a single kana
 | Enemy HP | `hp × tierHp × (1 + 0.25 × (floor − 1))`, tierHp: normal ×2, elite ×1.6, boss ×1.35, review ×1.8 |
 | Enemy damage / block | `value × 0.75 × (1 + 0.15 × (floor − 1))` |
 
+### Combo, statuses and reactions
+Numbers live in `CONFIG.combo` and `CONFIG.status`.
+
+- **Combo**: every correct reading adds 1; a fizzle or a held turn resets it. Tiers: 3 → +10% power, 6 → +20%, 10 → +30% (attacks, blocks, heals).
+- **Statuses** (an attack move leaves its element's status once per move, not per hit):
+
+| Element | Status | Effect |
+|---|---|---|
+| 🔥 Fire | Burn +2 (max 6) | At the end of the enemy's action it takes `burn` damage (ignores block and armor), then burn −1 |
+| 💧 Water | Soak (2 turns) | Wears off one per enemy action |
+| 🌪️ Wind | Gust | The enemy's next action loses a hit (multi-hit) or is cancelled (buff) |
+| ⚡ Thunder on a soaked enemy | Shock | ×1.5 damage, soak cleared, enemy loses its next action |
+| 🔥 Fire on a soaked enemy | Steam | ×0.75 damage, soak cleared, no burn |
+
+### Enemy gimmicks (`data/enemies.json`)
+| Enemy | Gimmick |
+|---|---|
+| Hitodama | Immune to burn |
+| Kappa | Shell: ×0.75 damage from everything except thunder, until a thunder hit cracks it |
+| Tanuki | Mimic: resists the element it was just hit with (never its own weakness) |
+| Tengu | Retaliate: each surviving physical hit costs you 3 HP (block applies) |
+| Yuki-onna | Freeze: after she defends, one of your moves is frozen next turn (can't be cast, costs nothing) |
+| Jorōgumo | Harden: +1 armor every time she defends |
+| Oni · Gashadokuro · Ryūjin | Stun-proof; at 50% HP a one-time **phase**: Oni enrages (+1 strength, faster pattern), Gashadokuro reassembles (heals 15%, +1 armor), Ryūjin's weakness flips to thunder (resists fire) |
+
 ### Balance
 `npm run sim` (or `SIM=1 npx vitest run src/game/balance.test.ts`) plays 300 fights per enemy and
 floor with a perfect reader and a greedy policy, and prints turns, HP lost and death rate.
-Targets with the starter deck: normal fights last 2.5–6 turns and cost < 20 HP; elites 5–8 turns
+`npm test` runs a fast regression (`src/game/balance.fast.test.ts`): 60 fights per enemy must stay within +25% of the pre-status turn counts. Targets with the starter deck: normal fights last 2.5–6 turns and cost < 20 HP; elites 5–8 turns
 and < 30 HP on their own floor; bosses 6–9 turns (floor-1 boss ~22 HP). With a few reward moves
 the final boss (Ryūjin) should kill a perfect reader < 10% of the time. Add `SIM_EXTRA=blaze,stone_ward,…` to simulate a deck with rewards.
 
 ---
+
+## Art (pixel sprites)
+
+Battle art is pixel art stored as code: no image files, so it works offline and costs nothing to download.
+
+- A sprite is a square grid of letters (`.` = transparent) plus a palette (`src/art/palette.ts`), built with `defineSprite(size, rows)` (it throws on a wrong size or an unknown letter).
+- **Enemies are 32×32** (`src/art/enemies-normal.ts`, `enemies-elite.ts`, `enemies-boss.ts`, keyed by enemy id). **Icons and effects are 16×16** (`icons.ts`: element, move-kind and status icons; `effects.ts`: cast bursts).
+- Drawn crisply on a `<canvas>` by `PixelSprite` at an integer scale. `EnemySprite` shows two idle frames (the second is the first shifted down 1px, swapped by CSS) and a white hit-flash frame, both derived (`bobSprite`, `flashSprite`), so each enemy is drawn once.
+- Dark ink outline (`K`), limited palette matching the ink-and-paper theme.
+- **Adding an enemy**: add it to `data/enemies.json` and draw a 32×32 sprite under its id; `npm test` fails until `ENEMY_SPRITES` covers every enemy id.
+- **Looking at sprites**: `npm run sprites` writes `sprite-sheet.png` (icons/effects) and `enemy-sheet.png` (all enemies) to the repo root (git-ignored).
+- Cast effects (`CastFx`): one burst per element over the enemy, hit-stop and shake scaled by damage, a screen flash for thunder, a status-icon pop, and a dissolve on death. All motion degrades under `prefers-reduced-motion`.
+- Not yet pixel art: the player (UI-only HP bar), relic icons, map and reward screens (still emoji).
 
 ## 2. SRS (the learning engine)
 
