@@ -27,13 +27,16 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
      Use an English/latin keyboard layout (a Japanese IME would turn letters into kana). Hepburn and common alternates are
    accepted: `shi/si`, `chi/ti`, `tsu/tu`, `fu/hu`, `ji/zi/di`, `zu/du`, `n/nn`, `wo/o`.
    Nothing is highlighted while you type, so you can't probe for the answer.
-3. **Confirm.** Press **⏎** on the keyboard (it's End Turn; ⏎ with nothing typed skips your move). The keyboard
+3. **Confirm.** Press **⏎** on the keyboard (it's End Turn; ⏎ with nothing typed is a fizzle, no free skip). The keyboard
    is docked at the bottom like the quiz's. What you typed is revealed
    (`き = ki → 🛡 Guard`):
    - it reads as one of the moves → that move happens (even if it's not the one you meant!);
    - it matches no move → **fizzle**, you take **3 damage** (`wrongHpCost`). If it was a near
      miss of one move's reading (edit distance), that kana is marked missed in your SRS;
-   - nothing typed → you skip your move.
+   - nothing typed → fizzle ("You froze up!").
+   - **Turn timer:** you have **6 s** (`combat.turnTimeMs`) to cast a move. When the meter runs out the turn
+     is a fizzle ("Time's up!") even if you'd typed the right reading. The meter pauses during enemy beats,
+     the menu and while the tab is hidden, and refills on every deal.
 4. **Beat, then the enemy acts.** After your move resolves there's a pause (1.3 s,
    `enemyDelayMs`), then the enemy acts (its intent was shown all turn), then another
    pause (0.9 s, `dealDelayMs`) before your next moves are dealt. Nothing is typeable
@@ -86,7 +89,7 @@ with a **whole word** instead of a single kana
 ### Combo, statuses and reactions
 Numbers live in `CONFIG.combo` and `CONFIG.status`.
 
-- **Combo**: every correct reading adds 1; a fizzle or a held turn resets it. Tiers: 3 → +10% power, 6 → +20%, 10 → +30% (attacks, blocks, heals).
+- **Combo**: every correct reading adds 1; a fizzle (typo, empty ⏎ or timeout) resets it. Tiers: 3 → +10% power, 6 → +20%, 10 → +30% (attacks, blocks, heals).
 - **Statuses** (an attack move leaves its element's status once per move, not per hit):
 
 | Element | Status | Effect |

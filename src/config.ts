@@ -13,6 +13,8 @@ export const CONFIG = {
 
     /** Typing a reading that matches no move: it fizzles and you take this much damage. */
     wrongHpCost: 3,
+    /** Time to cast a move each turn; running out (or an empty enter) is a fizzle. */
+    turnTimeMs: 6000,
     weaknessMultiplier: 2,
     resistMultiplier: 0.5,
     /** Chance a move is labelled with a whole word instead of one kana (once Word moves are unlocked). */

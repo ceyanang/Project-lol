@@ -233,3 +233,53 @@ describe('combo meter', () => {
     expect(run?.battle?.combo).toBe(0);
   });
 });
+
+describe('timeout and empty enter fizzle', () => {
+  const deck = ['strike', 'strike', 'strike', 'strike'];
+  const COST = CONFIG.combat.wrongHpCost;
+
+  it('empty enter is a fizzle', () => {
+    const r = confirmTurn(battle(deck));
+    expect(r.battle.playerHp).toBe(H - COST);
+    expect(r.battle.combo).toBe(0);
+    expect(r.battle.stats.wrong).toBe(1);
+    expect(r.battle.lastResult?.text).toBe('You froze up!');
+    expect(r.battle.pending).toBe('enemy');
+    expect(r.answers).toEqual([]);
+  });
+
+  it('timeout discards a correct typed answer', () => {
+    const b = typeFor(battle(deck), 'strike');
+    const r = confirmTurn(b, { timedOut: true });
+    expect(r.battle.playerHp).toBe(H - COST);
+    expect(r.battle.enemy.hp).toBe(b.enemy.hp);
+    expect(r.battle.lastResult?.text).toBe("Time's up!");
+    expect(r.battle.stats.wrong).toBe(1);
+  });
+
+  it('timeout with a near miss marks the aimed kana missed', () => {
+    const b = battle(deck);
+    const aim = b.slots[0].label;
+    const r = confirmTurn(setTyped(b, aim.romaji.slice(0, -1) || 'z'), { timedOut: true });
+    expect(r.answers.every((a) => !a.correct)).toBe(true);
+  });
+
+  it('timeout resets the combo; omamori absorbs the first one only', () => {
+    let b: BattleState = { ...battle(deck), combo: 4, relics: ['omamori'] };
+    b = confirmTurn(b, { timedOut: true }).battle;
+    expect(b.combo).toBe(0);
+    expect(b.playerHp).toBe(H);
+    const second = confirmTurn({ ...b, pending: null }, { timedOut: true }).battle;
+    expect(second.playerHp).toBe(H - COST);
+  });
+
+  it('timeout at 1 HP loses the battle', () => {
+    const r = confirmTurn({ ...battle(deck), playerHp: 1 }, { timedOut: true });
+    expect(r.battle.outcome).toBe('lost');
+  });
+
+  it('a second resolution while pending does nothing', () => {
+    const once = confirmTurn(battle(deck), { timedOut: true }).battle;
+    expect(confirmTurn(once, { timedOut: true }).battle).toBe(once);
+  });
+});

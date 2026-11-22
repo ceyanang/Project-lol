@@ -103,7 +103,8 @@ describe('gust, stun and immunity', () => {
     const e = { ...b.enemy, pattern: [{ type: 'multi' as const, value: 3, times: 1 }], status: { ...b.enemy.status, gust: 1 } };
     expect(effectiveIntent(e)).toBeNull();
     expect(incomingDamage(e)).toBe(0);
-    expect(advanceBeat({ ...confirmTurn({ ...b, enemy: e, typed: '' }).battle }, ctx).playerHp).toBe(HP);
+    // the empty enter is a fizzle (-wrongHpCost); the cancelled multi must add nothing on top
+    expect(advanceBeat({ ...confirmTurn({ ...b, enemy: e, typed: '' }).battle }, ctx).playerHp).toBe(HP - CONFIG.combat.wrongHpCost);
   });
 
   it('a shocked enemy loses exactly one action', () => {

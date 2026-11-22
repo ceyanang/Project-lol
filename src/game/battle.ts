@@ -505,15 +505,35 @@ function enemyTurn(b: BattleState): BattleState {
   return phaseCheck(next);
 }
 
+/** The slot a mistyped reading was probably aiming at (closest reading, unambiguous), if any. */
+function guessTarget(b: BattleState, typed: string): Slot | undefined {
+  const ranked = b.slots.map((s) => ({ s, d: editDistance(typed, s.label.romaji) })).sort((x, y) => x.d - y.d);
+  return ranked[0] && ranked[0].d <= Math.max(1, Math.floor(ranked[0].s.label.romaji.length / 2)) && ranked[1]?.d !== ranked[0].d ? ranked[0].s : undefined;
+}
+
+/** A fizzle: combo and a miss on the books, HP lost unless omamori saves you. */
+function fizzle(b: BattleState): BattleState {
+  const next = { ...b, movesMade: b.movesMade + 1, combo: 0, stats: { ...b.stats, wrong: b.stats.wrong + 1 } };
+  if (has(next, 'omamori') && !next.freeMissUsed) return pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
+  return pushFx({ ...next, playerHp: Math.max(0, next.playerHp - CONFIG.combat.wrongHpCost) }, 'miss', `Fizzle! -${CONFIG.combat.wrongHpCost}`);
+}
+
 /** End Turn: resolve what was typed (if anything); the enemy acts on the next beat. */
-export function confirmTurn(b: BattleState): PlayResult {
+export function confirmTurn(b: BattleState, opts: { timedOut?: boolean } = {}): PlayResult {
   if (b.outcome !== 'ongoing' || b.pending) return { battle: b, answers: [] };
   const typed = normalizeTyped(b.typed);
   const answers: SrsAnswer[] = [];
   let next: BattleState = b;
 
-  if (!typed) {
-    next = { ...next, combo: 0, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
+  if (!typed || opts.timedOut) {
+    // no free skip: an empty enter or an expired timer is punished like a typo (typed text is discarded)
+    if (typed) {
+      const target = guessTarget(b, typed);
+      if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
+    }
+    next = fizzle(next);
+    next = { ...next, lastResult: { ok: false, tileText: typed, tileRomaji: typed, text: opts.timedOut ? "Time's up!" : 'You froze up!' } };
+    if (next.playerHp <= 0) return { battle: { ...next, outcome: 'lost', typed: '' }, answers };
   } else {
     const slot = matchSlot(b, typed);
     const iced = slot ? undefined : b.slots.find((s) => b.frozen?.includes(s.uid) && matchesReading(s.label.kana, typed));
@@ -534,17 +554,9 @@ export function confirmTurn(b: BattleState): PlayResult {
       if (CONFIG.combo.tiers.some((t) => t.at === next.combo)) next = pushFx(next, 'combo', `Combo ×${next.combo}!`);
     } else {
       // a typo: guess which move it was aiming at (closest reading) and mark that kana missed
-      const ranked = b.slots
-        .map((s) => ({ s, d: editDistance(typed, s.label.romaji) }))
-        .sort((x, y) => x.d - y.d);
-      const target = ranked[0] && ranked[0].d <= Math.max(1, Math.floor(ranked[0].s.label.romaji.length / 2)) && ranked[1]?.d !== ranked[0].d ? ranked[0].s : undefined;
+      const target = guessTarget(b, typed);
       if (target) target.label.kana.forEach((k) => answers.push({ id: k, correct: false }));
-      next = { ...next, movesMade: next.movesMade + 1, combo: 0, stats: { ...next.stats, wrong: next.stats.wrong + 1 } };
-      if (has(next, 'omamori') && !next.freeMissUsed) {
-        next = pushFx({ ...next, freeMissUsed: true }, 'miss', 'Omamori saves you!');
-      } else {
-        next = pushFx({ ...next, playerHp: Math.max(0, next.playerHp - CONFIG.combat.wrongHpCost) }, 'miss', `Fizzle! -${CONFIG.combat.wrongHpCost}`);
-      }
+      next = fizzle(next);
       const hint = target ? ` (${target.label.text} is “${target.label.romaji}”)` : '';
       next = { ...next, lastResult: { ok: false, speak: target?.label.text, tileText: typed, tileRomaji: typed, text: `“${typed}” isn't any move's reading${hint}` } };
       if (next.playerHp <= 0) return { battle: { ...next, outcome: 'lost', typed: '' }, answers };
