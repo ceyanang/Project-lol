@@ -69,3 +69,45 @@ describe('enemy data', () => {
     expect(ENEMIES.every((e) => !!e.weak)).toBe(true);
   });
 });
+
+describe('freeze (yuki-onna)', () => {
+  const afterDefend = (deck = ['strike', 'strike', 'guard', 'guard']) => {
+    const ctx = ctxFor(3, 6);
+    const b = makeBattle(deck, 'yukionna', ctx); // pattern starts with defend
+    return { b: playTurn({ ...b, typed: '' }, ctx).battle, ctx };
+  };
+
+  it('freezes exactly one slot on the deal after her defend', () => {
+    const { b } = afterDefend();
+    expect(b.frozen).toHaveLength(1);
+    expect(b.slots.map((s) => s.uid)).toContain(b.frozen[0]);
+  });
+
+  it('typing a frozen reading costs nothing: no damage, no HP, no SRS answers', () => {
+    const { b } = afterDefend();
+    const frozen = b.slots.find((s) => s.uid === b.frozen[0])!;
+    const r = confirmTurn({ ...b, typed: frozen.label.romaji });
+    expect(r.answers).toHaveLength(0);
+    expect(r.battle.playerHp).toBe(b.playerHp);
+    expect(r.battle.enemy.hp).toBe(b.enemy.hp);
+    expect(r.battle.lastResult?.text).toContain('frozen');
+    expect(r.battle.combo).toBe(0);
+  });
+
+  it('other slots still work while one is frozen', () => {
+    const { b } = afterDefend();
+    const free = b.slots.find((s) => s.uid !== b.frozen[0])!;
+    const r = confirmTurn({ ...b, typed: free.label.romaji });
+    expect(r.answers.length).toBeGreaterThan(0);
+    expect(r.battle.lastResult?.ok).toBe(true);
+  });
+
+  it('the freeze lasts one turn', () => {
+    const { b, ctx } = afterDefend();
+    expect(playTurn({ ...b, typed: '' }, ctx).battle.frozen).toEqual([]);
+  });
+
+  it('nothing is frozen when fewer than two moves are dealt', () => {
+    expect(afterDefend(['strike']).b.frozen).toEqual([]);
+  });
+});

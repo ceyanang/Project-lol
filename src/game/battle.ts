@@ -2,9 +2,9 @@ import { CONFIG } from '../config';
 import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
 import type { Card, Element, EnemyDef, Gimmick, EnemyTier, Intent, MoveDef, Vocab } from '../types';
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
-import { type Rng, chance, shuffle, weightedPick } from './rng';
+import { type Rng, chance, pick, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
-import { breaksShell, hardenAmount, mimicResist, retaliationDamage, shellFactor } from './gimmicks';
+import { breaksShell, freezes, hardenAmount, mimicResist, retaliationDamage, shellFactor } from './gimmicks';
 import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, statusOf, tickStatuses } from './status';
 
 /*
@@ -32,6 +32,8 @@ export interface EnemyState {
   gimmicks: Gimmick[];
   /** Shell gimmick: set once the breaker element has landed. */
   shellBroken: boolean;
+  /** Freeze gimmick: the next deal freezes one move. */
+  freezeNext: boolean;
 }
 
 /** What a move is labelled with this turn: a kana or a whole word. */
@@ -77,6 +79,8 @@ export interface BattleState {
   drawPile: Card[];
   discard: Card[];
   slots: Slot[];
+  /** Uids of slots that can't be cast this turn (frozen). */
+  frozen: string[];
   /** What the player has typed this turn; resolved on End Turn. */
   typed: string;
   playerHp: number;
@@ -154,6 +158,7 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     status: NO_STATUS,
     gimmicks: def.gimmicks ?? [],
     shellBroken: false,
+    freezeNext: false,
   };
 }
 
@@ -219,6 +224,7 @@ export function createBattle(opts: {
     drawPile: shuffle(ctx.rng, opts.deck),
     discard: [],
     slots: [],
+    frozen: [],
     typed: '',
     playerHp: opts.hp,
     playerMaxHp: opts.maxHp,
@@ -282,8 +288,12 @@ export function startPlayerTurn(b: BattleState, ctx: BattleCtx): BattleState {
   const cards = pile.slice(0, n);
   const labels = makeLabels(cards.length, b, ctx);
   const slots: Slot[] = labels.map((label, i) => ({ uid: uid('s'), card: cards[i], label }));
+  const freeze = !!b.enemy.freezeNext;
+  const frozen = freeze && slots.length >= 2 ? [pick(ctx.rng, slots).uid] : [];
   return {
     ...b,
+    enemy: freeze ? { ...b.enemy, freezeNext: false } : b.enemy,
+    frozen,
     turn: b.turn + 1,
     playerBlock: 0,
     typed: '',
@@ -382,8 +392,8 @@ export function setTyped(b: BattleState, typed: string): BattleState {
 }
 
 /** The move whose label reads as `typed` (Hepburn or a common alternate), if any. */
-export function matchSlot(b: Pick<BattleState, 'slots'>, typed: string): Slot | undefined {
-  return b.slots.find((s) => matchesReading(s.label.kana, typed));
+export function matchSlot(b: Pick<BattleState, 'slots'> & { frozen?: string[] }, typed: string): Slot | undefined {
+  return b.slots.find((s) => !b.frozen?.includes(s.uid) && matchesReading(s.label.kana, typed));
 }
 
 const STATUS_TEXT: Partial<Record<Element, string>> = { fire: 'Burn!', water: 'Soaked!', wind: 'Gust!' };
@@ -462,7 +472,7 @@ function enemyTurn(b: BattleState): BattleState {
     case 'defend': {
       const amt = Math.round(intent.value * e.dmgScale);
       const harden = hardenAmount(next.enemy);
-      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt, armor: next.enemy.armor + harden } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
+      next = pushFx(log({ ...next, enemy: { ...next.enemy, block: amt, armor: next.enemy.armor + harden, freezeNext: freezes(next.enemy) } }, `${e.name} braces (+${amt} block).`), 'enemyBlock', `+${amt} 🛡`);
       if (harden > 0) next = pushFx(next, 'buff', `+${harden} ⛨`);
       break;
     }
@@ -494,7 +504,11 @@ export function confirmTurn(b: BattleState): PlayResult {
     next = { ...next, combo: 0, lastResult: { ok: false, tileText: '', tileRomaji: '', text: 'You held back this turn.' } };
   } else {
     const slot = matchSlot(b, typed);
-    if (slot) {
+    const iced = slot ? undefined : b.slots.find((s) => b.frozen?.includes(s.uid) && matchesReading(s.label.kana, typed));
+    if (iced) {
+      // a frozen move: nothing happens, nothing is learned or lost
+      next = { ...next, combo: 0, lastResult: { ok: false, tileText: iced.label.text, tileRomaji: typed, text: `❄️ ${iced.label.text} is frozen — that move can't be cast` } };
+    } else if (slot) {
       const move = MOVE_BY_ID[slot.card.moveId];
       slot.label.kana.forEach((k) => answers.push({ id: k, correct: true }));
       next = performMove(next, slot);

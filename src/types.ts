@@ -65,7 +65,9 @@ export type Gimmick =
   /** A surviving hit of `element` costs the player `damage`. */
   | { type: 'retaliate'; element: Element; damage: number }
   /** Gains `armor` every time it defends. */
-  | { type: 'harden'; armor: number };
+  | { type: 'harden'; armor: number }
+  /** After it defends, one of your moves is frozen (can't be cast) for the next turn. */
+  | { type: 'freeze' };
 
 export type RelicEffect =
   | 'voicedBonus'

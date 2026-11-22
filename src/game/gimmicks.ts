@@ -31,3 +31,6 @@ export function retaliationDamage(e: Pick<EnemyState, 'gimmicks'>, element: Elem
 export function hardenAmount(e: Pick<EnemyState, 'gimmicks'>): number {
   return find(e, 'harden')?.armor ?? 0;
 }
+
+/** Whether this enemy freezes a move after it defends. */
+export const freezes = (e: Pick<EnemyState, 'gimmicks'>): boolean => !!find(e, 'freeze');
