@@ -123,6 +123,7 @@ export function speak(text: string, rate = 0.8): SpeakResult {
     u.lang = 'ja-JP';
     u.rate = rate;
     if (voice) u.voice = voice;
+    duckMusic(1.5);
     synth.speak(u);
   } catch {
     return 'unsupported';
@@ -146,7 +147,6 @@ export function warmUpSpeech() {
     u.rate = 2;
     const voice = jaVoice ?? pickVoice();
     if (voice) u.voice = voice;
-    duckMusic(1.5);
     window.speechSynthesis.speak(u);
   } catch {
     // ignore

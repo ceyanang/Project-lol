@@ -51,8 +51,10 @@ function audio(): AudioContext | null {
     master.gain.value = 0.22;
     master.connect(ctx.destination);
   }
-  // browsers start the context suspended until a user gesture
-  if (ctx.state === 'suspended') void ctx.resume();
+  // browsers start the context suspended until a user gesture; never wake it while the tab is hidden
+  // (timers keep firing in the background and would un-suspend the music the visibility handler paused)
+  const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  if (ctx.state === 'suspended' && !hidden) void ctx.resume();
   return ctx;
 }
 
