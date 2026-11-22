@@ -4,6 +4,7 @@ import { createElement } from 'react';
 import PixelSprite from '../components/PixelSprite';
 import { writeFileSync } from 'node:fs';
 import { CAST_SPRITE } from './effects';
+import { NORMAL_SPRITES } from './enemies-normal';
 import { ELEMENT_ICON, KIND_ICON, STATUS_ICON } from './icons';
 import { type Sprite, bobSprite, defineSprite, flashSprite } from './sprite';
 import { renderSheet } from './sheet';
@@ -89,7 +90,25 @@ describe('icons and effects', () => {
   });
 });
 
+/** A 32×32 enemy sprite must fit with a margin (no clipped edges) and be substantial. */
+function expectEnemySprite(id: string, s: Sprite) {
+  expect(s.size, id).toBe(32);
+  const opaque = s.rows.join('').replace(/\./g, '').length;
+  expect(opaque, `${id} too sparse`).toBeGreaterThan(150);
+  expect(s.rows[0], `${id} touches the top edge`).toBe('.'.repeat(32));
+  expect(s.rows[31], `${id} touches the bottom edge`).toBe('.'.repeat(32));
+  expect(s.rows.every((r) => r[0] === '.' && r[31] === '.'), `${id} touches a side edge`).toBe(true);
+}
+
+describe('normal enemy sprites', () => {
+  it('has exactly the seven normal enemies, each a clean 32×32 sprite', () => {
+    expect(Object.keys(NORMAL_SPRITES).sort()).toEqual(['bakeneko', 'chochin', 'hitodama', 'kappa', 'kasaobake', 'kodama', 'tanuki']);
+    for (const [id, s] of Object.entries(NORMAL_SPRITES)) expectEnemySprite(id, s);
+  });
+});
+
 it.skipIf(!process.env.SPRITES)('writes sprite-sheet.png for a human to look at', () => {
   const all = [ELEMENT_ICON, CAST_SPRITE, KIND_ICON, STATUS_ICON].flatMap((r) => Object.values(r));
   writeFileSync('sprite-sheet.png', renderSheet(all, { scale: 8, columns: 5 }));
+  writeFileSync('enemy-sheet.png', renderSheet(Object.values(NORMAL_SPRITES), { scale: 6, columns: 4 }));
 });
