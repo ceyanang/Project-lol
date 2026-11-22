@@ -41,8 +41,8 @@ export default function MoveCard({ move, label, preview, count, selected, onTap 
         <span className="move-sum">
           {summary(move, preview)}
           {el && <span className="move-el" title={el.label}> {el.emoji}</span>}
-          {preview?.matchup === 'weak' && <span className="badge badge-weak">WEAK</span>}
-          {preview?.matchup === 'resist' && <span className="badge badge-resist">resist</span>}
+          {preview?.matchup === 'weak' && <span className="badge badge-weak" title="Hits its weakness">弱 ×2</span>}
+          {preview?.matchup === 'resist' && <span className="badge badge-resist" title="It resists this">耐 ×½</span>}
         </span>
       </span>
     </Tag>

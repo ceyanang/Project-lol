@@ -21,11 +21,17 @@ Follow these in every change.
 5. **Tap targets ≥ 48×48 px** with ≥ 8 px between them. Primary actions (End Turn) sit in the bottom third, the thumb zone. Exception: the in-game QWERTY keyboard uses phone-keyboard-sized keys (≥ 40 px tall, full row width).
 6. **Typing goes through `ReadingInput`.** By default that's the in-game keyboard (`src/components/Keyboard.tsx`), which never opens the OS keyboard; a physical keyboard is listened to via keydown. The one native `<input>` is the opt-in **📱 Phone keyboard** setting, and it must keep `autocomplete/autocorrect="off"`, `autocapitalize="none"`, `spellcheck=false`, font-size ≥ 16 px (or iOS zooms), and `enterkeyhint="go"`. Phone mode must never react to the keyboard opening (no visualViewport resizing, no focus-dependent layout): it uses a static top-half layout (`.layout-phone`, `.sheet-top`) that keeps the moves and the typed field above the keyboard on screens down to iPhone SE size.
 7. No hover-only affordances. Every interaction works with a single tap; no long-press-only actions, no drag-only actions.
-8. Base font size ≥ 16 px; kana on cards ≥ 40 px. Use the system Japanese font stack (`Hiragino Sans`, `Noto Sans JP`, `Yu Gothic`…) — no web fonts, so nothing is fetched at runtime.
+8. Base font size ≥ 16 px; kana on cards ≥ 40 px. Fonts are bundled subsets in `src/fonts/` (Yuji Syuku brush for kana, Shippori Mincho for headings; SIL OFL), precached by the service worker, never fetched from a CDN. Body/UI text uses the system font stack.
 9. Disable text selection and the iOS tap highlight on game UI (`user-select: none; -webkit-tap-highlight-color: transparent`).
 10. No horizontal scrolling. Lists scroll vertically inside their screen.
 11. Colour is never the only signal: mastery levels also show a label/icon.
 12. Animations ≤ 400 ms and honour `prefers-reduced-motion`.
+
+## Visual identity (ink & paper)
+1. Washi paper (`--bg`), sumi ink (`--ink`), shu seal red (`--red`), ai indigo (`--blue`), kin gold (`--gold`), moss (`--green`). Tokens live in `:root` in `src/styles.css`; don't hard-code colors.
+2. The kana are the star: brushed (`--brush`) on paper slips. Keep everything around them quiet: ink lines, flat paper, no gradients or glows.
+3. Red seal stamps are for things that matter (weakness, the logo); don't sprinkle them.
+4. Buttons are flat print blocks with a hard ink offset; sentence-case labels, no emoji on primary menu buttons.
 
 ## Offline / PWA rules
 1. Everything the game needs is bundled and precached by the service worker (`vite-plugin-pwa`, Workbox `generateSW`). No CDN links, no runtime fetches.

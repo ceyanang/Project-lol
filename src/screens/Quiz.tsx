@@ -49,7 +49,7 @@ export default function Quiz({ profile, onBack, onSpeak, onFinish }: Props) {
         <button type="button" className="icon-btn" onClick={onBack} aria-label="Back">
           ←
         </button>
-        <h2 className="grow lib-title">Skip-ahead Quiz</h2>
+        <h2 className="grow lib-title">Skip-ahead quiz</h2>
       </header>
       <p className="muted small">
         Know some kana already? Type their readings to unlock them right away. A row: get all {groupById('h-ka').kana.length} right. A whole family:{' '}

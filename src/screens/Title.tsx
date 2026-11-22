@@ -26,7 +26,9 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
   return (
     <main className="screen title-screen">
       <h1 className="logo">
-        <span className="logo-kana jp">か</span>
+        <span className="logo-kana jp">
+          か<span className="logo-seal" aria-hidden="true">斬</span>
+        </span>
         Kana-Slayer
       </h1>
       <p className="muted tagline">Read kana. Slay yokai. Remember forever.</p>
@@ -34,24 +36,24 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
       <div className="menu">
         {canContinue && (
           <button type="button" className="btn btn-gold btn-wide" onClick={onContinue}>
-            ▶ Continue{continueLabel ? ` · ${continueLabel}` : ''}
+            Continue{continueLabel ? ` · ${continueLabel}` : ''}
           </button>
         )}
         <button type="button" className={`btn btn-wide ${canContinue ? '' : 'btn-primary'}`} onClick={() => (canContinue ? setSheet('abandon') : onNewRun())}>
-          ⚔️ New Run
+          New run
         </button>
         <button type="button" className="btn btn-wide btn-blue" onClick={onLibrary}>
-          📚 Kana Library
+          Kana library
         </button>
         <button type="button" className="btn btn-wide" onClick={onStudy}>
-          🎯 Study focus
+          Study focus
           <br />
           <span className="small muted">
             {studying.length === unlockedRows.length ? `All ${unlockedRows.length} unlocked rows` : `${studying.length} of ${unlockedRows.length} rows on`}
           </span>
         </button>
         <button type="button" className="btn btn-wide" onClick={onQuiz}>
-          🎓 Skip-ahead Quiz
+          Skip-ahead quiz
           <br />
           <span className="small muted">Already know some? Test out to unlock them.</span>
         </button>

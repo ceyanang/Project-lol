@@ -45,7 +45,7 @@ export default function Library({ profile, onSpeak, onBack, onToggleAutoSpeak }:
         <button type="button" className="icon-btn" onClick={onBack} aria-label="Back">
           ←
         </button>
-        <h2 className="grow lib-title">Kana Library</h2>
+        <h2 className="grow lib-title">Kana library</h2>
         <button type="button" className="pill pill-btn" onClick={onToggleAutoSpeak} aria-pressed={profile.settings.autoSpeak}>
           {profile.settings.autoSpeak ? '🔊 Auto' : '🔇 Auto'}
         </button>
