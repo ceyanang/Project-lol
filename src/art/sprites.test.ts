@@ -4,6 +4,8 @@ import { createElement } from 'react';
 import PixelSprite from '../components/PixelSprite';
 import { writeFileSync } from 'node:fs';
 import { CAST_SPRITE } from './effects';
+import { ENEMIES } from '../data';
+import { ENEMY_SPRITES, spriteFor } from './index';
 import { NORMAL_SPRITES } from './enemies-normal';
 import { ELEMENT_ICON, KIND_ICON, STATUS_ICON } from './icons';
 import { type Sprite, bobSprite, defineSprite, flashSprite } from './sprite';
@@ -107,8 +109,25 @@ describe('normal enemy sprites', () => {
   });
 });
 
+describe('every enemy has its own sprite', () => {
+  it('ENEMY_SPRITES covers exactly the enemies in data/enemies.json (a new enemy without art fails here)', () => {
+    expect(Object.keys(ENEMY_SPRITES).sort()).toEqual(ENEMIES.map((e) => e.id).sort());
+    for (const [id, s] of Object.entries(ENEMY_SPRITES)) expectEnemySprite(id, s);
+  });
+
+  it('no two enemies share a sprite', () => {
+    const sigs = Object.values(ENEMY_SPRITES).map((s) => s.rows.join('/'));
+    expect(new Set(sigs).size).toBe(sigs.length);
+  });
+
+  it('spriteFor returns the sprite and throws on an unknown id', () => {
+    expect(spriteFor('kappa')).toBe(ENEMY_SPRITES.kappa);
+    expect(() => spriteFor('nope')).toThrow(/nope/);
+  });
+});
+
 it.skipIf(!process.env.SPRITES)('writes sprite-sheet.png for a human to look at', () => {
   const all = [ELEMENT_ICON, CAST_SPRITE, KIND_ICON, STATUS_ICON].flatMap((r) => Object.values(r));
   writeFileSync('sprite-sheet.png', renderSheet(all, { scale: 8, columns: 5 }));
-  writeFileSync('enemy-sheet.png', renderSheet(Object.values(NORMAL_SPRITES), { scale: 6, columns: 4 }));
+  writeFileSync('enemy-sheet.png', renderSheet(Object.values(ENEMY_SPRITES), { scale: 6, columns: 4 }));
 });
