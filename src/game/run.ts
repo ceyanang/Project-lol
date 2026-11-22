@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import { ENEMIES, RELICS, availableWords, nextLockedGroup, unlockedKanaIds, wordMovesUnlocked } from '../data';
+import { ENEMIES, RELICS, availableWords, nextLockedGroup, studyKanaIds, wordMovesUnlocked } from '../data';
 import type { Card, EnemyDef, EnemyTier } from '../types';
 import { type BattleCtx, type BattleState, createBattle } from './battle';
 import { moveRewardOptions, starterDeck } from './deck';
@@ -36,7 +36,8 @@ export interface RunState {
 }
 
 export function runCtx(profile: Profile, rng: Rng, weightOf: (id: string) => number): BattleCtx {
-  const unlocked = unlockedKanaIds(profile.unlocked);
+  // only the groups you're studying label moves and fill drills (Study focus)
+  const unlocked = studyKanaIds(profile.unlocked, profile.studyOff);
   return {
     unlocked,
     words: availableWords(new Set(unlocked)),
@@ -193,7 +194,7 @@ export function advanceFloor(run: RunState, profile: Profile, ctx: BattleCtx, no
   }
   const floor = run.floor + 1;
   const heal = Math.round((run.maxHp - run.hp) * CONFIG.run.bossHealMissingPct);
-  const unlocked = unlockedKanaIds(profile.unlocked);
+  const unlocked = studyKanaIds(profile.unlocked, profile.studyOff);
   return {
     run: {
       ...run,

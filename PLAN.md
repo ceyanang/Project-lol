@@ -151,6 +151,14 @@ Unlocks are stored as a list of group ids (`profile.unlocked`; old saves with a 
 | 26–30 | katakana dakuten ガ … パ |
 | 31 | 📜 Word moves |
 
+**🎯 Study focus** (home menu): pick which unlocked rows to practice. Each unlocked row has an
+on/off chip; only rows that are **on** label your moves, fill Study drills and review fights
+(`profile.studyOff` stores the ones switched off, so new unlocks start on). Presets: All,
+Hiragana only, Katakana only, Latest rows (newest rows until there are ≥ 8 sounds). You can't
+switch off so much that fewer than **5 different sounds** (`MIN_STUDY_READINGS`) remain, since a
+turn deals up to 5 moves with different readings. Hiragana and katakana share sounds, so
+katakana-only is enough on its own. The Library and the Skip-ahead Quiz still show everything.
+
 **🎓 Skip-ahead Quiz** (home menu): if you already know some kana, test out of them.
 - **A row** (e.g. か row): every kana in it, no misses → that row unlocks.
 - **A family** (Hiragana, Hiragana dakuten, Katakana, Katakana dakuten): 14 questions with at

@@ -10,6 +10,7 @@ import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
 import Quiz from './screens/Quiz';
+import StudyFocus from './screens/StudyFocus';
 import { applyQuizUnlock } from './game/quiz';
 import MapScreen from './screens/MapScreen';
 import Rest from './screens/Rest';
@@ -17,7 +18,7 @@ import Reward from './screens/Reward';
 import RunOver from './screens/RunOver';
 import Title from './screens/Title';
 
-type View = 'title' | 'library' | 'quiz' | 'run';
+type View = 'title' | 'library' | 'quiz' | 'study' | 'run';
 
 export default function App() {
   const [profile, setProfileState] = useState<Profile>(() => loadProfile());
@@ -164,6 +165,14 @@ export default function App() {
         }}
       />
     );
+  } else if (view === 'study') {
+    screen = (
+      <StudyFocus
+        profile={profile}
+        onBack={() => setView('title')}
+        onChange={(studyOff) => setProfile({ ...profileRef.current, studyOff })}
+      />
+    );
   } else if (view === 'quiz') {
     screen = (
       <Quiz
@@ -187,6 +196,7 @@ export default function App() {
         onContinue={() => setView('run')}
         onLibrary={() => setView('library')}
         onQuiz={() => setView('quiz')}
+        onStudy={() => setView('study')}
         onToggleSfx={() => {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, sfx: !p.settings.sfx } });

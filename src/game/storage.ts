@@ -11,6 +11,8 @@ export interface Profile {
   version: 1;
   /** Unlocked UNLOCK_GROUPS ids (always includes the あ row). Bosses unlock in order; the quiz can unlock any. */
   unlocked: string[];
+  /** Unlocked groups switched off in Study focus (new unlocks start on). */
+  studyOff: string[];
   srs: SrsStats;
   runs: number;
   wins: number;
@@ -24,7 +26,7 @@ export interface Profile {
 }
 
 export function newProfile(): Profile {
-  return { version: 1, unlocked: firstGroups(1), srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true, keyboard: 'game' } };
+  return { version: 1, unlocked: firstGroups(1), studyOff: [], srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true, keyboard: 'game' } };
 }
 
 function safeGet(key: string): unknown {
@@ -61,6 +63,7 @@ export function loadProfile(): Profile {
   return {
     version: 1,
     unlocked: parseUnlocked(raw),
+    studyOff: parseStudyOff(raw),
     srs,
     runs: num(raw.runs, 0),
     wins: num(raw.wins, 0),
@@ -82,6 +85,11 @@ function parseUnlocked(raw: Record<string, unknown>): string[] {
   }
   const n = typeof raw.unlockedCount === 'number' && Number.isFinite(raw.unlockedCount) ? raw.unlockedCount : 1;
   return firstGroups(n);
+}
+
+function parseStudyOff(raw: Record<string, unknown>): string[] {
+  const valid = new Set(UNLOCK_GROUPS.map((g) => g.id));
+  return Array.isArray(raw.studyOff) ? [...new Set(raw.studyOff.filter((x): x is string => typeof x === 'string' && valid.has(x)))] : [];
 }
 
 export function saveProfile(p: Profile) {

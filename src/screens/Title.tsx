@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UNLOCK_GROUPS, nextLockedGroup, unlockedKanaIds } from '../data';
+import { UNLOCK_GROUPS, nextLockedGroup, studyGroups, unlockedKanaIds } from '../data';
 import type { Profile } from '../game/storage';
 
 interface Props {
@@ -10,15 +10,18 @@ interface Props {
   onContinue: () => void;
   onLibrary: () => void;
   onQuiz: () => void;
+  onStudy: () => void;
   onToggleSfx: () => void;
   onToggleAutoSpeak: () => void;
   onToggleKeyboard: () => void;
 }
 
-export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onToggleSfx, onToggleAutoSpeak, onToggleKeyboard }: Props) {
+export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onStudy, onToggleSfx, onToggleAutoSpeak, onToggleKeyboard }: Props) {
   const next = nextLockedGroup(profile.unlocked);
   const [sheet, setSheet] = useState<null | 'abandon'>(null);
   const kanaCount = unlockedKanaIds(profile.unlocked).length;
+  const unlockedRows = profile.unlocked.filter((g) => g !== 'words');
+  const studying = studyGroups(unlockedRows, profile.studyOff);
 
   return (
     <main className="screen title-screen">
@@ -40,10 +43,17 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
         <button type="button" className="btn btn-wide btn-blue" onClick={onLibrary}>
           📚 Kana Library
         </button>
+        <button type="button" className="btn btn-wide" onClick={onStudy}>
+          🎯 Study focus
+          <br />
+          <span className="small muted">
+            {studying.length === unlockedRows.length ? `All ${unlockedRows.length} unlocked rows` : `${studying.length} of ${unlockedRows.length} rows on`}
+          </span>
+        </button>
         <button type="button" className="btn btn-wide" onClick={onQuiz}>
           🎓 Skip-ahead Quiz
           <br />
-          <span className="small muted">Already know some kana? Test out to unlock them.</span>
+          <span className="small muted">Already know some? Test out to unlock them.</span>
         </button>
       </div>
 

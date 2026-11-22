@@ -40,6 +40,48 @@ export function unlockedKanaIds(groups: readonly string[]): string[] {
   return UNLOCK_GROUPS.filter((g) => set.has(g.id)).flatMap((g) => g.kana);
 }
 
+/**
+ * Fewest different readings the study pool may have: a turn deals up to 5 moves (Paper Lantern),
+ * each labelled with a different reading.
+ */
+export const MIN_STUDY_READINGS = 5;
+
+export function distinctReadings(kanaIds: readonly string[]): number {
+  return new Set(kanaIds.map((k) => KANA_BY_ID[k]?.romaji)).size;
+}
+
+/**
+ * The groups you're studying: unlocked groups minus the ones switched off.
+ * If switching off would leave too few sounds (old save, quiz changes), everything unlocked is used.
+ */
+export function studyGroups(unlocked: readonly string[], off: readonly string[]): string[] {
+  const offSet = new Set(off);
+  const on = unlocked.filter((g) => !offSet.has(g));
+  return distinctReadings(unlockedKanaIds(on)) >= MIN_STUDY_READINGS ? on : [...unlocked];
+}
+
+/** Kana that label your moves and fill drills: the groups you're studying. */
+export function studyKanaIds(unlocked: readonly string[], off: readonly string[]): string[] {
+  return unlockedKanaIds(studyGroups(unlocked, off));
+}
+
+/** Can group `id` be switched off without dropping below the minimum number of sounds? */
+export function canSwitchOff(unlocked: readonly string[], off: readonly string[], id: string): boolean {
+  const offSet = new Set([...off, id]);
+  return distinctReadings(unlockedKanaIds(unlocked.filter((g) => !offSet.has(g)))) >= MIN_STUDY_READINGS;
+}
+
+/** The most recently unlocked groups, newest first, until they hold at least `minReadings` sounds. */
+export function latestGroups(unlocked: readonly string[], minReadings = 8): string[] {
+  const picked: string[] = [];
+  for (const id of [...unlocked].reverse()) {
+    if (id === 'words') continue;
+    picked.push(id);
+    if (distinctReadings(unlockedKanaIds(picked)) >= minReadings) break;
+  }
+  return picked;
+}
+
 /** The group the next boss kill unlocks: the first one (in unlock order) you don't have yet. */
 export function nextLockedGroup(groups: readonly string[]): UnlockGroup | undefined {
   const set = new Set(groups);
