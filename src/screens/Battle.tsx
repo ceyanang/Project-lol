@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ELEMENT_ICON } from '../art/icons';
 import CastFx from '../components/CastFx';
 import ComboMeter from '../components/ComboMeter';
+import TurnTimer from '../components/TurnTimer';
+import { CONFIG } from '../config';
 import EnemySprite from '../components/EnemySprite';
 import HpBar from '../components/HpBar';
 import PixelSprite from '../components/PixelSprite';
@@ -20,6 +22,8 @@ interface Props {
   floor: number;
   onType: (typed: string) => void;
   onConfirm: () => void;
+  /** The turn timer ran out: punished like a typo. */
+  onTimeout: () => void;
   keyboardMode: KeyboardMode;
   onMenu?: () => void;
 }
@@ -29,7 +33,7 @@ const FX_MS = 1100;
 const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist', 'combo', 'react'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
-export default function Battle({ battle, floor, onType, onConfirm, onMenu, keyboardMode }: Props) {
+export default function Battle({ battle, floor, onType, onConfirm, onTimeout, onMenu, keyboardMode }: Props) {
   const [fx, setFx] = useState<Fx[]>([]);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
@@ -143,6 +147,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
       </p>
 
       <ComboMeter combo={battle.combo} />
+      <TurnTimer turnKey={`${battle.turn}-${battle.pending ?? 'play'}`} running={ongoing && !battle.pending} durationMs={CONFIG.combat.turnTimeMs} onExpire={onTimeout} />
 
       <section className={`moves ${battle.pending ? 'is-waiting' : ''}`} aria-label="Your moves this turn">
         {battle.slots.map((s) => {

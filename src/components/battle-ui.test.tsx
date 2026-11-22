@@ -9,6 +9,7 @@ import ComboMeter from './ComboMeter';
 import EnemySprite from './EnemySprite';
 import MoveCard from './MoveCard';
 import StatusChips from './StatusChips';
+import TurnTimer from './TurnTimer';
 
 const html = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
 const clean = () => makeBattle(['strike', 'strike', 'strike', 'strike']).enemy;
@@ -95,5 +96,15 @@ describe('CastFx', () => {
 
   it('ignores hits with no element (e.g. a blocked or armor-only hit text)', () => {
     expect(html(createElement(CastFx, { fx: [{ id: 3, kind: 'enemyHit', text: 'Armor!' }] }))).toBe('');
+  });
+});
+
+describe('TurnTimer', () => {
+  it('renders a progressbar at full with the seconds as text', () => {
+    const out = html(createElement(TurnTimer, { turnKey: 1, running: true, durationMs: 6000, onExpire: () => {} }));
+    expect(out).toContain('role="progressbar"');
+    expect(out).toContain('aria-valuenow="6000"');
+    expect(out).toContain('6s');
+    expect(out).toContain('width:100%');
   });
 });

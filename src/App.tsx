@@ -126,6 +126,16 @@ export default function App() {
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));
   }
 
+  /** The turn timer ran out: same as a typo (typed text is discarded). */
+  function onTimeout() {
+    const cur = runRef.current;
+    if (!cur?.battle || cur.battle.pending || cur.battle.outcome !== 'ongoing') return;
+    const r = confirmTurn(cur.battle, { timedOut: true });
+    playSfx('wrong');
+    recordSrs(r.answers);
+    setRun(noteAnswers({ ...cur, battle: r.battle }, r.answers));
+  }
+
   // When a battle has an outcome, let the last hit animate, then move on.
   // Also recovers a save made in that short window (app closed right after a kill).
   const runRef = useRef(run);
@@ -256,6 +266,7 @@ export default function App() {
         floor={run.floor}
         onType={onType}
         onConfirm={onConfirm}
+        onTimeout={onTimeout}
         keyboardMode={profile.settings.keyboard}
         onMenu={() => setView('title')}
       />
