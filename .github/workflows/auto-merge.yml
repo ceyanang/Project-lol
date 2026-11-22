@@ -1,0 +1,40 @@
+name: Auto-merge to main
+
+# Every push to a Claude working branch is tested, merged into main, and main is redeployed to GitHub Pages.
+# (Pushes made with GITHUB_TOKEN don't trigger other workflows, so the deploy is started explicitly.)
+on:
+  push:
+    branches: ['ccr-**', 'claude/**']
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: auto-merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Merge into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B main origin/main
+          git merge --no-edit "origin/${GITHUB_REF_NAME}"
+          git push origin main
+      - name: Redeploy Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main
