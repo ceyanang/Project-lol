@@ -48,6 +48,8 @@ export interface Slot {
 
 export interface TurnResult {
   ok: boolean;
+  /** Kana (or word) to read aloud after End Turn: the matched move's label, or on a misread the closest move's label. */
+  speak?: string;
   tileText: string;
   tileRomaji: string;
   text: string;
@@ -421,7 +423,7 @@ export function confirmTurn(b: BattleState): PlayResult {
         ...next,
         movesMade: next.movesMade + 1,
         stats: { ...next.stats, correct: next.stats.correct + 1, words: next.stats.words + (slot.label.kind === 'word' ? 1 : 0) },
-        lastResult: { ok: true, tileText: slot.label.text, tileRomaji: typed, text: `${slot.label.text} = ${slot.label.romaji} → ${move.emoji} ${move.name}` },
+        lastResult: { ok: true, speak: slot.label.text, tileText: slot.label.text, tileRomaji: typed, text: `${slot.label.text} = ${slot.label.romaji} → ${move.emoji} ${move.name}` },
       };
     } else {
       // a typo: guess which move it was aiming at (closest reading) and mark that kana missed
@@ -437,7 +439,7 @@ export function confirmTurn(b: BattleState): PlayResult {
         next = pushFx({ ...next, playerHp: Math.max(0, next.playerHp - CONFIG.combat.wrongHpCost) }, 'miss', `Fizzle! -${CONFIG.combat.wrongHpCost}`);
       }
       const hint = target ? ` (${target.label.text} is “${target.label.romaji}”)` : '';
-      next = { ...next, lastResult: { ok: false, tileText: typed, tileRomaji: typed, text: `“${typed}” isn't any move's reading${hint}` } };
+      next = { ...next, lastResult: { ok: false, speak: target?.label.text, tileText: typed, tileRomaji: typed, text: `“${typed}” isn't any move's reading${hint}` } };
       if (next.playerHp <= 0) return { battle: { ...next, outcome: 'lost', typed: '' }, answers };
     }
   }

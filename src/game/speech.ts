@@ -1,3 +1,4 @@
+import { KANA_BY_ID } from '../data';
 /**
  * Japanese text-to-speech via window.speechSynthesis (no audio files).
  * Side-effect module: only UI code calls it.
@@ -40,6 +41,32 @@ export function voicesKnown(): boolean {
 }
 
 export type SpeakResult = 'ok' | 'no-voice' | 'unsupported';
+
+/**
+ * Read a kana aloud. A bundled recording (public/audio/<romaji>.mp3, same file for hiragana and
+ * katakana) plays when it exists, so it sounds the same on every phone and works offline;
+ * otherwise (and for whole words) the device's Japanese voice is used.
+ */
+export function speakKana(text: string, onFallback?: (result: SpeakResult) => void): SpeakResult {
+  const chars = [...text];
+  const kana = chars.length === 1 ? KANA_BY_ID[chars[0]] : undefined;
+  if (!kana || typeof Audio === 'undefined') return speak(text);
+  try {
+    const audio = new Audio(`${import.meta.env.BASE_URL}audio/${kana.romaji}.mp3`);
+    let fell = false;
+    const fallback = () => {
+      if (!fell) {
+        fell = true;
+        onFallback?.(speak(text));
+      }
+    };
+    audio.addEventListener('error', fallback);
+    audio.play().catch(fallback);
+    return 'ok';
+  } catch {
+    return speak(text);
+  }
+}
 
 /**
  * Speak Japanese text. Even without a listed Japanese voice we still try with lang=ja-JP —

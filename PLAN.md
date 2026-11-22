@@ -179,9 +179,17 @@ Title (Continue / New Run / Kana Library, sound + read-aloud toggles) → Map �
 Reward → … → Run Over. Kana Library: every kana by row with mastery, tap to hear.
 
 ## 7. Pronunciation & sound
-`speechSynthesis` with a Japanese voice when present (hint shown if missing). In battle the
-matched kana is spoken **after** End Turn, never while typing. Sound effects are synthesized with
-Web Audio (no files).
+**When it speaks.** Never while typing. On submit (⏎ / Go) the game reads aloud the kana of the
+move you matched; on a misread it reads the kana of the move you were closest to, so you hear the
+right answer; skipping says nothing. The quiz reads each kana as you answer.
+
+**How it speaks.** `speakKana` first plays a bundled recording `public/audio/<romaji>.mp3` (one
+file per reading, shared by hiragana and katakana, e.g. `ka.mp3`, `shi.mp3`; 69 files cover all
+kana) so it sounds identical on every phone and works offline. If the file is missing, or for whole
+words, it falls back to `speechSynthesis` with a Japanese voice (hint shown if none is installed).
+Recordings are precached by the service worker (`mp3` is in `globPatterns`).
+
+Sound effects are synthesized with Web Audio (no files).
 
 ## 8. Persistence keys
 | Key | Content |

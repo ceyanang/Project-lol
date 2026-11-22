@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { advanceBeat, confirmTurn, matchSlot, setTyped } from './game/battle';
+import { advanceBeat, confirmTurn, setTyped } from './game/battle';
 import { CONFIG } from './config';
 import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
 import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
-import { VOICE_HELP, initSpeech, speak as speakJa, voicesKnown } from './game/speech';
+import { type SpeakResult, VOICE_HELP, initSpeech, speakKana, voicesKnown } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
 import Battle from './screens/Battle';
 import Library from './screens/Library';
@@ -60,11 +60,13 @@ export default function App() {
 
   /** Explicit taps always speak. */
   const speak = useCallback((text: string) => {
-    const res = speakJa(text);
-    if (res !== 'ok' && !voiceHintShown.current && (res === 'unsupported' || voicesKnown())) {
-      voiceHintShown.current = true;
-      setToast(res === 'unsupported' ? 'This browser has no speech support, so kana can’t be read aloud.' : VOICE_HELP);
-    }
+    const hint = (res: SpeakResult) => {
+      if (res !== 'ok' && !voiceHintShown.current && (res === 'unsupported' || voicesKnown())) {
+        voiceHintShown.current = true;
+        setToast(res === 'unsupported' ? 'This browser has no speech support, so kana can’t be read aloud.' : VOICE_HELP);
+      }
+    };
+    hint(speakKana(text, hint));
   }, []);
   /** Automatic speech during battle respects the auto-speak setting. */
   const speakAuto = useCallback(
@@ -94,12 +96,13 @@ export default function App() {
   function onConfirm() {
     if (!run?.battle || run.battle.pending || run.battle.outcome !== 'ongoing') return;
     const typed = run.battle.typed;
-    const slot = typed ? matchSlot(run.battle, typed) : undefined;
     const r = confirmTurn(run.battle);
     if (typed) {
-      playSfx(slot ? 'correct' : 'wrong');
-      // speak only after confirming, so audio never gives the reading away early
-      if (slot) speakAuto(slot.label.text);
+      playSfx(r.battle.lastResult?.ok ? 'correct' : 'wrong');
+      // speak only after confirming, so audio never gives the reading away early:
+      // the kana you got (or, on a misread, the one you were aiming at)
+      const spoken = r.battle.lastResult?.speak;
+      if (spoken) window.setTimeout(() => speakAuto(spoken), 180);
     }
     recordSrs(r.answers);
     setRun(noteAnswers({ ...run, battle: r.battle }, r.answers));

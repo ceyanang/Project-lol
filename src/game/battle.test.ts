@@ -107,6 +107,18 @@ describe('typing and confirming a turn', () => {
     }
   });
 
+  it('submitting speaks the matched kana, or on a misread the one you were aiming at', () => {
+    const ctx = ctxFor();
+    const b = battle(['strike', 'guard', 'water_jet', 'wind_slash']);
+    const slot = b.slots[0];
+    expect(playTurn(setTyped(b, slot.label.romaji), ctx).battle.lastResult?.speak).toBe(slot.label.text);
+    const typo = slot.label.romaji.slice(0, -1) + 'x';
+    const miss = playTurn(setTyped(b, typo), ctx).battle.lastResult;
+    expect(miss?.ok).toBe(false);
+    expect(miss?.speak === undefined || b.slots.some((s) => s.label.text === miss.speak)).toBe(true);
+    expect(playTurn(b, ctx).battle.lastResult?.speak).toBeUndefined(); // skipping says nothing
+  });
+
   it('typed input is normalized (letters only, lowercase)', () => {
     const b = battle(['strike']);
     expect(setTyped(b, 'K a!').typed).toBe('ka');
