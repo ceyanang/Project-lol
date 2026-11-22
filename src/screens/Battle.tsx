@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ELEMENT_ICON } from '../art/icons';
+import CastFx from '../components/CastFx';
 import ComboMeter from '../components/ComboMeter';
 import EnemySprite from '../components/EnemySprite';
 import HpBar from '../components/HpBar';
@@ -34,7 +35,7 @@ const FX_SOUND: Partial<Record<Fx['kind'], Sfx>> = {
   heal: 'heal',
   weak: 'combo',
 };
-const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist'];
+const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist', 'combo', 'react'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
 export default function Battle({ battle, floor, onType, onConfirm, onMenu, keyboardMode }: Props) {
@@ -64,6 +65,9 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
   }, [battle.outcome]);
 
   const enemyHit = fx.some((f) => f.kind === 'enemyHit');
+  const hitAmount = fx.filter((f) => f.kind === 'enemyHit').at(-1)?.amount ?? 0;
+  // bigger hits shake harder and freeze the sprite a little longer before the shake
+  const hitStyle = { '--shake': `${Math.min(12, 3 + hitAmount / 3)}px`, '--stop': `${Math.min(110, 40 + hitAmount * 3)}ms` } as React.CSSProperties;
   const playerHit = fx.some((f) => f.kind === 'playerHit' || f.kind === 'miss');
   const intentText = !intent
     ? statusOf(e).stun > 0
@@ -102,7 +106,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
         <div className={`intent-bubble ${battle.pending === 'enemy' ? 'is-acting' : ''}`} aria-label="Enemy intent">
           {intentText}
         </div>
-        <div className={`enemy-art ${enemyHit ? 'shake' : ''}`} key={enemyHit ? `hit${battle.fxSeq}` : 'idle'}>
+        <div className={`enemy-art ${enemyHit ? 'is-hit' : ''} ${battle.outcome === 'won' ? 'is-dead' : ''}`} style={hitStyle} key={enemyHit ? `hit${battle.fxSeq}` : 'idle'}>
           <EnemySprite enemyId={e.defId} scale={scale} hit={enemyHit} />
         </div>
         <div className="enemy-name">
@@ -124,6 +128,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onMenu, keybo
           )}
           <StatusChips enemy={e} scale={keyboardMode === 'phone' ? 1 : 2} />
         </div>
+        <CastFx fx={fx} scale={keyboardMode === 'phone' ? 4 : 8} />
         <div className="fx-layer">
           {fx
             .filter((f) => ENEMY_FX.includes(f.kind))

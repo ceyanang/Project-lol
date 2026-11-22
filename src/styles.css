@@ -813,3 +813,42 @@ h1, h2, h3, h4, .lib-title, .sheet-title, .enemy-name, .rc-title, .logo { font-f
   .enemy-sprite .frame-a, .enemy-sprite .frame-b, .combo.tier-3 { animation: none; }
   .enemy-sprite .frame-b { opacity: 0; }
 }
+
+/* ---------- Cast effects ---------- */
+.cast { position: absolute; left: 50%; top: 42%; pointer-events: none; z-index: 5; animation-fill-mode: both; }
+.cast-fire { animation: castFire 700ms steps(10, end); }
+.cast-water { animation: castWater 650ms ease-in; }
+.cast-wind { animation: castWind 520ms steps(8, end); }
+.cast-thunder { animation: castThunder 520ms steps(1, end); }
+.cast-physical { animation: castSlash 380ms ease-out; }
+@keyframes castFire { 0% { transform: translate(-50%, -20%) scale(0.3); opacity: 0; } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 55% { transform: translate(-50%, -52%) scale(0.95); } 75% { transform: translate(-50%, -56%) scale(1.2); } 100% { transform: translate(-50%, -80%) scale(1.5); opacity: 0; } }
+@keyframes castWater { 0% { transform: translate(-50%, -140%) scale(0.6); opacity: 0; } 35% { opacity: 1; transform: translate(-50%, -60%) scale(1); } 70% { transform: translate(-50%, -45%) scale(1.25, 0.8); } 100% { transform: translate(-50%, -35%) scale(1.4, 0.5); opacity: 0; } }
+@keyframes castWind { 0% { transform: translate(40%, -50%) rotate(-8deg) scale(0.9); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-130%, -50%) rotate(-8deg) scale(1.1); opacity: 0; } }
+@keyframes castThunder { 0% { transform: translate(-50%, -160%); opacity: 1; } 20% { transform: translate(-50%, -50%); } 35% { opacity: 0; } 50% { opacity: 1; } 65% { opacity: 0; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes castSlash { 0% { transform: translate(-50%, -50%) rotate(-25deg) scale(0.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-30%, -40%) rotate(-25deg) scale(1.3); opacity: 0; } }
+.screen-flash { position: fixed; inset: 0; background: #fffdf0; pointer-events: none; z-index: 40; animation: screenFlash 90ms steps(1, end) both; }
+@keyframes screenFlash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+.status-pop { position: absolute; left: 50%; top: 18%; pointer-events: none; z-index: 5; animation: statusPop 900ms ease-out both; }
+@keyframes statusPop { 0% { transform: translate(-50%, 10px) scale(0.5); opacity: 0; } 25% { opacity: 1; transform: translate(-50%, -6px) scale(1.2); } 100% { transform: translate(-50%, -26px) scale(1); opacity: 0; } }
+.layout-phone .cast, .layout-phone .status-pop { left: 100px; }
+
+/* hit: freeze the sprite on its flash frame (hit-stop), then shake. Size scales with damage. */
+.enemy-art.is-hit { animation: hitShake 320ms ease-out var(--stop, 60ms) both; }
+.enemy-art.is-hit .frame-a { animation: none; opacity: 1; }
+.enemy-art.is-hit .frame-b { animation: none; opacity: 0; }
+@keyframes hitShake { 0% { transform: translateX(0); } 20% { transform: translateX(calc(var(--shake, 6px) * -1)); } 40% { transform: translateX(var(--shake, 6px)); } 60% { transform: translateX(calc(var(--shake, 6px) * -0.5)); } 80% { transform: translateX(calc(var(--shake, 6px) * 0.3)); } 100% { transform: translateX(0); } }
+.enemy-art.is-dead { animation: dissolve 800ms steps(8, end) forwards; }
+.enemy-art.is-dead .frame-a { animation: none; opacity: 1; }
+.enemy-art.is-dead .frame-b { animation: none; opacity: 0; }
+@keyframes dissolve { 0% { opacity: 1; filter: brightness(2.2); } 30% { opacity: 0.85; transform: translateY(2px) scaleY(0.96); } 100% { opacity: 0; transform: translateY(10px) scaleY(0.55); } }
+.fx-status { color: var(--purple); top: 16%; font-size: 1.2rem; }
+.fx-react { color: var(--gold); top: 36%; font-size: 2rem; text-shadow: 0 3px 0 var(--sumi); }
+.fx-combo { color: var(--gold); top: 2%; left: 4%; font-size: 1.05rem; }
+@media (prefers-reduced-motion: reduce) {
+  .cast, .status-pop { animation: castFade 250ms both; }
+  .cast { transform: translate(-50%, -50%); }
+  .screen-flash { display: none; }
+  .enemy-art.is-hit { animation: none; }
+  .enemy-art.is-dead { animation: castFade 300ms reverse both; }
+}
+@keyframes castFade { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }

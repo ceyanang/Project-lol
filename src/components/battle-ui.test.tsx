@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { MOVE_BY_ID } from '../data';
 import { makeBattle } from '../game/testkit';
+import type { Fx } from '../game/battle';
+import CastFx from './CastFx';
 import ComboMeter from './ComboMeter';
 import EnemySprite from './EnemySprite';
 import MoveCard from './MoveCard';
@@ -63,5 +65,35 @@ describe('EnemySprite', () => {
     const hit = html(createElement(EnemySprite, { enemyId: 'kappa', scale: 3, hit: true }));
     expect(hit.match(/<canvas/g)).toHaveLength(3);
     expect(hit).toContain('frame-flash');
+  });
+});
+
+describe('CastFx', () => {
+  const hit = (element: Fx['element'], id = 1): Fx => ({ id, kind: 'enemyHit', text: '-9', element, amount: 9 });
+
+  it('renders nothing with no fx', () => {
+    expect(html(createElement(CastFx, { fx: [] }))).toBe('');
+  });
+
+  it('draws a different cast effect for each element', () => {
+    for (const el of ['physical', 'fire', 'water', 'wind', 'thunder'] as const) {
+      const out = html(createElement(CastFx, { fx: [hit(el)] }));
+      expect(out).toContain(`cast-${el}`);
+      expect(out).toContain('<canvas');
+    }
+  });
+
+  it('only thunder flashes the whole screen', () => {
+    expect(html(createElement(CastFx, { fx: [hit('thunder')] }))).toContain('screen-flash');
+    expect(html(createElement(CastFx, { fx: [hit('fire')] }))).not.toContain('screen-flash');
+  });
+
+  it('pops a status icon when a status lands', () => {
+    const out = html(createElement(CastFx, { fx: [{ id: 2, kind: 'status', text: 'Burn!', element: 'fire' }] }));
+    expect(out).toContain('status-pop');
+  });
+
+  it('ignores hits with no element (e.g. a blocked or armor-only hit text)', () => {
+    expect(html(createElement(CastFx, { fx: [{ id: 3, kind: 'enemyHit', text: 'Armor!' }] }))).toBe('');
   });
 });
