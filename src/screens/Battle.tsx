@@ -15,7 +15,7 @@ import { type BattleState, type Fx, effectiveIntent, intentDamage, previewMove }
 import { statusOf } from '../game/status';
 import { soundsFor } from '../game/fxSounds';
 import { playSfx } from '../game/sfx';
-import type { KeyboardMode } from '../game/storage';
+import type { Difficulty, KeyboardMode } from '../game/storage';
 
 interface Props {
   battle: BattleState;
@@ -25,13 +25,14 @@ interface Props {
   /** The turn timer ran out: punished like a typo. */
   onTimeout: () => void;
   keyboardMode: KeyboardMode;
+  difficulty: Difficulty;
   onMenu?: () => void;
 }
 
 const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist', 'combo', 'react'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
-export default function Battle({ battle, floor, onType, onConfirm, onTimeout, onMenu, keyboardMode }: Props) {
+export default function Battle({ battle, floor, onType, onConfirm, onTimeout, onMenu, keyboardMode, difficulty }: Props) {
   const [fx, setFx] = useState<Fx[]>([]);
   const lastFx = useRef(battle.fxSeq);
   const e = battle.enemy;
@@ -151,7 +152,7 @@ export default function Battle({ battle, floor, onType, onConfirm, onTimeout, on
       </p>
 
       <ComboMeter combo={battle.combo} />
-      <TurnTimer turnKey={`${battle.turn}-${battle.pending ?? 'play'}`} running={ongoing && !battle.pending} durationMs={CONFIG.combat.turnTimeMs} onExpire={onTimeout} />
+      <TurnTimer turnKey={`${battle.turn}-${battle.pending ?? 'play'}`} running={ongoing && !battle.pending} durationMs={CONFIG.combat.turnTimeMs[difficulty]} onExpire={onTimeout} />
 
       <section className={`moves ${battle.pending ? 'is-waiting' : ''}`} aria-label="Your moves this turn">
         {battle.slots.map((s) => {

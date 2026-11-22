@@ -15,9 +15,10 @@ interface Props {
   onToggleMusic: () => void;
   onToggleAutoSpeak: () => void;
   onToggleKeyboard: () => void;
+  onCycleDifficulty: () => void;
 }
 
-export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onStudy, onToggleSfx, onToggleMusic, onToggleAutoSpeak, onToggleKeyboard }: Props) {
+export default function Title({ profile, canContinue, continueLabel, onNewRun, onContinue, onLibrary, onQuiz, onStudy, onToggleSfx, onToggleMusic, onToggleAutoSpeak, onToggleKeyboard, onCycleDifficulty }: Props) {
   const next = nextLockedGroup(profile.unlocked);
   const [sheet, setSheet] = useState<null | 'abandon'>(null);
   const kanaCount = unlockedKanaIds(profile.unlocked).length;
@@ -77,6 +78,14 @@ export default function Title({ profile, canContinue, continueLabel, onNewRun, o
           title="Type with the in-game keyboard or your phone's own keyboard"
         >
           {profile.settings.keyboard === 'phone' ? '📱 Phone keyboard' : '⌨️ Game keyboard'}
+        </button>
+        <button
+          type="button"
+          className="pill pill-btn"
+          onClick={onCycleDifficulty}
+          title="Turn timer: easy 15 s, normal 8 s, hard 6 s"
+        >
+          ⏱️ {{ easy: 'Easy · 15s', normal: 'Normal · 8s', hard: 'Hard · 6s' }[profile.settings.difficulty]}
         </button>
       </div>
 

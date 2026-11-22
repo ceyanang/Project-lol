@@ -11,7 +11,7 @@ const render = (music: boolean) => {
   return renderToStaticMarkup(
     createElement(Title, {
       profile, canContinue: false, onNewRun: noop, onContinue: noop, onLibrary: noop, onQuiz: noop, onStudy: noop,
-      onToggleSfx: noop, onToggleMusic: noop, onToggleAutoSpeak: noop, onToggleKeyboard: noop,
+      onToggleSfx: noop, onToggleMusic: noop, onToggleAutoSpeak: noop, onToggleKeyboard: noop, onCycleDifficulty: noop,
     }),
   );
 };

@@ -1,3 +1,4 @@
+import { CONFIG } from '../config';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PROFILE_KEY, loadProfile, newProfile, saveProfile } from './storage';
 import { recordAnswers } from './srs';
@@ -52,5 +53,18 @@ describe('storage', () => {
     const p = loadProfile();
     expect(p.unlocked).toEqual(['h-a']);
     expect(p.srs).toEqual({});
+  });
+
+  it('difficulty defaults to normal and only accepts easy/normal/hard', () => {
+    expect(newProfile().settings.difficulty).toBe('normal');
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { difficulty: 'hard' } }));
+    expect(loadProfile().settings.difficulty).toBe('hard');
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { difficulty: 'easy' } }));
+    expect(loadProfile().settings.difficulty).toBe('easy');
+    mem.set(PROFILE_KEY, JSON.stringify({ version: 1, unlocked: ['h-a'], srs: {}, settings: { difficulty: 'nightmare' } }));
+    expect(loadProfile().settings.difficulty).toBe('normal');
+  });
+  it('turn time per difficulty is 15 s / 8 s / 6 s', () => {
+    expect(CONFIG.combat.turnTimeMs).toEqual({ easy: 15000, normal: 8000, hard: 6000 });
   });
 });

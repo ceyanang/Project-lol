@@ -6,6 +6,8 @@ export const PROFILE_KEY = 'kanaslayer.profile.v1';
 export const RUN_KEY = 'kanaslayer.run.v3';
 
 export type KeyboardMode = 'game' | 'phone';
+export type Difficulty = 'easy' | 'normal' | 'hard';
+export const DIFFICULTIES: Difficulty[] = ['easy', 'normal', 'hard'];
 
 export interface Profile {
   version: 1;
@@ -24,11 +26,13 @@ export interface Profile {
     music: boolean;
     /** 'game' = in-game QWERTY keyboard (default); 'phone' = the device's own keyboard. */
     keyboard: KeyboardMode;
+    /** Sets the turn timer (CONFIG.combat.turnTimeMs): easy 15 s, normal 8 s, hard 6 s. */
+    difficulty: Difficulty;
   };
 }
 
 export function newProfile(): Profile {
-  return { version: 1, unlocked: firstGroups(1), studyOff: [], srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true, music: true, keyboard: 'game' } };
+  return { version: 1, unlocked: firstGroups(1), studyOff: [], srs: {}, runs: 0, wins: 0, bestFloor: 0, settings: { autoSpeak: true, sfx: true, music: true, keyboard: 'game', difficulty: 'normal' } };
 }
 
 function safeGet(key: string): unknown {
@@ -75,6 +79,7 @@ export function loadProfile(): Profile {
       sfx: isObj(raw.settings) && typeof raw.settings.sfx === 'boolean' ? raw.settings.sfx : true,
       music: isObj(raw.settings) && typeof raw.settings.music === 'boolean' ? raw.settings.music : true,
       keyboard: isObj(raw.settings) && raw.settings.keyboard === 'phone' ? 'phone' : 'game',
+      difficulty: isObj(raw.settings) && (raw.settings.difficulty === 'easy' || raw.settings.difficulty === 'hard') ? raw.settings.difficulty : 'normal',
     },
   };
 }

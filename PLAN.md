@@ -34,7 +34,7 @@ the matching **kana**. Kana you miss come back more often (spaced repetition).
    - it matches no move → **fizzle**, you take **3 damage** (`wrongHpCost`). If it was a near
      miss of one move's reading (edit distance), that kana is marked missed in your SRS;
    - nothing typed → fizzle ("You froze up!").
-   - **Turn timer:** you have **6 s** (`combat.turnTimeMs`) to cast a move. When the meter runs out the turn
+   - **Turn timer:** you have **15 s (easy) / 8 s (normal, default) / 6 s (hard)** (`combat.turnTimeMs`, picked with the ⏱️ pill on the title screen) to cast a move. When the meter runs out the turn
      is a fizzle ("Time's up!") even if you'd typed the right reading. The meter pauses during enemy beats,
      the menu and while the tab is hidden, and refills on every deal.
 4. **Beat, then the enemy acts.** After your move resolves there's a pause (1.3 s,

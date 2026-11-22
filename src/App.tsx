@@ -5,7 +5,7 @@ import { KANA_BY_ID } from './data';
 import { defaultRng } from './game/rng';
 import { enterNode, finishBattle, newRun, noteAnswers, parseRun, pickEnemy, popReward, restHeal, runCtx, studyReward, takeCard, takeRelic, type RunState } from './game/run';
 import { makeWeightOf, recordAnswers, type Answer } from './game/srs';
-import { type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
+import { DIFFICULTIES, type Profile, loadProfile, loadRunRaw, saveProfile, saveRunRaw } from './game/storage';
 import { type SpeakResult, VOICE_HELP, initSpeech, preloadClips, speakKana, voicesKnown, warmUpSpeech } from './game/speech';
 import { playSfx, setSfxEnabled } from './game/sfx';
 import { useMusic } from './music/useMusic';
@@ -236,6 +236,10 @@ export default function App() {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, autoSpeak: !p.settings.autoSpeak } });
         }}
+        onCycleDifficulty={() => {
+          const p = profileRef.current;
+          setProfile({ ...p, settings: { ...p.settings, difficulty: DIFFICULTIES[(DIFFICULTIES.indexOf(p.settings.difficulty) + 1) % DIFFICULTIES.length] } });
+        }}
         onToggleKeyboard={() => {
           const p = profileRef.current;
           setProfile({ ...p, settings: { ...p.settings, keyboard: p.settings.keyboard === 'phone' ? 'game' : 'phone' } });
@@ -268,6 +272,7 @@ export default function App() {
         onConfirm={onConfirm}
         onTimeout={onTimeout}
         keyboardMode={profile.settings.keyboard}
+        difficulty={profile.settings.difficulty}
         onMenu={() => setView('title')}
       />
     );
