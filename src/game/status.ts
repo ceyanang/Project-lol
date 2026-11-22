@@ -1,5 +1,5 @@
 import { CONFIG } from '../config';
-import type { Element } from '../types';
+import type { Element, StatusKind } from '../types';
 import type { EnemyState } from './battle';
 
 /** Status counters on an enemy (all 0 when clean). */
@@ -14,6 +14,10 @@ export const NO_STATUS: Status = { burn: 0, soak: 0, stun: 0, gust: 0 };
 
 /** The enemy's status, defaulting for saves made before statuses existed. */
 export const statusOf = (e: Pick<EnemyState, 'status'>): Status => e.status ?? NO_STATUS;
+
+/** Whether an enemy's gimmicks make it immune to a status. */
+export const isImmune = (e: Pick<EnemyState, 'gimmicks'>, kind: StatusKind): boolean =>
+  (e.gimmicks ?? []).some((g) => g.type === 'immune' && g.to.includes(kind));
 
 export type Reaction = 'steam' | 'shock';
 
@@ -35,12 +39,12 @@ export function applyElementStatus(e: EnemyState, element: Element | undefined):
     if (s.soak > 0) {
       s.soak = 0;
       reaction = 'steam';
-    } else s.burn = Math.min(C.burnMax, s.burn + C.burnStacksPerHit);
+    } else if (!isImmune(e, 'burn')) s.burn = Math.min(C.burnMax, s.burn + C.burnStacksPerHit);
   } else if (element === 'water') s.soak = C.soakTurns;
   else if (element === 'wind') s.gust = C.gustHits;
   else if (element === 'thunder' && s.soak > 0) {
     s.soak = 0;
-    s.stun = C.shockStun;
+    if (!isImmune(e, 'stun')) s.stun = C.shockStun;
     reaction = 'shock';
   }
   return { enemy: { ...e, status: s }, reaction };

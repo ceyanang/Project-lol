@@ -47,12 +47,16 @@ export interface EnemyDef {
   weak: Element;
   /** Moves of this element deal ×0.5. */
   resist?: Element;
+  gimmicks?: Gimmick[];
 }
 
 export type Element = 'physical' | 'fire' | 'water' | 'wind' | 'thunder';
 
 /** Elemental statuses on an enemy. */
 export type StatusKind = 'burn' | 'soak' | 'stun' | 'gust';
+
+/** Special rules an enemy fights by (see PLAN.md §1). */
+export type Gimmick = { type: 'immune'; to: StatusKind[] };
 
 export type RelicEffect =
   | 'voicedBonus'

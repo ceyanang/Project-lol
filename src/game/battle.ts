@@ -1,10 +1,10 @@
 import { CONFIG } from '../config';
 import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
-import type { Card, Element, EnemyDef, EnemyTier, Intent, MoveDef, Vocab } from '../types';
+import type { Card, Element, EnemyDef, Gimmick, EnemyTier, Intent, MoveDef, Vocab } from '../types';
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
 import { type Rng, chance, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
-import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, tickStatuses } from './status';
+import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, statusOf, tickStatuses } from './status';
 
 /*
  * Combat (see PLAN.md §1):
@@ -28,6 +28,7 @@ export interface EnemyState {
   weak: MoveDef['element'];
   resist?: MoveDef['element'];
   status: Status;
+  gimmicks: Gimmick[];
 }
 
 /** What a move is labelled with this turn: a kana or a whole word. */
@@ -148,6 +149,7 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     weak: def.weak,
     resist: def.resist,
     status: NO_STATUS,
+    gimmicks: def.gimmicks ?? [],
   };
 }
 
@@ -164,10 +166,27 @@ export function isAttackIntent(i: Intent): boolean {
   return i.type === 'attack' || i.type === 'multi';
 }
 
+/**
+ * What the enemy will actually do this turn: null when it is stunned, or when a gust blows
+ * the intent away (a buff is cancelled; a multi-hit loses gustHits hits and is cancelled at 0).
+ */
+export function effectiveIntent(e: EnemyState): Intent | null {
+  const s = statusOf(e);
+  if (s.stun > 0) return null;
+  const i = currentIntent(e);
+  if (s.gust <= 0) return i;
+  if (i.type === 'buff') return null;
+  if (i.type === 'multi') {
+    const times = (i.times ?? 2) - CONFIG.status.gustHits;
+    return times > 0 ? { ...i, times } : null;
+  }
+  return i;
+}
+
 /** Total damage the enemy will deal this turn if unblocked. */
 export function incomingDamage(e: EnemyState): number {
-  const i = currentIntent(e);
-  if (!isAttackIntent(i)) return 0;
+  const i = effectiveIntent(e);
+  if (!i || !isAttackIntent(i)) return 0;
   return intentDamage(e, i) * (i.type === 'multi' ? (i.times ?? 2) : 1);
 }
 
@@ -406,8 +425,13 @@ function performMove(b: BattleState, slot: Slot): BattleState {
 function enemyTurn(b: BattleState): BattleState {
   const e = { ...b.enemy, block: 0 };
   let next: BattleState = { ...b, enemy: e };
-  const intent = currentIntent(e);
-  switch (intent.type) {
+  const st = statusOf(e);
+  const intent = effectiveIntent(e);
+  if (st.stun > 0) {
+    next = pushFx(log({ ...next, enemy: { ...e, status: { ...st, stun: st.stun - 1 } } }, `${e.name} is stunned!`), 'status', 'Stunned!', { element: 'thunder' });
+  } else if (!intent) {
+    next = pushFx(log(next, `${e.name} is blown off course.`), 'status', 'Gust!', { element: 'wind' });
+  } else switch (intent.type) {
     case 'attack': {
       const dmg = intentDamage(e, intent);
       next = hitPlayer(log(next, `${e.name} attacks for ${dmg}.`), dmg);
@@ -433,7 +457,7 @@ function enemyTurn(b: BattleState): BattleState {
       );
       break;
   }
-  next = { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1 } };
+  next = { ...next, enemy: { ...next.enemy, intentIndex: next.enemy.intentIndex + 1, status: { ...statusOf(next.enemy), gust: 0 } } };
   if (next.outcome !== 'ongoing') return next;
   const tick = tickStatuses(next.enemy);
   next = { ...next, enemy: tick.enemy };
