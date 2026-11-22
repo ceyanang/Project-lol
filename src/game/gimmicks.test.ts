@@ -167,3 +167,19 @@ describe('boss phases', () => {
     expect(b.enemy.phaseDone).toBe(true);
   });
 });
+
+describe('retaliate vs drain (review finding)', () => {
+  it('the drain heal lands before tengu hits back, so a 2 HP player survives vampire ink', () => {
+    const b = { ...makeBattle(['vampire_ink', 'strike', 'guard', 'guard'], 'tengu'), playerHp: 2 };
+    const r = confirmTurn(typeFor(b, 'vampire_ink')).battle;
+    expect(r.outcome).toBe('ongoing');
+    expect(r.playerHp).toBe(2 + 9 - 3); // armor 1 → 9 dealt → heal 9, then the feathers sting for 3
+  });
+
+  it('a player who still dies to the retaliation is shown at 0 HP, never healed back up', () => {
+    const b = { ...makeBattle(['vampire_ink', 'strike', 'guard', 'guard'], 'tengu'), playerHp: 1 };
+    const r = confirmTurn(typeFor({ ...b, playerBlock: 0, enemy: { ...b.enemy, armor: 99 } }, 'vampire_ink')).battle; // armor 99 → 0 dealt → no heal
+    expect(r.outcome).toBe('lost');
+    expect(r.playerHp).toBe(0);
+  });
+});

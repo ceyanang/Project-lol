@@ -443,11 +443,12 @@ function performMove(b: BattleState, slot: Slot): BattleState {
     if (p.matchup === 'weak') next = pushFx(next, 'weak', 'Weakness!');
     if (p.matchup === 'resist') next = pushFx(next, 'resist', 'Resisted…');
     if (next.enemy.hp > 0) next = applyStatusFx(next, move.element);
-    next = afterHit(next, move);
     if (move.kind === 'drain' && dealt > 0) {
       const heal = Math.min(dealt, next.playerMaxHp - next.playerHp);
       next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
     }
+    // gimmick reactions (retaliation) come after the drain heal, so a heal can save you from them
+    next = afterHit(next, move);
   }
   if (p.block > 0) next = pushFx({ ...next, playerBlock: next.playerBlock + p.block }, 'block', `+${p.block} 🛡`);
   if (p.heal > 0) {
