@@ -1,6 +1,6 @@
 # Kana-Slayer: Juice, Elemental Combos & Pixel Art — Design
 
-Date: 2026-11-22 · Status: draft for approval
+Date: 2026-11-22 · Status: approved by owner
 
 ## Intent and why
 
@@ -30,6 +30,7 @@ with enemies so decisions matter beyond "biggest number."
   own project; this design should not block it.
 - Changing the kana-learning core: SRS, typing input, quiz, study drills stay as they are.
 - AI-generated art and external art tools in this phase.
+- Player battle sprite: wanted eventually, deferred. Battle stays UI-only for the player (HP bar).
 - Emoji on non-battle screens (map nodes, relics, rewards) is a follow-up unless trivially
   covered by the shared sprite renderer.
 
@@ -69,6 +70,7 @@ best); enemies move to 32×32 because faces need room.
 - Do both A and B; start with juice plus the elemental-combo mechanics together, because
   you cannot animate "soak then zap" without it being a real mechanic.
 - Pixel art, hand-drawn as code, **32×32 for every enemy**.
+- Enemy gimmicks and boss phases are the builder's call.
 - Style: chunky pixels, dark ink outline, limited palette matching the ink-and-paper theme.
 
 ## Proposed details (my calls — change freely)
@@ -100,8 +102,7 @@ These are proposals, not agreed with the owner:
 - Delivery order within the project; a sensible split is (1) sprite renderer + enemies,
   (2) cast animations + combo, (3) statuses and reactions, (4) gimmicks/phases, (5) balance pass.
 
-## Open questions for the owner
+## Owner answers
 
-1. Should the player get a visible character sprite in battle (a small shrine-maiden/ninja at the
-   bottom), or stay UI-only with just the HP bar?
-2. Are gimmicks per enemy OK to invent myself, or do you want to veto/pick them?
+1. Player sprite: not now, eventually. Keep the player UI-only for this project.
+2. Enemy gimmicks: builder invents them (kept inside the "first pass" ideas above), owner approved the doc.
