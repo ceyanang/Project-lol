@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ELEMENT_ICON } from '../art/icons';
-import CastFx from '../components/CastFx';
+import CastFx, { fxLifetime } from '../components/CastFx';
 import ComboMeter from '../components/ComboMeter';
 import TurnTimer from '../components/TurnTimer';
 import { CONFIG } from '../config';
@@ -28,8 +28,6 @@ interface Props {
   onMenu?: () => void;
 }
 
-const FX_MS = 1100;
-
 const ENEMY_FX: Fx['kind'][] = ['enemyHit', 'enemyBlock', 'buff', 'move', 'weak', 'resist', 'combo', 'react'];
 const PLAYER_FX: Fx['kind'][] = ['playerHit', 'block', 'miss', 'heal'];
 
@@ -43,15 +41,19 @@ export default function Battle({ battle, floor, onType, onConfirm, onTimeout, on
   // during a beat (enemy acting / dealing) nothing is tappable
   const busy = !ongoing || !!battle.pending;
 
-  // floating numbers + sounds for new fx entries
+  // floating numbers + sounds for new fx entries. Each entry gets its own removal timer, kept across
+  // re-renders: cancelling it when `battle.fx` changed left old entries (and the enemy's "is hit" pose) stuck on screen.
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
   useEffect(() => {
     const fresh = battle.fx.filter((f) => f.id > lastFx.current);
     lastFx.current = battle.fxSeq;
     if (!fresh.length) return;
     soundsFor(fresh).forEach((s, i) => (i === 0 ? playSfx(s) : window.setTimeout(() => playSfx(s), i * 70)));
     setFx((cur) => [...cur, ...fresh]);
-    const t = window.setTimeout(() => setFx((cur) => cur.filter((f) => !fresh.includes(f))), FX_MS);
-    return () => window.clearTimeout(t);
+    fresh.forEach((f) => {
+      timers.current.push(window.setTimeout(() => setFx((cur) => cur.filter((x) => x !== f)), fxLifetime(f)));
+    });
   }, [battle.fxSeq, battle.fx]);
 
   useEffect(() => {

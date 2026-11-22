@@ -4,6 +4,20 @@ import type { Fx } from '../game/battle';
 import type { Element, StatusKind } from '../types';
 import PixelSprite from './PixelSprite';
 
+/** How long each cast burst plays (keep in step with the `.cast-*` animation lengths in styles.css). */
+const CAST_MS: Record<Element, number> = { fire: 700, water: 650, wind: 520, thunder: 520, physical: 380 };
+/** Longest the enemy's hit shake can run (`--stop` max 110 ms + 320 ms shake). */
+const HIT_SHAKE_MS = 430;
+const STATUS_POP_MS = 900;
+const FLOATING_TEXT_MS = 1000;
+
+/** How long an fx entry should stay mounted: exactly as long as its animation, no longer. */
+export function fxLifetime(f: Pick<Fx, 'kind' | 'element'>): number {
+  if (f.kind === 'enemyHit') return Math.max(HIT_SHAKE_MS, f.element ? CAST_MS[f.element] : 0);
+  if (f.kind === 'status') return STATUS_POP_MS;
+  return FLOATING_TEXT_MS;
+}
+
 const STATUS_OF: Partial<Record<Element, StatusKind>> = { fire: 'burn', water: 'soak', wind: 'gust' };
 
 /**

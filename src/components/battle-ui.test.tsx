@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { MOVE_BY_ID } from '../data';
 import { makeBattle } from '../game/testkit';
 import type { Fx } from '../game/battle';
-import CastFx from './CastFx';
+import CastFx, { fxLifetime } from './CastFx';
 import ComboMeter from './ComboMeter';
 import EnemySprite from './EnemySprite';
 import MoveCard from './MoveCard';
@@ -106,5 +106,15 @@ describe('TurnTimer', () => {
     expect(out).toContain('aria-valuenow="6000"');
     expect(out).toContain('6s');
     expect(out).toContain('width:100%');
+  });
+});
+
+describe('fxLifetime', () => {
+  it('matches each element burst instead of one flat delay', () => {
+    expect(fxLifetime({ kind: 'enemyHit', element: 'physical' })).toBe(430);
+    expect(fxLifetime({ kind: 'enemyHit', element: 'fire' })).toBe(700);
+    expect(fxLifetime({ kind: 'enemyHit', element: 'thunder' })).toBe(520);
+    expect(fxLifetime({ kind: 'status', element: 'fire' })).toBe(900);
+    expect(fxLifetime({ kind: 'miss' })).toBeLessThanOrEqual(1000);
   });
 });
