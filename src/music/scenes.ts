@@ -11,7 +11,7 @@ export interface Layers {
   enraged: boolean;
 }
 
-const NO_LAYERS: Layers = { hook: false, enraged: false };
+export const NO_LAYERS: Layers = { hook: false, enraged: false };
 
 /** Which track should play. `view` is App's view state ('title' | 'library' | 'study' | 'quiz' | 'run'); null = silence. */
 export function sceneFor(view: string, run: RunState | null): Scene | null {
