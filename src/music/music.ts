@@ -122,6 +122,17 @@ export function startMusic(): void {
   reconcile();
 }
 
+/**
+ * Call on every user gesture until it returns true. Starts the music (once) and nudges the shared
+ * context awake; returns true only once the browser really lets audio run. A touch `pointerdown` is not
+ * a user activation on phones, so the first call may stay false and a later `pointerup`/`click` succeeds.
+ */
+export function onUserGesture(): boolean {
+  startMusic();
+  const ctx = getAudioContext(); // resumes the context if it is suspended (and the tab is visible)
+  return started && !!ctx && ctx.state === 'running';
+}
+
 /** Which track plays (null = silence). Switching crossfades; asking for the playing scene again does nothing. */
 export function setMusicScene(scene: Scene | null): void {
   wantScene = scene;

@@ -35,6 +35,8 @@ export class FakeAudioContext {
   currentTime = 0;
   sampleRate = 8000;
   state = 'running';
+  /** When false, resume() leaves the context suspended (like a browser refusing without a gesture). */
+  autoResume = true;
   destination = new FakeNode();
   sources: FakeSource[] = [];
   createOscillator() { const s = new FakeSource(); this.sources.push(s); return s; }
@@ -47,6 +49,6 @@ export class FakeAudioContext {
     return { length, duration: length / this.sampleRate, getChannelData: () => new Float32Array(length) };
   }
   createPeriodicWave() { return {}; }
-  resume() { this.state = 'running'; return Promise.resolve(); }
+  resume() { if (this.autoResume) this.state = 'running'; return Promise.resolve(); }
   suspend() { this.state = 'suspended'; return Promise.resolve(); }
 }

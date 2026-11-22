@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { RunState } from '../game/run';
-import { musicLevel, musicScene, setMusicEnabled, setMusicLayers, setMusicScene, startMusic } from './music';
+import { musicLevel, musicScene, onUserGesture, setMusicEnabled, setMusicLayers, setMusicScene } from './music';
 import { layersFor, sceneFor } from './scenes';
 
 /**
@@ -9,10 +9,10 @@ import { layersFor, sceneFor } from './scenes';
  */
 export function useMusic(view: string, run: RunState | null, enabled: boolean): void {
   useEffect(() => {
-    const events = ['pointerdown', 'pointerup', 'touchend', 'keydown'] as const;
+    const events = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+    // keep listening until the browser has really let audio run (the first touch event may not count)
     const go = () => {
-      events.forEach((e) => window.removeEventListener(e, go));
-      startMusic();
+      if (onUserGesture()) events.forEach((e) => window.removeEventListener(e, go));
     };
     events.forEach((e) => window.addEventListener(e, go));
     // for the browser checks in the plan: read the music output level and scene from the page

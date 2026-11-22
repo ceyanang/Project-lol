@@ -20,7 +20,7 @@ async function setup() {
       vi.advanceTimersByTime(25);
     }
   };
-  return { music, ac, doc, listeners, run };
+  return { music, ac, doc, listeners, run, sfx };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -135,5 +135,41 @@ describe('ducking', () => {
     expect(() => music.duckMusic(0.5)).not.toThrow();
     music.startMusic();
     expect(() => music.duckMusic(0.5)).not.toThrow();
+  });
+});
+
+describe('review fixes', () => {
+  it('a sound effect or voice clip while hidden does not un-suspend the context', async () => {
+    const { music, ac, doc, listeners, sfx } = await setup();
+    music.startMusic();
+    music.setMusicScene('menu');
+    doc.visibilityState = 'hidden';
+    listeners.visibilitychange();
+    expect(ac.state).toBe('suspended');
+    sfx.getAudioContext(); // what playSfx and speakKana do (enemy beats keep firing in the background)
+    expect(ac.state).toBe('suspended');
+    doc.visibilityState = 'visible';
+    listeners.visibilitychange();
+    expect(ac.state).toBe('running');
+  });
+
+  it('onUserGesture keeps asking until the browser actually lets audio run', async () => {
+    const { music, ac, run } = await setup();
+    ac.state = 'suspended';
+    ac.autoResume = false; // the first touch event is not a user activation
+    expect(music.onUserGesture()).toBe(false);
+    expect(ac.state).toBe('suspended');
+    ac.state = 'running'; // a later event (pointerup / click) is
+    expect(music.onUserGesture()).toBe(true);
+    music.setMusicScene('menu');
+    run(0.5);
+    expect(music.musicScene()).toBe('menu');
+  });
+
+  it('onUserGesture is false without Web Audio', async () => {
+    vi.resetModules();
+    vi.stubGlobal('window', {});
+    const m: MusicApi = await import('./music');
+    expect(m.onUserGesture()).toBe(false);
   });
 });
