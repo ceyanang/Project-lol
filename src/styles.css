@@ -334,7 +334,6 @@ button {
 /* battle: sections keep their natural height; the screen scrolls as a last resort on tiny phones */
 .battle { overflow-y: auto; }
 .battle > * { flex-shrink: 0; }
-.battle .enemy-emoji { font-size: clamp(52px, 11dvh, 96px); }
 .player-hp { flex: 1; }
 
 /* ---------- Moves ---------- */
@@ -472,10 +471,10 @@ button {
 .layout-phone .battle-top .icon-btn { min-width: 38px; min-height: 38px; font-size: 1rem; }
 
 .layout-phone .enemy {
-  order: 1; display: grid; grid-template-columns: 50px 1fr; grid-template-areas: 'art name' 'art hp' 'art match';
+  order: 1; display: grid; grid-template-columns: 64px 1fr; grid-template-areas: 'art name' 'art hp' 'art match';
   align-items: center; column-gap: 10px; row-gap: 3px; padding: 6px 10px 6px 50px; border-radius: 16px;
 }
-.layout-phone .enemy-emoji { grid-area: art; font-size: 42px; }
+.layout-phone .enemy-art { grid-area: art; }
 .layout-phone .enemy-name { grid-area: name; justify-self: start; font-size: 0.95rem; padding-right: 72px; }
 .layout-phone .enemy .hpbar { grid-area: hp; }
 .layout-phone .matchups { grid-area: match; justify-content: flex-start; flex-wrap: nowrap; gap: 4px; }
@@ -782,3 +781,35 @@ h1, h2, h3, h4, .lib-title, .sheet-title, .enemy-name, .rc-title, .logo { font-f
 .fx-enemyHit, .fx-playerHit { font-size: 1.9rem; }
 .badge { white-space: nowrap; }
 .pixel { image-rendering: pixelated; display: block; }
+
+/* ---------- Pixel art battle ---------- */
+.enemy-art { display: flex; justify-content: center; }
+.enemy-sprite { position: relative; filter: drop-shadow(0 5px 0 rgba(28, 26, 23, 0.18)); }
+.enemy-sprite canvas { position: absolute; inset: 0; }
+.enemy-sprite .frame-a { animation: idleA 1.2s steps(1) infinite; }
+.enemy-sprite .frame-b { animation: idleB 1.2s steps(1) infinite; }
+.enemy-sprite .frame-flash { opacity: 0; animation: hitFlash 140ms steps(1) 1; }
+@keyframes idleA { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes idleB { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes hitFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+.matchup canvas { display: inline-block; vertical-align: -3px; }
+.move-name { display: flex; align-items: center; gap: 4px; }
+.move-card { position: relative; }
+.move-card.is-frozen { opacity: 0.7; border-color: var(--blue); filter: saturate(0.4); }
+.frozen-badge { position: absolute; right: 4px; top: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 2px; font-weight: 900; font-size: 0.8rem; background: var(--panel); border: 2px solid var(--panel2); border-radius: 99px; padding: 1px 8px 1px 3px; }
+.chip canvas { display: block; }
+.chip-burn { border-color: var(--red); }
+.chip-soak { border-color: var(--blue); }
+.chip-stun { border-color: var(--gold); }
+.chip-gust { border-color: var(--muted); }
+.chip-shell { border-color: var(--gold); }
+.combo { display: flex; gap: 8px; justify-content: center; align-items: baseline; font-weight: 900; letter-spacing: 0.06em; color: var(--muted); }
+.combo.tier-1 { color: var(--gold); }
+.combo.tier-2 { color: var(--red); font-size: 1.1rem; }
+.combo.tier-3 { color: var(--purple); font-size: 1.2rem; animation: comboPulse 0.6s ease-in-out infinite alternate; }
+@keyframes comboPulse { to { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) {
+  .enemy-sprite .frame-a, .enemy-sprite .frame-b, .combo.tier-3 { animation: none; }
+  .enemy-sprite .frame-b { opacity: 0; }
+}

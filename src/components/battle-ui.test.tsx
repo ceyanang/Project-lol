@@ -1,0 +1,67 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it } from 'vitest';
+import { MOVE_BY_ID } from '../data';
+import { makeBattle } from '../game/testkit';
+import ComboMeter from './ComboMeter';
+import EnemySprite from './EnemySprite';
+import MoveCard from './MoveCard';
+import StatusChips from './StatusChips';
+
+const html = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el);
+const clean = () => makeBattle(['strike', 'strike', 'strike', 'strike']).enemy;
+const withStatus = (e: ReturnType<typeof clean>, s: Partial<ReturnType<typeof clean>['status']>) => ({ ...e, status: { ...e.status, ...s } });
+
+describe('StatusChips', () => {
+  it('renders nothing for a clean enemy', () => {
+    expect(html(createElement(StatusChips, { enemy: clean() }))).toBe('');
+  });
+
+  it('renders one chip per active status with its count', () => {
+    const out = html(createElement(StatusChips, { enemy: withStatus(clean(), { burn: 2, stun: 1 }) }));
+    expect(out).toContain('data-status="burn"');
+    expect(out).toContain('data-status="stun"');
+    expect(out).not.toContain('data-status="soak"');
+    expect(out).toMatch(/data-status="burn"[^>]*>.*?<b>2<\/b>/);
+  });
+
+  it('shows a shell chip until the shell is broken', () => {
+    const kappa = makeBattle(['strike', 'strike', 'strike', 'strike'], 'kappa').enemy;
+    expect(html(createElement(StatusChips, { enemy: kappa }))).toContain('data-status="shell"');
+    expect(html(createElement(StatusChips, { enemy: { ...kappa, shellBroken: true } }))).not.toContain('data-status="shell"');
+  });
+});
+
+describe('ComboMeter', () => {
+  it('renders nothing at 0 and the tier class from the configured tiers', () => {
+    expect(html(createElement(ComboMeter, { combo: 0 }))).toBe('');
+    expect(html(createElement(ComboMeter, { combo: 1 }))).toContain('tier-0');
+    expect(html(createElement(ComboMeter, { combo: 3 }))).toContain('tier-1');
+    expect(html(createElement(ComboMeter, { combo: 6 }))).toContain('tier-2');
+    expect(html(createElement(ComboMeter, { combo: 10 }))).toContain('tier-3');
+    expect(html(createElement(ComboMeter, { combo: 6 }))).toContain('×6');
+  });
+});
+
+describe('MoveCard art', () => {
+  it('draws an element sprite instead of the emoji, and marks a frozen move', () => {
+    const out = html(createElement(MoveCard, { move: MOVE_BY_ID.fire_talisman, label: 'き', frozen: true }));
+    expect(out).toContain('<canvas');
+    expect(out).not.toContain(MOVE_BY_ID.fire_talisman.emoji);
+    expect(out).toContain('is-frozen');
+  });
+
+  it('is not frozen by default', () => {
+    expect(html(createElement(MoveCard, { move: MOVE_BY_ID.guard, label: 'あ' }))).not.toContain('is-frozen');
+  });
+});
+
+describe('EnemySprite', () => {
+  it('draws two idle frames, plus a flash frame while hit', () => {
+    const idle = html(createElement(EnemySprite, { enemyId: 'kappa', scale: 3, hit: false }));
+    expect(idle.match(/<canvas/g)).toHaveLength(2);
+    const hit = html(createElement(EnemySprite, { enemyId: 'kappa', scale: 3, hit: true }));
+    expect(hit.match(/<canvas/g)).toHaveLength(3);
+    expect(hit).toContain('frame-flash');
+  });
+});
