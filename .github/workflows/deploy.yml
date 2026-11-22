@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/kana-slayer-roguelike-9rumx7]
+    branches: [main, claude/kana-slayer-roguelike-9rumx7, claude/upbeat-rubin-ynmast]
   workflow_dispatch:
 
 permissions:
