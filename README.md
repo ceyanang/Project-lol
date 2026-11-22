@@ -35,3 +35,15 @@ real "Add to Home Screen" offline test use the GitHub Pages deploy below.)
 3. Turn on airplane mode / Wi-Fi off.
 4. Launch from the home-screen icon → the title screen loads, runs and the Kana Library work.
 5. Speech offline needs an **on-device** Japanese voice (iOS: Settings › Accessibility › Spoken Content › Voices › Japanese).
+
+## Voice clips
+
+Kana are read aloud from bundled recordings (`public/audio/<reading>.mp3`, Kuon via ElevenLabs v4; one
+file per reading, shared by hiragana and katakana, 69 in total). If a file is missing the game uses the
+device's Japanese voice. To (re)download the recordings on a machine with normal internet:
+
+```bash
+node scripts/fetch-voice.mjs     # Node 18+, writes public/audio/*.mp3, then commit them
+```
+
+The links live in `scripts/voice-urls.json` (job ids in `scripts/voice-jobs.json`).
