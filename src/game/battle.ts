@@ -1,10 +1,10 @@
 import { CONFIG } from '../config';
 import { KANA_BY_ID, MOVE_BY_ID, isVoiced } from '../data';
-import type { Card, Element, EnemyDef, Gimmick, EnemyTier, Intent, MoveDef, Vocab } from '../types';
+import type { Card, Element, EnemyDef, Gimmick, Phase, EnemyTier, Intent, MoveDef, Vocab } from '../types';
 import { editDistance, matchesReading, normalizeTyped } from './romaji';
 import { type Rng, chance, pick, shuffle, weightedPick } from './rng';
 import type { Answer as SrsAnswer } from './srs';
-import { breaksShell, freezes, hardenAmount, mimicResist, retaliationDamage, shellFactor } from './gimmicks';
+import { breaksShell, checkPhase, freezes, hardenAmount, mimicResist, retaliationDamage, shellFactor } from './gimmicks';
 import { type Status, NO_STATUS, applyElementStatus, reactionMultiplier, statusOf, tickStatuses } from './status';
 
 /*
@@ -34,6 +34,8 @@ export interface EnemyState {
   shellBroken: boolean;
   /** Freeze gimmick: the next deal freezes one move. */
   freezeNext: boolean;
+  phase?: Phase;
+  phaseDone: boolean;
 }
 
 /** What a move is labelled with this turn: a kana or a whole word. */
@@ -159,6 +161,8 @@ export function createEnemy(def: EnemyDef, floor: number): EnemyState {
     gimmicks: def.gimmicks ?? [],
     shellBroken: false,
     freezeNext: false,
+    phase: def.phase,
+    phaseDone: false,
   };
 }
 
@@ -353,6 +357,13 @@ export function previewMove(move: MoveDef, label: Label | null, b: Pick<BattleSt
 
 // ---------------------------------------------------------------- resolving a turn
 
+/** Announce a boss phase change if the enemy just crossed its threshold. */
+function phaseCheck(b: BattleState): BattleState {
+  const r = checkPhase(b.enemy);
+  if (!r.fired) return b;
+  return pushFx(log({ ...b, enemy: r.enemy }, `${r.enemy.name}: ${r.fired.label}`), 'buff', r.fired.label);
+}
+
 function pushFx(b: BattleState, kind: FxKind, text: string, extra: { element?: Element; amount?: number } = {}): BattleState {
   const id = b.fxSeq + 1;
   return { ...b, fxSeq: id, fx: [...b.fx, { id, kind, text, ...extra }].slice(-8) };
@@ -444,7 +455,7 @@ function performMove(b: BattleState, slot: Slot): BattleState {
     next = pushFx({ ...next, playerHp: next.playerHp + heal }, 'heal', `+${heal} ❤️`);
   }
   if (p.weaken > 0) next = pushFx({ ...next, enemy: { ...next.enemy, strength: next.enemy.strength - p.weaken } }, 'enemyBlock', `-${p.weaken} 💪`);
-  return log(next, `You used ${move.name}.`);
+  return phaseCheck(log(next, `You used ${move.name}.`));
 }
 
 function enemyTurn(b: BattleState): BattleState {
@@ -490,7 +501,7 @@ function enemyTurn(b: BattleState): BattleState {
   next = { ...next, enemy: tick.enemy };
   if (tick.burnDamage > 0) next = pushFx(next, 'enemyHit', `-${tick.burnDamage} 🔥`, { element: 'fire', amount: tick.burnDamage });
   if (next.enemy.hp <= 0) next = log({ ...next, outcome: 'won' }, `${next.enemy.name} burns away!`);
-  return next;
+  return phaseCheck(next);
 }
 
 /** End Turn: resolve what was typed (if anything); the enemy acts on the next beat. */

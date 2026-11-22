@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ENEMIES, MOVE_BY_ID } from '../data';
-import { confirmTurn, playTurn, previewMove } from './battle';
+import { advanceBeat, confirmTurn, playTurn, previewMove } from './battle';
 import { HP, ctxFor, makeBattle, typeFor } from './testkit';
 
 const DECK = ['strike', 'lightning_seal', 'water_jet', 'fire_talisman'];
@@ -109,5 +109,58 @@ describe('freeze (yuki-onna)', () => {
 
   it('nothing is frozen when fewer than two moves are dealt', () => {
     expect(afterDefend(['strike']).b.frozen).toEqual([]);
+  });
+});
+
+describe('boss phases', () => {
+  const PH = ['water_jet', 'lightning_seal', 'wind_slash', 'strike'];
+  const withHp = (b: ReturnType<typeof makeBattle>, hp: number, maxHp = b.enemy.maxHp) => ({ ...b, enemy: { ...b.enemy, hp, maxHp } });
+
+  it('oni enrages below half HP: new pattern, +1 strength, intent restarts', () => {
+    const b = withHp(makeBattle(PH, 'oni'), 42); // maxHp 81, half is 40.5
+    const r = confirmTurn(typeFor(b, 'water_jet')).battle; // weak water: big hit
+    expect(r.enemy.phaseDone).toBe(true);
+    expect(r.enemy.strength).toBe(1);
+    expect(r.enemy.pattern).not.toEqual(b.enemy.pattern);
+    expect(r.enemy.intentIndex).toBe(0);
+    expect(r.fx.some((f) => f.text === 'Enraged!')).toBe(true);
+  });
+
+  it('a phase fires only once', () => {
+    const ctx = ctxFor(3, 2);
+    let b = withHp(makeBattle(PH, 'oni', ctx), 42);
+    b = { ...playTurn(typeFor(b, 'water_jet'), ctx).battle, playerHp: HP };
+    expect(b.enemy.strength).toBeGreaterThanOrEqual(1);
+    const str = b.enemy.strength;
+    const before = b.enemy.pattern;
+    b = playTurn(typeFor(b, 'lightning_seal'), ctx).battle;
+    expect(b.enemy.pattern).toBe(before);
+    expect(b.enemy.strength).toBeGreaterThanOrEqual(str);
+    expect(b.enemy.phaseDone).toBe(true);
+  });
+
+  it('a killing blow from above the threshold ends the fight with no phase change', () => {
+    const b = withHp(makeBattle(PH, 'oni'), 20, 30); // 67% of max, water_jet deals 21
+    const r = confirmTurn(typeFor(b, 'water_jet')).battle;
+    expect(r.outcome).toBe('won');
+    expect(r.enemy.phaseDone).toBe(false);
+    expect(r.enemy.strength).toBe(0);
+  });
+
+  it("ryujin's phase flips its weakness to thunder", () => {
+    const b = withHp(makeBattle(PH, 'ryujin'), 40); // maxHp 65, wind_slash 3x(10-2)=24 -> 16
+    const r = confirmTurn(typeFor(b, 'wind_slash')).battle;
+    expect(r.enemy.phaseDone).toBe(true);
+    expect(r.enemy.weak).toBe('thunder');
+    expect(previewMove(MOVE_BY_ID.lightning_seal, r.slots[0].label, r).matchup).toBe('weak');
+  });
+
+  it('burn ticking across the threshold triggers the phase too', () => {
+    const ctx = ctxFor(3, 2);
+    let b = withHp(makeBattle(PH, 'oni', ctx), 41);
+    b = { ...b, enemy: { ...b.enemy, status: { ...b.enemy.status, burn: 3 } } };
+    b = advanceBeat(confirmTurn({ ...b, typed: '' }).battle, ctx);
+    expect(b.enemy.hp).toBeLessThan(40.5);
+    expect(b.enemy.phaseDone).toBe(true);
   });
 });

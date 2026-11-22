@@ -48,6 +48,7 @@ export interface EnemyDef {
   /** Moves of this element deal ×0.5. */
   resist?: Element;
   gimmicks?: Gimmick[];
+  phase?: Phase;
 }
 
 export type Element = 'physical' | 'fire' | 'water' | 'wind' | 'thunder';
@@ -68,6 +69,22 @@ export type Gimmick =
   | { type: 'harden'; armor: number }
   /** After it defends, one of your moves is frozen (can't be cast) for the next turn. */
   | { type: 'freeze' };
+
+/** A one-time change when a boss drops to `atHpPct` of its max HP. */
+export interface Phase {
+  atHpPct: number;
+  /** Shown when it fires. */
+  label: string;
+  pattern?: Intent[];
+  /** Added to strength. */
+  strength?: number;
+  /** Added to armor. */
+  armor?: number;
+  /** Heals this fraction of max HP. */
+  heal?: number;
+  weak?: Element;
+  resist?: Element;
+}
 
 export type RelicEffect =
   | 'voicedBonus'
